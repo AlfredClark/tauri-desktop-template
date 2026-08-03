@@ -1,2 +1,3 @@
+# 固定 stable 工具链，保证所有开发者与 CI 使用一致的 Rust 版本
 [toolchain]
 channel = "stable"

@@ -1,12 +1,14 @@
 <script lang="ts">
   import { invoke } from "@tauri-apps/api/core";
 
+  // $state 为 Svelte 5 的响应式状态声明
   let name = $state("");
   let greetMsg = $state("");
 
+  // 调用 Rust 侧命令 greet（定义于 src-tauri/src/lib.rs）
   async function greet(event: Event) {
     event.preventDefault();
-    // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
+    // invoke 参数名需与 Rust 命令参数一致（Tauri 自动转换驼峰命名）
     greetMsg = await invoke("greet", { name });
   }
 </script>

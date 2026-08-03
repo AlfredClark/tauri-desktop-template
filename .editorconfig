@@ -1,3 +1,4 @@
+# 编辑器统一配置：与 prettier / rustfmt 规范保持一致
 root = true
 
 [*]
@@ -8,5 +9,6 @@ trim_trailing_whitespace = true
 indent_style = space
 indent_size = 2
 
+# Rust 与 TOML 文件使用 4 空格缩进（rustfmt 默认）
 [*.{rs,toml}]
 indent_size = 4
