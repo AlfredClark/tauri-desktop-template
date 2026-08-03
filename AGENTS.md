@@ -23,7 +23,10 @@
 ```
 ├── src/                        SvelteKit 前端
 │   ├── app.html                入口 HTML（引用 /favicon.png）
-│   └── routes/
+│   ├── components/             自定义 Svelte 组件（按功能分子目录）
+│   ├── lib/                    前端功能模块
+│   │   └── stores/             状态管理模块（types.ts / utils.ts / index.ts）
+│   └── routes/                 页面路由
 │       ├── +layout.ts          全局布局（关闭 SSR）
 │       └── +page.svelte        IPC 调用示例（invoke("greet")）
 ├── static/                     静态资源（favicon、logo）
@@ -56,8 +59,76 @@
 | `bun run format:all:check`          | prettier --check + cargo fmt --check                      |
 | `bun run validate`                  | 完整验证：lint + 格式 + Rust + 类型检查（改动后必须通过） |
 
+## 前端模块
+
+前端功能按模块组织在 `src/lib/` 下，每个模块由类型契约、实现与统一出口三部分构成（详见各模块小节）。
+
+### 状态管理（stores）
+
+位于 `src/lib/stores/`：基于 Svelte `writable` 的增强型 store 工厂。
+
+| 文件       | 职责                                                                              |
+| ---------- | --------------------------------------------------------------------------------- |
+| `types.ts` | 类型契约：`StorageType` 枚举、`StorageAdapter`、`PersistOptions`、`Store<T>` 接口 |
+| `utils.ts` | `createStore` 工厂实现（含 local/session 适配器）                                 |
+| `index.ts` | 统一出口：重导出工厂与类型，并集中实例化业务 store                                |
+
+#### 创建 store
+
+```ts
+import { createStore } from "$lib/stores";
+
+// 纯内存 store
+const count = createStore<number>(0);
+
+// 持久化：字符串简写，key 为 "theme"，介质默认 Local
+const theme = createStore("light", { persist: "theme" });
+
+// 持久化：完整对象配置（指定介质）
+const status = createStore(() => ({ splashscreen: true }), {
+  persist: { key: "status", storage: StorageType.Session },
+});
+
+// 值变更回调（与持久化相互独立，无绑定关系）
+const countWithLog = createStore<number>(0, {
+  subscribe: (value) => console.log("count:", value),
+});
+```
+
+- `initial` 支持字面量或惰性函数（惰性函数在创建时执行一次）
+- `persist` 为字符串时视为 key（介质默认 `Local`）；为对象时可指定 `key` 与 `storage`（`StorageType.Local` / `StorageType.Session`）
+- `subscribe` 为值变更回调，注册为内部订阅者：创建时执行一次，此后每次 `set`/`update`/`reset` 后触发，接收新值
+
+#### 使用 store
+
+- 组件内用 `$store` 语法自动订阅（`{$store}` 读取）；`$store = value` 等价 `store.set(value)`（需整体赋值）
+- `store.set(value)` / `store.update(fn)` / `store.get()` / `store.reset()`
+- 对象型 store 的字段级 input 绑定无法使用 `bind:value={$store.field}`（Svelte 不支持 store 成员表达式绑定），需用 `value={$store.field}` + `oninput` + `update()` 组合，或采用「父组件订阅 + props 切片」模式
+- 修改对象型 store 单项字段：`store.update((s) => ({ ...s, field: newValue }))`；通知所有订阅者是预期的（DOM 更新仍细粒度），设置项多时用 props 切片收窄子组件重跑
+
+#### 持久化行为
+
+- 创建时从存储读取数据（hydrate）；条目缺失或 JSON 损坏时静默回退初始值
+- 首次创建且条目缺失时立即写入默认值，保证存储与内存一致
+- `set`/`update` 同步写入，写入失败（配额满、隐私模式等）静默忽略，不影响内存状态
+- `reset()`：删除存储条目 → 内存恢复默认值 → 写回默认值（存储条目始终存在）
+
+#### 新增业务 store 的约定
+
+- 值类型定义在 `types.ts`，实例化在 `index.ts` 并统一导出
+- 命名不带 store 后缀（如 `settings`、`status`）
+- 异步/复杂业务逻辑（如 Tauri IPC 调用）不放入工厂，由具体业务 store 自行实现
+
+> 其他模块（如 IPC 封装、主题切换等）后续按此结构补充。
+
 ## 约定与注意事项
 
+- **前端模块结构**：每个前端模块位于 `src/lib/<模块名>/`，遵循「类型契约 → 实现 → 统一出口」三段式：
+  - `types.ts`：类型契约（接口/枚举/类型），与实现解耦
+  - 实现文件（如 `utils.ts`）：核心逻辑，按职责拆分
+  - `index.ts`：统一出口——重导出模块公开 API，并集中实例化业务实例（如 store）
+  - 消费方统一从 `$lib/<模块名>` 导入，禁止跨模块内部文件引用
+  - 新增模块时，同步在 AGENTS.md「前端模块」章节添加对应小节（文件职责表 + 用法 + 约定），「目录结构」添加模块目录及说明
 - **新增 IPC 命令**：在 `src-tauri/src/lib.rs` 添加 `#[tauri::command]` 函数 → 注册到 `invoke_handler` → 前端用 `invoke()` 调用；如涉及新权限需同步修改 `capabilities/`
 - **CSP**：`tauri.conf.json` 中 dev/prod 两套 CSP；prod 无 `unsafe-inline`，若前端需访问外部服务，必须同步更新 CSP 对应字段
 - **端口**：dev 固定 1420（HMR websocket 1420/1421），与 vite.config.ts 及 CSP 一致，修改需三处同步

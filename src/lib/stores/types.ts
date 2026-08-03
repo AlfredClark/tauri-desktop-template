@@ -1,0 +1,29 @@
+import type { Subscriber, Unsubscriber, Writable } from "svelte/store";
+
+/** 存储介质类型 */
+export enum StorageType {
+  Local = "local", // 本地存储：持久保存，应用重启后保留
+  Session = "session", // 会话存储：关闭窗口后清除
+}
+
+/** 存储介质适配器：屏蔽不同存储实现的差异，新增介质只需注册一个新适配器 */
+export interface StorageAdapter {
+  getItem(key: string): string | null; // 读取指定 key 的原始字符串，不存在时返回 null
+  setItem(key: string, value: string): void; // 写入指定 key
+  removeItem(key: string): void; // 删除指定 key
+}
+
+/** 持久化配置 */
+export interface PersistOptions {
+  key: string; // 存储 key，显式指定
+  storage?: StorageType; // 存储介质，默认 Local
+}
+
+/** 增强型 store：subscribe 兼容 $store 语法，并附带便捷方法 */
+export interface Store<T> extends Writable<T> {
+  subscribe(run: Subscriber<T>, invalidate?: (value?: T) => void): Unsubscriber; // 订阅状态变化，返回取消订阅函数
+  set(value: T): void; // 直接设置新值
+  update(fn: (value: T) => T): void; // 基于当前值计算并设置新值
+  get(): T; // 同步读取当前值
+  reset(): void; // 恢复默认值：删除持久化条目 → 内存重置 → 写回默认值
+}
