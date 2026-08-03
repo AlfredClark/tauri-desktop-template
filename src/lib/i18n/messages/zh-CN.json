@@ -1,0 +1,9 @@
+{
+  "$schema": "https://inlang.com/schema/inlang-message-format",
+  "welcome": "欢迎使用 Tauri + Svelte",
+  "greet_placeholder": "输入名称...",
+  "greet_button": "问候",
+  "lang_en": "English",
+  "lang_zh_cn": "简体中文",
+  "click_hint": "点击 Tauri、Vite 和 SvelteKit 的 logo 了解更多。"
+}

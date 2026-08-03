@@ -1,0 +1,9 @@
+{
+  "$schema": "https://inlang.com/schema/inlang-message-format",
+  "welcome": "Welcome to Tauri + Svelte",
+  "greet_placeholder": "Enter a name...",
+  "greet_button": "Greet",
+  "lang_en": "English",
+  "lang_zh_cn": "简体中文",
+  "click_hint": "Click on the Tauri, Vite, and SvelteKit logos to learn more."
+}

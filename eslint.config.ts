@@ -17,7 +17,17 @@ export default defineConfig([
     ],
   },
   // 全局忽略：生成目录、构建产物与 Rust 后端
-  globalIgnores(["build/", ".svelte-kit/", "package/", "node_modules/", "src-tauri/", "target/", "**/.*"]),
+  globalIgnores([
+    "build/",
+    ".svelte-kit/",
+    "package/",
+    "node_modules/",
+    "src-tauri/",
+    "target/",
+    "src/lib/i18n/paraglide/",
+    "src/lib/i18n/project.inlang/",
+    "**/.*",
+  ]),
   {
     // 浏览器环境下的 TS 文件
     files: ["src/**/*.ts"],

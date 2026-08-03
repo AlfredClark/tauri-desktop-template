@@ -9,6 +9,9 @@ mod cores;
 
 use commands::invoke_handlers;
 
+// 初始化 rust-i18n：加载 src-tauri/locales 下的消息源，缺失翻译回退 en
+rust_i18n::i18n!("locales", fallback = "en");
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     // Linux Wayland 环境下 webkit2gtk 的 DMABUF 渲染器会导致白屏/崩溃，

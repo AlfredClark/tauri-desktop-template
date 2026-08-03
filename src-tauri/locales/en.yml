@@ -1,0 +1,2 @@
+_version: 1
+greet: "Hello, %{name}! You've been greeted from Rust!"

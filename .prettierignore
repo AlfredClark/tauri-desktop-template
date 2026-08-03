@@ -6,3 +6,5 @@ src-tauri
 target
 Cargo.lock
 bun.lock
+src/lib/i18n/paraglide
+src/lib/i18n/project.inlang

@@ -1,5 +1,8 @@
 <script lang="ts">
+  import { ParaglideMessage } from "@inlang/paraglide-js-svelte";
+  import { m } from "$lib/i18n/paraglide/messages";
   import { invokeCommand } from "$lib/ipc";
+  import { changeLocale } from "$lib/i18n";
 
   // $state 为 Svelte 5 的响应式状态声明
   let name = $state("");
@@ -14,7 +17,12 @@
 </script>
 
 <main class="container">
-  <h1>Welcome to Tauri + Svelte</h1>
+  <h1><ParaglideMessage message={m.welcome} /></h1>
+
+  <div class="row">
+    <button onclick={() => void changeLocale("en")}>{m.lang_en()}</button>
+    <button onclick={() => void changeLocale("zh-CN")}>{m.lang_zh_cn()}</button>
+  </div>
 
   <div class="row">
     <a href="https://vite.dev" target="_blank">
@@ -27,11 +35,11 @@
       <img src="/svelte.svg" class="logo svelte-kit" alt="SvelteKit Logo" />
     </a>
   </div>
-  <p>Click on the Tauri, Vite, and SvelteKit logos to learn more.</p>
+  <p>{m.click_hint()}</p>
 
   <form class="row" onsubmit={greet}>
-    <input id="greet-input" placeholder="Enter a name..." bind:value={name} />
-    <button type="submit">Greet</button>
+    <input id="greet-input" placeholder={m.greet_placeholder()} bind:value={name} />
+    <button type="submit">{m.greet_button()}</button>
   </form>
   <p>{greetMsg}</p>
 </main>

@@ -45,7 +45,8 @@
     "format:rust": "cargo fmt",
     "format:rust:check": "cargo fmt --check",
     "format:all": "prettier --write . && cargo fmt",
-    "format:all:check": "prettier --check . && cargo fmt --check"
+    "format:all:check": "prettier --check . && cargo fmt --check",
+    "paraglide:compile": "paraglide-js compile --project ./src/lib/i18n/project.inlang --outdir ./src/lib/i18n/paraglide --strategy globalVariable baseLocale --emit-ts-declarations"
   },
   "lint-staged": {
     "*.{js,ts,svelte}": [
@@ -67,6 +68,10 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@inlang/paraglide-js": "^2.23.1",
+    "@inlang/paraglide-js-svelte": "^1.0.3",
+    "@inlang/plugin-m-function-matcher": "^2.2.9",
+    "@inlang/plugin-message-format": "^4.4.0",
     "@sveltejs/adapter-static": "^3.0.10",
     "@sveltejs/kit": "^2.70.2",
     "@sveltejs/vite-plugin-svelte": "^7.2.0",

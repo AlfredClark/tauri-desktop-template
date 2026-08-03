@@ -10,13 +10,13 @@
 
 ## 技术栈与工具链
 
-| 类别     | 选型                                                                                |
-| -------- | ----------------------------------------------------------------------------------- |
-| 包管理器 | bun（`bun.lock` 已提交，勿用 npm/yarn/pnpm）                                        |
-| 前端     | SvelteKit 5、Vite 8、TypeScript 6                                                   |
-| 桌面端   | Tauri 2.11、tauri-plugin-opener、tauri-plugin-store（config.json）、@tauri-apps/api |
-| Rust     | stable 工具链（`rust-toolchain.toml`），edition 2024                                |
-| 环境要求 | Node >= 24（`package.json` engines），Linux 需 webkit2gtk 等 Tauri 系统依赖         |
+| 类别     | 选型                                                                                                         |
+| -------- | ------------------------------------------------------------------------------------------------------------ |
+| 包管理器 | bun（`bun.lock` 已提交，勿用 npm/yarn/pnpm）                                                                 |
+| 前端     | SvelteKit 5、Vite 8、TypeScript 6                                                                            |
+| 桌面端   | Tauri 2.11、tauri-plugin-opener、tauri-plugin-store（config.json）、@tauri-apps/api、rust-i18n（后端国际化） |
+| Rust     | stable 工具链（`rust-toolchain.toml`），edition 2024                                                         |
+| 环境要求 | Node >= 24（`package.json` engines），Linux 需 webkit2gtk 等 Tauri 系统依赖                                  |
 
 ## 目录结构
 
@@ -25,16 +25,19 @@
 │   ├── app.html                入口 HTML（引用 /favicon.png）
 │   ├── components/             自定义 Svelte 组件（按功能分子目录）
 │   ├── lib/                    前端功能模块
+│   │   ├── i18n/               国际化（paraglide-js 配置 / 消息源 / 生成产物 / 模块）
 │   │   ├── ipc/                IPC 封装（invokeCommand 统一响应解包）
 │   │   └── stores/             状态管理模块（types.ts / utils.ts / index.ts）
 │   └── routes/                 页面路由
-│       ├── +layout.ts          全局布局（关闭 SSR）
+│       ├── +layout.ts          全局布局（关闭 SSR、启动同步 locale）
+│       ├── +layout.svelte      html lang 属性客户端同步（app.html 硬编码 en）
 │       └── +page.svelte        IPC 调用示例（invoke("greet")）
 ├── static/                     静态资源（favicon、logo）
 ├── src-tauri/                  桌面端（Rust）
-│   ├── src/lib.rs              模块组装：Builder / setup / 命令注册
-│   ├── src/cores/              核心逻辑（含初始化 setup、统一响应协议 response.rs）
+│   ├── src/lib.rs              模块组装：Builder / setup / 命令注册 / rust-i18n 初始化
+│   ├── src/cores/              核心逻辑（含初始化 setup、统一响应协议 response.rs、locale 类型 locale.rs）
 │   ├── src/commands/           IPC 命令薄层（如 config.rs）
+│   ├── locales/                后端消息源（rust-i18n，en.yml / zh-CN.yml）
 │   ├── src/main.rs             二进制入口（调用 lib::run()）
 │   ├── capabilities/default.json  窗口权限（main + core:default + opener:default）
 │   ├── tauri.conf.json         窗口 / CSP / 打包配置
@@ -143,6 +146,61 @@ const locale = await invokeCommand<string>("get_config", { key: "locale" });
 - 成功时返回业务数据（`T`）；失败（code !== 0）时 console.error 打印并返回 null，调用方用 `??` 兜底
 - 命令参数键名与 Rust 参数名一致（Tauri 自动转换驼峰命名）
 
+### 国际化（i18n）
+
+位于 `src/lib/i18n/`：基于 paraglide-js 的国际化，配置、消息源与生成产物统一收拢于此。
+
+| 文件/目录                      | 职责                                                                                                                            |
+| ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------- |
+| `project.inlang/settings.json` | inlang 项目配置（baseLocale: en、locales: en/zh-CN、消息格式插件）                                                              |
+| `messages/{en,zh-CN}.json`     | 消息源文件，新增文案需双语同步                                                                                                  |
+| `paraglide/`                   | 生成产物（已 gitignore——目录内 `.gitignore` 为 `*`，由 vite 插件自动编译；IDE 类型提示依赖其存在，已加入 eslint/prettier 忽略） |
+| `utils.ts`                     | `changeLocale`（后端优先的语言切换）+ `syncLocale`（启动时从后端同步 locale）                                                   |
+| `index.ts`                     | 统一出口：`changeLocale` / `syncLocale` + 重导出 paraglide 运行时 `getLocale` / `isLocale` / `toLocale` 与类型                  |
+
+```ts
+import { changeLocale, syncLocale } from "$lib/i18n";
+import { m } from "$lib/i18n/paraglide/messages";
+import { ParaglideMessage } from "@inlang/paraglide-js-svelte";
+
+await syncLocale(); // 启动时调用（+layout.ts 的 load 中，页面渲染前）：从后端同步 locale
+const ok = await changeLocale("zh-CN"); // 切换语言：先写 Rust config.json 落盘，成功后才切 paraglide 运行时
+// 组件内：{m.xxx()} 响应切换，富文本用 <ParaglideMessage message={m.xxx} />
+```
+
+- locale 真相源为 Rust 侧 `config.json`（系统级配置），前端运行时与后端 rust-i18n 均为其镜像（见「后端国际化」小节）
+- `changeLocale` 后端优先：先 `set_config` 写 config.json 落盘，成功后才调用 paraglide 运行时 `setLocale(locale, { reload })`；`reload` 默认 true（刷新页面从持久化恢复），纯内存切换传 `false`（避免刷新循环）；vite 插件 `strategy: ["globalVariable", "baseLocale"]`（纯内存，禁止 paraglide 自行持久化），config.json 为唯一真相源
+- 启动同步：`syncLocale` 读取 config.json 的 locale 并经 `toLocale` 校验后 `setLocale(locale, { reload: false })` 应用，挂载于 `src/routes/+layout.ts` 的 `load`（SPA 下页面渲染前执行一次，首帧即正确语言）；命令失败（含 IPC 异常）或条目缺失时静默保持 paraglide 默认语言
+- 运行时读取/校验直接使用 paraglide 重导出：`getLocale()` / `isLocale()` / `toLocale()`（从 `$lib/i18n` 导入）
+- `<html lang>` 语义：`app.html` 硬编码 `lang="en"`；SPA 无服务端 hooks（无法用官方 `%lang%` + `hooks.server.ts` 方案），由 `src/routes/+layout.svelte` 的 `onMount` 以 `document.documentElement.lang = getLocale()` 客户端同步（layout load 先执行 `syncLocale`，挂载时语言已正确；`changeLocale` 默认 reload 后重挂载生效）
+- 新增文案：`messages/en.json` 与 `messages/zh-CN.json` 双语同步添加
+- 新增语言：修改 `project.inlang/settings.json` 的 `locales`（paraglide `Locale` 类型自动派生）；改动配置后需重新编译生成产物（`bun run paraglide:compile`，参数与 vite 插件保持一致）
+
+## 后端国际化（rust-i18n）
+
+基于 rust-i18n v4（编译期 codegen，YAML 消息源），与前端 i18n 共用 config.json 的 `locale` 作为真相源。
+
+| 文件/目录            | 职责                                                                  |
+| -------------------- | --------------------------------------------------------------------- |
+| `src-tauri/locales/` | 消息源（`_version: 1`，en.yml / zh-CN.yml，双语同步）                 |
+| `src/lib.rs`         | `rust_i18n::i18n!("locales", fallback = "en")` 初始化                 |
+| `cores/locale.rs`    | `Locale` newtype：经 `available_locales!` 校验，杜绝非法 locale 值    |
+| `cores/config.rs`    | setup 加载 config.json 后 `rust_i18n::set_locale` 同步初始值          |
+| `commands/config.rs` | `set_config` 写 locale 前经 `Locale` 校验，非法值拒绝写入并同步运行时 |
+
+```rust
+use rust_i18n::t;
+// 消息源（src-tauri/locales/en.yml）：greet: "Hello, %{name}!"
+Response::ok(t!("greet", name = name).to_string())
+```
+
+- 默认 locale 为 `"en"`（与前端 paraglide `baseLocale` 一致），缺失翻译回退 en
+- locale 值约束：`Locale::new` 校验（可用语言列表编译期固定）；`Config::load` 遇到缺失/非法值回退默认并落盘修复；`set_config` 对非法 locale 直接返回错误码拒绝写入（不落盘）
+- locale 切换链路：前端 `changeLocale` → `set_config`（校验 + config.json 落盘）→ `rust_i18n::set_locale`，后端 `t!` 随即返回新语言文本
+- 业务返回值（如 `greet`）用 `t!` 本地化；错误信息（`Response.message`）不本地化，保留技术原文
+- 新增文案：`en.yml` 与 `zh-CN.yml` 双语同步添加（`_version: 1`，key 支持嵌套 map 与 `%{name}` 插值）
+- 新增语言：新建 `locales/<locale>.yml`，并同步前端 `settings.json` 的 `locales`（paraglide `Locale` 类型自动派生）
+
 ## 约定与注意事项
 
 - **前端模块结构**：每个前端模块位于 `src/lib/<模块名>/`，遵循「类型契约 → 实现 → 统一出口」三段式：
@@ -152,7 +210,7 @@ const locale = await invokeCommand<string>("get_config", { key: "locale" });
   - 消费方统一从 `$lib/<模块名>` 导入，禁止跨模块内部文件引用
   - 新增模块时，同步在 AGENTS.md「前端模块」章节添加对应小节（文件职责表 + 用法 + 约定），「目录结构」添加模块目录及说明
 - **新增 IPC 命令**：命令定义在 `src-tauri/src/commands/<模块>.rs`（薄层，核心逻辑经 `State` 注入或调用 `cores/` 模块，统一返回 `cores/response.rs` 的 `Response<T>`，错误码 0 成功 / 1 内部错误）→ 在 `commands/mod.rs` 的 `invoke_handlers!` 宏中追加（`lib.rs` 的 `invoke_handler` 无需改动）→ 前端经 `invokeCommand` 调用；如涉及新权限需同步修改 `capabilities/`
-- **系统级配置**：`config.json`（应用数据目录，tauri-plugin-store）经 `cores/config.rs` 的 `setup` 初始化并存入 Tauri State（避免重复读文件），`get_config` / `set_config` 键值命令读写，前端 `invoke` 调用，无需新增 capabilities 权限；系统级配置与前端 UI 偏好（localStorage stores 模块）按配置归属分层，不混用
+- **系统级配置**：`config.json`（应用数据目录，tauri-plugin-store）经 `cores/config.rs` 的 `setup` 初始化并存入 Tauri State（避免重复读文件），`get_config` / `set_config` 键值命令读写，前端 `invokeCommand` 调用，无需新增 capabilities 权限；`locale` 为前后端 i18n 共用的真相源（前端 `changeLocale` 写回同步，后端 rust-i18n 运行时经 `set_config` 钩子同步，见「后端国际化」小节）；系统级配置与前端 UI 偏好（localStorage stores 模块）按配置归属分层，不混用
 - **CSP**：`tauri.conf.json` 中 dev/prod 两套 CSP；prod 无 `unsafe-inline`，若前端需访问外部服务，必须同步更新 CSP 对应字段
 - **端口**：dev 固定 1420（HMR websocket 1420/1421），与 vite.config.ts 及 CSP 一致，修改需三处同步
 - **lib.rs 中 Linux Wayland 处理**（`WEBKIT_DISABLE_DMABUF_RENDERER`）为必要 workaround，勿删除

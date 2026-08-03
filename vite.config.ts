@@ -1,3 +1,4 @@
+import { paraglideVitePlugin } from "@inlang/paraglide-js";
 import { defineConfig } from "vite";
 import { sveltekit } from "@sveltejs/kit/vite";
 
@@ -5,7 +6,17 @@ import { sveltekit } from "@sveltejs/kit/vite";
 const host = process.env.TAURI_DEV_HOST;
 
 export default defineConfig(() => ({
-  plugins: [sveltekit()],
+  plugins: [
+    sveltekit(),
+    // 国际化：编译 messages 生成 paraglide 运行时（src/lib/i18n/paraglide）
+    paraglideVitePlugin({
+      project: "./src/lib/i18n/project.inlang",
+      outdir: "./src/lib/i18n/paraglide",
+      emitTsDeclarations: true,
+      // 纯内存策略：locale 真相源为 Rust config.json，禁止 paraglide 自行持久化（cookie/localStorage 等）
+      strategy: ["globalVariable", "baseLocale"],
+    }),
+  ],
 
   clearScreen: false,
   server: {

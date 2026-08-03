@@ -1,0 +1,2 @@
+_version: 1
+greet: "你好，%{name}！你已收到来自 Rust 的问候！"
