@@ -1,7 +1,13 @@
 //! Tauri 应用核心库。
 //!
-//! 所有 `#[tauri::command]` 命令与 Builder 配置集中在此文件；
+//! 模块拆分：`cores/` 为核心逻辑（含初始化 setup），`commands/` 为 IPC 命令薄层；
+//! 本文件仅声明模块、组装 Builder 与注册命令。
 //! `src/main.rs` 仅作为二进制入口委托调用 `run()`。
+
+mod commands;
+mod cores;
+
+use commands::invoke_handlers;
 
 /// IPC 命令示例：前端通过 `invoke("greet", { name })` 调用。
 #[tauri::command]
@@ -27,8 +33,9 @@ pub fn run() {
     }
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
-        // 新增命令后必须在此注册，否则前端 invoke 会调用失败
-        .invoke_handler(tauri::generate_handler![greet])
+        .plugin(tauri_plugin_store::Builder::new().build())
+        .setup(cores::setup_cores)
+        .invoke_handler(invoke_handlers!())
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

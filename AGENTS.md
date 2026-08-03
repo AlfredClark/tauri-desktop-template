@@ -10,13 +10,13 @@
 
 ## 技术栈与工具链
 
-| 类别     | 选型                                                                        |
-| -------- | --------------------------------------------------------------------------- |
-| 包管理器 | bun（`bun.lock` 已提交，勿用 npm/yarn/pnpm）                                |
-| 前端     | SvelteKit 5、Vite 8、TypeScript 6                                           |
-| 桌面端   | Tauri 2.11、tauri-plugin-opener、@tauri-apps/api                            |
-| Rust     | stable 工具链（`rust-toolchain.toml`），edition 2024                        |
-| 环境要求 | Node >= 24（`package.json` engines），Linux 需 webkit2gtk 等 Tauri 系统依赖 |
+| 类别     | 选型                                                                                |
+| -------- | ----------------------------------------------------------------------------------- |
+| 包管理器 | bun（`bun.lock` 已提交，勿用 npm/yarn/pnpm）                                        |
+| 前端     | SvelteKit 5、Vite 8、TypeScript 6                                                   |
+| 桌面端   | Tauri 2.11、tauri-plugin-opener、tauri-plugin-store（config.json）、@tauri-apps/api |
+| Rust     | stable 工具链（`rust-toolchain.toml`），edition 2024                                |
+| 环境要求 | Node >= 24（`package.json` engines），Linux 需 webkit2gtk 等 Tauri 系统依赖         |
 
 ## 目录结构
 
@@ -31,7 +31,9 @@
 │       └── +page.svelte        IPC 调用示例（invoke("greet")）
 ├── static/                     静态资源（favicon、logo）
 ├── src-tauri/                  桌面端（Rust）
-│   ├── src/lib.rs              所有 #[tauri::command] 与 Builder 配置
+│   ├── src/lib.rs              模块组装：Builder / setup / 命令注册
+│   ├── src/cores/              核心逻辑（含初始化 setup，如 config.rs）
+│   ├── src/commands/           IPC 命令薄层（如 config.rs）
 │   ├── src/main.rs             二进制入口（调用 lib::run()）
 │   ├── capabilities/default.json  窗口权限（main + core:default + opener:default）
 │   ├── tauri.conf.json         窗口 / CSP / 打包配置
@@ -129,7 +131,8 @@ const countWithLog = createStore<number>(0, {
   - `index.ts`：统一出口——重导出模块公开 API，并集中实例化业务实例（如 store）
   - 消费方统一从 `$lib/<模块名>` 导入，禁止跨模块内部文件引用
   - 新增模块时，同步在 AGENTS.md「前端模块」章节添加对应小节（文件职责表 + 用法 + 约定），「目录结构」添加模块目录及说明
-- **新增 IPC 命令**：在 `src-tauri/src/lib.rs` 添加 `#[tauri::command]` 函数 → 注册到 `invoke_handler` → 前端用 `invoke()` 调用；如涉及新权限需同步修改 `capabilities/`
+- **新增 IPC 命令**：命令定义在 `src-tauri/src/commands/<模块>.rs`（薄层，核心逻辑经 `State` 注入或调用 `cores/` 模块）→ 在 `commands/mod.rs` 的 `invoke_handlers!` 宏中追加（`lib.rs` 的 `invoke_handler` 无需改动）→ 前端用 `invoke()` 调用；如涉及新权限需同步修改 `capabilities/`
+- **系统级配置**：`config.json`（应用数据目录，tauri-plugin-store）经 `cores/config.rs` 的 `setup` 初始化并存入 Tauri State（避免重复读文件），`get_config` / `set_config` 键值命令读写，前端 `invoke` 调用，无需新增 capabilities 权限；系统级配置与前端 UI 偏好（localStorage stores 模块）按配置归属分层，不混用
 - **CSP**：`tauri.conf.json` 中 dev/prod 两套 CSP；prod 无 `unsafe-inline`，若前端需访问外部服务，必须同步更新 CSP 对应字段
 - **端口**：dev 固定 1420（HMR websocket 1420/1421），与 vite.config.ts 及 CSP 一致，修改需三处同步
 - **lib.rs 中 Linux Wayland 处理**（`WEBKIT_DISABLE_DMABUF_RENDERER`）为必要 workaround，勿删除
