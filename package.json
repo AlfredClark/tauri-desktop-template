@@ -7,7 +7,7 @@
   "homepage": "https://github.com/alfredclark",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/AlfredClark/tauri-desktop-template.git"
+    "url": "git+https://github.com/alfredclark/tauri-desktop-template.git"
   },
   "bugs": {
     "url": "https://github.com/alfredclark/tauri-desktop-template/issues"
@@ -18,29 +18,36 @@
     "template"
   ],
   "type": "module",
+  "packageManager": "bun@1.3.14",
+  "engines": {
+    "node": ">=24.0.0"
+  },
   "scripts": {
+    "validate": "npm run lint:all && npm run format:all:check && npm run check:rust && npm run check",
+    "tauri:dev": "tauri dev",
+    "tauri:build": "tauri build",
     "dev": "vite dev",
     "build": "vite build",
     "preview": "vite preview",
+    "tauri": "tauri",
+    "prepare": "husky",
     "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
     "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
+    "check:rust": "cargo check",
     "lint": "eslint .",
     "lint:fix": "eslint --fix .",
     "lint:css": "stylelint \"src/**/*.{css,svelte}\"",
     "lint:css:fix": "stylelint --fix \"src/**/*.{css,svelte}\"",
     "lint:rust": "cargo clippy -- -D warnings",
-    "lint:all": "eslint . && stylelint \"src/**/*.{css,svelte}\" && prettier --check . && svelte-kit sync && svelte-check --tsconfig ./tsconfig.json && cargo fmt --check && cargo clippy -- -D warnings",
+    "lint:all": "eslint . && stylelint \"src/**/*.{css,svelte}\" && cargo clippy -- -D warnings",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "format:rust": "cargo fmt",
     "format:rust:check": "cargo fmt --check",
-    "tauri": "tauri",
-    "prepare": "husky"
+    "format:all": "prettier --write . && cargo fmt",
+    "format:all:check": "prettier --check . && cargo fmt --check"
   },
   "lint-staged": {
-    "*": [
-      "prettier --write --ignore-unknown"
-    ],
     "*.{js,ts,svelte}": [
       "eslint --fix"
     ],
@@ -49,6 +56,9 @@
     ],
     "*.rs": [
       "rustfmt"
+    ],
+    "*": [
+      "prettier --write --ignore-unknown"
     ]
   },
   "dependencies": {
