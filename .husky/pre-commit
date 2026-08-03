@@ -1,1 +1,2 @@
 bunx lint-staged
+cargo clippy -- -D warnings

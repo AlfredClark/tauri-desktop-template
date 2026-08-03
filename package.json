@@ -28,9 +28,12 @@
     "lint:fix": "eslint --fix .",
     "lint:css": "stylelint \"src/**/*.{css,svelte}\"",
     "lint:css:fix": "stylelint --fix \"src/**/*.{css,svelte}\"",
-    "lint:all": "eslint . && stylelint \"src/**/*.{css,svelte}\" && prettier --check . && svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
+    "lint:rust": "cargo clippy -- -D warnings",
+    "lint:all": "eslint . && stylelint \"src/**/*.{css,svelte}\" && prettier --check . && svelte-kit sync && svelte-check --tsconfig ./tsconfig.json && cargo fmt --check && cargo clippy -- -D warnings",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
+    "format:rust": "cargo fmt",
+    "format:rust:check": "cargo fmt --check",
     "tauri": "tauri",
     "prepare": "husky"
   },
@@ -43,6 +46,9 @@
     ],
     "*.{css,svelte}": [
       "stylelint --fix"
+    ],
+    "*.rs": [
+      "rustfmt"
     ]
   },
   "dependencies": {
