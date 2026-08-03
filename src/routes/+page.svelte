@@ -16,19 +16,19 @@
 
   <div class="row">
     <a href="https://vite.dev" target="_blank">
-      <img src="/vite.svg" class="logo vite" alt="Vite Logo"/>
+      <img src="/vite.svg" class="logo vite" alt="Vite Logo" />
     </a>
     <a href="https://tauri.app" target="_blank">
-      <img src="/tauri.svg" class="logo tauri" alt="Tauri Logo"/>
+      <img src="/tauri.svg" class="logo tauri" alt="Tauri Logo" />
     </a>
     <a href="https://svelte.dev" target="_blank">
-      <img src="/svelte.svg" class="logo svelte-kit" alt="SvelteKit Logo"/>
+      <img src="/svelte.svg" class="logo svelte-kit" alt="SvelteKit Logo" />
     </a>
   </div>
   <p>Click on the Tauri, Vite, and SvelteKit logos to learn more.</p>
 
   <form class="row" onsubmit={greet}>
-    <input id="greet-input" placeholder="Enter a name..." bind:value={name}/>
+    <input id="greet-input" placeholder="Enter a name..." bind:value={name} />
     <button type="submit">Greet</button>
   </form>
   <p>{greetMsg}</p>
@@ -48,15 +48,13 @@
     font-size: 16px;
     line-height: 24px;
     font-weight: 400;
-
     color: #0f0f0f;
     background-color: #f6f6f6;
-
     font-synthesis: none;
-    text-rendering: optimizeLegibility;
+    text-rendering: optimizelegibility;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
   }
 
   .container {
@@ -107,9 +105,10 @@
     font-weight: 500;
     font-family: inherit;
     color: #0f0f0f;
-    background-color: #ffffff;
+    background-color: #fff;
     transition: border-color 0.25s;
-    box-shadow: 0 2px 2px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 2px 2px rgb(0 0 0 / 20%);
+    outline: none;
   }
 
   button {
@@ -123,11 +122,6 @@
   button:active {
     border-color: #396cd8;
     background-color: #e8e8e8;
-  }
-
-  input,
-  button {
-    outline: none;
   }
 
   #greet-input {
@@ -146,7 +140,7 @@
 
     input,
     button {
-      color: #ffffff;
+      color: #fff;
       background-color: #0f0f0f98;
     }
 
@@ -154,5 +148,4 @@
       background-color: #0f0f0f69;
     }
   }
-
 </style>

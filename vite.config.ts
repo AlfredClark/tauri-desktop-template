@@ -13,10 +13,10 @@ export default defineConfig(() => ({
     host: host || false,
     ws: host
       ? {
-        protocol: "ws",
-        host,
-        port: 1421,
-      }
+          protocol: "ws",
+          host,
+          port: 1421,
+        }
       : undefined,
     watch: {
       ignored: ["**/src-tauri/**"],
