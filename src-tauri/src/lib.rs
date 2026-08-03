@@ -9,12 +9,6 @@ mod cores;
 
 use commands::invoke_handlers;
 
-/// IPC 命令示例：前端通过 `invoke("greet", { name })` 调用。
-#[tauri::command]
-fn greet(name: &str) -> String {
-    format!("Hello, {}! You've been greeted from Rust!", name)
-}
-
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     // Linux Wayland 环境下 webkit2gtk 的 DMABUF 渲染器会导致白屏/崩溃，

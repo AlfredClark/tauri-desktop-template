@@ -25,6 +25,7 @@
 │   ├── app.html                入口 HTML（引用 /favicon.png）
 │   ├── components/             自定义 Svelte 组件（按功能分子目录）
 │   ├── lib/                    前端功能模块
+│   │   ├── ipc/                IPC 封装（invokeCommand 统一响应解包）
 │   │   └── stores/             状态管理模块（types.ts / utils.ts / index.ts）
 │   └── routes/                 页面路由
 │       ├── +layout.ts          全局布局（关闭 SSR）
@@ -32,7 +33,7 @@
 ├── static/                     静态资源（favicon、logo）
 ├── src-tauri/                  桌面端（Rust）
 │   ├── src/lib.rs              模块组装：Builder / setup / 命令注册
-│   ├── src/cores/              核心逻辑（含初始化 setup，如 config.rs）
+│   ├── src/cores/              核心逻辑（含初始化 setup、统一响应协议 response.rs）
 │   ├── src/commands/           IPC 命令薄层（如 config.rs）
 │   ├── src/main.rs             二进制入口（调用 lib::run()）
 │   ├── capabilities/default.json  窗口权限（main + core:default + opener:default）
@@ -121,7 +122,26 @@ const countWithLog = createStore<number>(0, {
 - 命名不带 store 后缀（如 `settings`、`status`）
 - 异步/复杂业务逻辑（如 Tauri IPC 调用）不放入工厂，由具体业务 store 自行实现
 
-> 其他模块（如 IPC 封装、主题切换等）后续按此结构补充。
+> 其他模块（如主题切换等）后续按此结构补充。
+
+### IPC 封装（ipc）
+
+位于 `src/lib/ipc/`：统一响应协议的封装，所有 Rust 命令调用统一走 `invokeCommand`。
+
+| 文件       | 职责                                                                             |
+| ---------- | -------------------------------------------------------------------------------- |
+| `types.ts` | 类型契约：`Response<T>` 接口、`CODE_OK` 常量（与 Rust `cores/response.rs` 对齐） |
+| `utils.ts` | `invokeCommand` 实现：invoke 调用 + 解包响应，失败 console.error 并返回 null     |
+| `index.ts` | 统一出口                                                                         |
+
+```ts
+import { invokeCommand } from "$lib/ipc";
+
+const locale = await invokeCommand<string>("get_config", { key: "locale" });
+```
+
+- 成功时返回业务数据（`T`）；失败（code !== 0）时 console.error 打印并返回 null，调用方用 `??` 兜底
+- 命令参数键名与 Rust 参数名一致（Tauri 自动转换驼峰命名）
 
 ## 约定与注意事项
 
@@ -131,7 +151,7 @@ const countWithLog = createStore<number>(0, {
   - `index.ts`：统一出口——重导出模块公开 API，并集中实例化业务实例（如 store）
   - 消费方统一从 `$lib/<模块名>` 导入，禁止跨模块内部文件引用
   - 新增模块时，同步在 AGENTS.md「前端模块」章节添加对应小节（文件职责表 + 用法 + 约定），「目录结构」添加模块目录及说明
-- **新增 IPC 命令**：命令定义在 `src-tauri/src/commands/<模块>.rs`（薄层，核心逻辑经 `State` 注入或调用 `cores/` 模块）→ 在 `commands/mod.rs` 的 `invoke_handlers!` 宏中追加（`lib.rs` 的 `invoke_handler` 无需改动）→ 前端用 `invoke()` 调用；如涉及新权限需同步修改 `capabilities/`
+- **新增 IPC 命令**：命令定义在 `src-tauri/src/commands/<模块>.rs`（薄层，核心逻辑经 `State` 注入或调用 `cores/` 模块，统一返回 `cores/response.rs` 的 `Response<T>`，错误码 0 成功 / 1 内部错误）→ 在 `commands/mod.rs` 的 `invoke_handlers!` 宏中追加（`lib.rs` 的 `invoke_handler` 无需改动）→ 前端经 `invokeCommand` 调用；如涉及新权限需同步修改 `capabilities/`
 - **系统级配置**：`config.json`（应用数据目录，tauri-plugin-store）经 `cores/config.rs` 的 `setup` 初始化并存入 Tauri State（避免重复读文件），`get_config` / `set_config` 键值命令读写，前端 `invoke` 调用，无需新增 capabilities 权限；系统级配置与前端 UI 偏好（localStorage stores 模块）按配置归属分层，不混用
 - **CSP**：`tauri.conf.json` 中 dev/prod 两套 CSP；prod 无 `unsafe-inline`，若前端需访问外部服务，必须同步更新 CSP 对应字段
 - **端口**：dev 固定 1420（HMR websocket 1420/1421），与 vite.config.ts 及 CSP 一致，修改需三处同步

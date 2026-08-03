@@ -7,6 +7,8 @@ use std::sync::Arc;
 use tauri::Manager;
 use tauri_plugin_store::{Store, StoreExt};
 
+use crate::cores::response::{AppError, AppResult};
+
 /// config.json 文件名（存放于应用数据目录）
 const FILE_NAME: &str = "config.json";
 
@@ -32,7 +34,7 @@ impl Config {
     /// 从 store 加载配置：条目存在且为字符串时使用文件值，否则回退默认值并落盘。
     /// @param store plugin-store 的 store 引用
     /// @returns 加载结果；回退默认值落盘失败时返回错误
-    pub fn load(store: &Store<tauri::Wry>) -> tauri_plugin_store::Result<Self> {
+    pub fn load(store: &Store<tauri::Wry>) -> AppResult<Self> {
         match store.get(KEY_LOCALE) {
             Some(serde_json::Value::String(locale)) => Ok(Self { locale }),
             _ => {
@@ -62,9 +64,9 @@ impl ConfigState {
     /// @param key 配置项 key
     /// @param value 配置值
     /// @returns 落盘失败时返回错误
-    pub fn set(&self, key: String, value: serde_json::Value) -> tauri_plugin_store::Result<()> {
+    pub fn set(&self, key: String, value: serde_json::Value) -> AppResult<()> {
         self.store.set(key, value);
-        self.store.save()
+        self.store.save().map_err(AppError::from)
     }
 }
 
