@@ -1,6 +1,7 @@
 pub mod autostart;
 pub mod config;
 pub mod env;
+pub mod instance;
 pub mod locale;
 pub mod logger;
 pub mod response;

@@ -10,13 +10,13 @@
 
 ## 技术栈与工具链
 
-| 类别     | 选型                                                                                                                                                                                                       |
-| -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 包管理器 | bun（`bun.lock` 已提交，勿用 npm/yarn/pnpm）                                                                                                                                                               |
-| 前端     | SvelteKit 5、Vite 8、TypeScript 6                                                                                                                                                                          |
-| 桌面端   | Tauri 2.11、tauri-plugin-opener、tauri-plugin-store（config.json）、tauri-plugin-autostart、tauri-plugin-log（前后端共用日志）、系统托盘（tauri 内置 tray-icon）、@tauri-apps/api、rust-i18n（后端国际化） |
-| Rust     | stable 工具链（`rust-toolchain.toml`），edition 2024                                                                                                                                                       |
-| 环境要求 | Node >= 24（`package.json` engines），Linux 需 webkit2gtk 等 Tauri 系统依赖                                                                                                                                |
+| 类别     | 选型                                                                                                                                                                                                                                               |
+| -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 包管理器 | bun（`bun.lock` 已提交，勿用 npm/yarn/pnpm）                                                                                                                                                                                                       |
+| 前端     | SvelteKit 5、Vite 8、TypeScript 6                                                                                                                                                                                                                  |
+| 桌面端   | Tauri 2.11、tauri-plugin-opener、tauri-plugin-store（config.json）、tauri-plugin-autostart、tauri-plugin-log（前后端共用日志）、tauri-plugin-single-instance（单实例）、系统托盘（tauri 内置 tray-icon）、@tauri-apps/api、rust-i18n（后端国际化） |
+| Rust     | stable 工具链（`rust-toolchain.toml`），edition 2024                                                                                                                                                                                               |
+| 环境要求 | Node >= 24（`package.json` engines），Linux 需 webkit2gtk 等 Tauri 系统依赖                                                                                                                                                                        |
 
 ## 目录结构
 
@@ -36,7 +36,7 @@
 ├── static/                     静态资源（favicon、logo）
 ├── src-tauri/                  桌面端（Rust）
 │   ├── src/lib.rs              模块组装：Builder / setup / 命令注册 / rust-i18n 初始化
-│   ├── src/cores/              核心逻辑（含初始化 setup、自动启动 autostart.rs、Linux 环境准备 env.rs、日志装配 logger.rs、统一响应协议 response.rs、locale 类型 locale.rs、系统托盘 tray.rs）
+│   ├── src/cores/              核心逻辑（含初始化 setup、自动启动 autostart.rs、Linux 环境准备 env.rs、日志装配 logger.rs、统一响应协议 response.rs、locale 类型 locale.rs、单实例 instance.rs、系统托盘 tray.rs）
 │   ├── src/commands/           IPC 命令薄层（如 config.rs，含 get_config / set_locale / toggle_autostart / toggle_tray）
 │   ├── locales/                后端消息源（rust-i18n，en.yml / zh-CN.yml）
 │   ├── src/main.rs             二进制入口（调用 lib::run()）
@@ -233,6 +233,7 @@ Response::ok(t!("greet", name = name).to_string())
   - 新增模块时，同步在 AGENTS.md「前端模块」章节添加对应小节（文件职责表 + 用法 + 约定），「目录结构」添加模块目录及说明
 - **新增 IPC 命令**：命令定义在 `src-tauri/src/commands/<模块>.rs`（薄层，核心逻辑经 `State` 注入或调用 `cores/` 模块，统一返回 `cores/response.rs` 的 `Response<T>`，错误码 0 成功 / 1 内部错误）→ 在 `commands/mod.rs` 的 `invoke_handlers!` 宏中追加（`lib.rs` 的 `invoke_handler` 无需改动）→ 前端经 `invokeCommand` 调用；如涉及新权限需同步修改 `capabilities/`
 - **系统级配置**：`config.json`（应用数据目录，tauri-plugin-store）经 `cores/config.rs` 的 `setup` 初始化并存入 Tauri State（避免重复读文件），读取统一走 `get_config`（键值通用读，条目缺失返回 null，前端 `??` 兜底），写入按配置项专项专用：`set_locale` 写 locale（校验 + 同步 rust-i18n 运行时 + 重建托盘菜单）、`toggle_autostart` 切换 autostart、`toggle_tray` 切换系统托盘，无需新增 capabilities 权限；`locale` 为前后端 i18n 共用的真相源（前端 `changeLocale` 写回同步，后端 rust-i18n 运行时经 `set_locale` 钩子同步，见「后端国际化」小节）；`autostart`（开机自启）同样以 config.json 为真相源：插件装配于 `cores/autostart.rs`（插件链仅一行 `.plugin(cores::autostart::plugin())`），启动时按持久化值 apply 到 OS，切换必须走 `toggle_autostart` 命令（先 OS 生效再写回 config，防双写路径不一致）；`tray`（系统托盘）同样以 config.json 为真相源（默认开启）：`cores/tray.rs` 启动时无条件创建托盘一次并按持久化值设置显隐（左键切换窗口显隐、右键弹菜单：显示/隐藏 + 退出），切换必须走 `toggle_tray` 命令（先 `set_visible` 显隐再写回 config）；注意托盘显隐用 `set_visible` 而非移除/重建——Linux 下 remove/recreate 会因 libappindicator 不注销 D-Bus 对象导致路径注册冲突、无法重新显示（上游限制）；菜单文案经 rust-i18n `t!` 本地化，`set_locale` 时经 `rebuild_menu` 重建菜单；系统级配置与前端 UI 偏好（localStorage stores 模块）按配置归属分层，不混用
+- **单实例**：装配于 `cores/instance.rs`（插件链仅一行 `.plugin(cores::instance::plugin())`，置于链首）；Linux 下首个实例注册 D-Bus 名 `{identifier}.SingleInstance`，第二实例启动时回调于首个实例进程内执行（仅聚焦主窗口：取消最小化 + 显示 + 聚焦）后自行退出；纯 Rust 侧，无 capabilities 权限
 - **日志**：前后端共用 tauri-plugin-log（Rust 侧 `log::info!` 等宏，前端 `$lib/logger` 封装，前端命令需 `log:default` 权限）；装配于 `cores/logger.rs`（插件链仅一行 `.plugin(cores::logger::plugin())`）：dev Trace / release Info，stdout + LogDir（Linux `~/.local/share/{bundleIdentifier}/logs/`）+ Webview 目标，1MB KeepAll 轮转、本地时区；`attachConsole` 经 `initLogger` 挂载于 `+layout.svelte` 的 onMount（前端日志镜像到浏览器控制台）
 - **CSP**：`tauri.conf.json` 中 dev/prod 两套 CSP；prod 无 `unsafe-inline`，若前端需访问外部服务，必须同步更新 CSP 对应字段
 - **端口**：dev 固定 1420（HMR websocket 1420/1421），与 vite.config.ts 及 CSP 一致，修改需三处同步
