@@ -26,6 +26,7 @@
     "validate": "npm run lint:all && npm run format:all:check && npm run check:rust && npm run check",
     "tauri:dev": "tauri dev",
     "tauri:build": "tauri build",
+    "i18n:compile": "paraglide-js compile --project ./src/lib/i18n/project.inlang --outdir ./src/lib/i18n/paraglide --strategy globalVariable baseLocale --emit-ts-declarations",
     "dev": "vite dev",
     "build": "vite build",
     "preview": "vite preview",
@@ -45,8 +46,7 @@
     "format:rust": "cargo fmt",
     "format:rust:check": "cargo fmt --check",
     "format:all": "prettier --write . && cargo fmt",
-    "format:all:check": "prettier --check . && cargo fmt --check",
-    "paraglide:compile": "paraglide-js compile --project ./src/lib/i18n/project.inlang --outdir ./src/lib/i18n/paraglide --strategy globalVariable baseLocale --emit-ts-declarations"
+    "format:all:check": "prettier --check . && cargo fmt --check"
   },
   "lint-staged": {
     "*.{js,ts,svelte}": [
