@@ -16,6 +16,9 @@ const FILE_NAME: &str = "config.json";
 /// locale 配置项 key（命令层需据其同步 rust-i18n 运行时，故 pub(crate)）
 pub(crate) const KEY_LOCALE: &str = "locale";
 
+/// 自动启动配置项 key（读写必须经 toggle_autostart 命令，故 pub(crate)）
+pub(crate) const KEY_AUTOSTART: &str = "autostart";
+
 /// 默认语言标签（与前端 paraglide baseLocale 一致）
 const DEFAULT_LOCALE: &str = "en";
 
@@ -24,6 +27,8 @@ const DEFAULT_LOCALE: &str = "en";
 pub struct Config {
     /// 界面语言（经 rust-i18n 可用 locale 校验），默认 en
     pub locale: Locale,
+    /// 开机自启开关，默认关闭
+    pub autostart: bool,
 }
 
 impl Default for Config {
@@ -31,6 +36,7 @@ impl Default for Config {
         Self {
             // DEFAULT_LOCALE 恒在可用 locale 列表中（en.yml 消息源存在）
             locale: Locale::new(DEFAULT_LOCALE).expect("default locale must be available"),
+            autostart: false,
         }
     }
 }
@@ -43,11 +49,21 @@ impl Config {
     pub fn load(store: &Store<tauri::Wry>) -> AppResult<Self> {
         match store.get(KEY_LOCALE) {
             Some(serde_json::Value::String(locale)) => match Locale::new(&locale) {
-                Some(locale) => Ok(Self { locale }),
+                Some(locale) => Ok(Self {
+                    locale,
+                    autostart: Self::load_autostart(store),
+                }),
                 None => Self::default_and_persist(store),
             },
             _ => Self::default_and_persist(store),
         }
+    }
+
+    /// 读取自动启动开关，条目缺失或非布尔时回退默认值。
+    /// @param store plugin-store 的 store 引用
+    /// @returns 持久化的 autostart 值；缺失/损坏时默认 false
+    fn load_autostart(store: &Store<tauri::Wry>) -> bool {
+        store.get(KEY_AUTOSTART).and_then(|v| v.as_bool()).unwrap_or(false)
     }
 
     /// 构造默认配置并写入存储（修复缺失/损坏的 locale 条目）。
@@ -56,6 +72,7 @@ impl Config {
     fn default_and_persist(store: &Store<tauri::Wry>) -> AppResult<Self> {
         let config = Self::default();
         store.set(KEY_LOCALE, serde_json::Value::String(config.locale.as_str().to_string()));
+        store.set(KEY_AUTOSTART, serde_json::Value::Bool(config.autostart));
         store.save()?;
         Ok(config)
     }

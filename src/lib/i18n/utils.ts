@@ -11,7 +11,7 @@ const CONFIG_KEY_LOCALE = "locale";
  * @returns 后端写入与前端切换均成功时返回 true；后端写入失败时返回 false（前端不切换）
  */
 export async function changeLocale(locale: Locale, reload: boolean = true): Promise<boolean> {
-  const result = await invokeCommand<Locale>("set_config", { key: CONFIG_KEY_LOCALE, value: locale });
+  const result = await invokeCommand<Locale>("set_locale", { locale });
   if (result === null) {
     return false;
   }

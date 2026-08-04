@@ -8,7 +8,8 @@ macro_rules! invoke_handlers {
         tauri::generate_handler![
             $crate::commands::demo::greet,
             $crate::commands::config::get_config,
-            $crate::commands::config::set_config,
+            $crate::commands::config::set_locale,
+            $crate::commands::config::toggle_autostart,
         ]
     };
 }

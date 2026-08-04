@@ -1,4 +1,6 @@
+pub mod autostart;
 pub mod config;
+pub mod env;
 pub mod locale;
 pub mod response;
 
@@ -7,5 +9,6 @@ pub mod response;
 /// @returns 任一模块初始化失败时返回错误
 pub fn setup_cores(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
     config::setup(app)?;
+    autostart::setup(app)?;
     Ok(())
 }

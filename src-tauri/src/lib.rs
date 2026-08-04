@@ -14,23 +14,15 @@ rust_i18n::i18n!("locales", fallback = "en");
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    // Linux Wayland 环境下 webkit2gtk 的 DMABUF 渲染器会导致白屏/崩溃，
-    // 此 workaround 为必要处理，请勿删除。
-    #[cfg(target_os = "linux")]
-    {
-        let is_wayland_session = std::env::var("XDG_SESSION_TYPE")
-            .is_ok_and(|session_type| session_type.eq_ignore_ascii_case("wayland"))
-            || std::env::var_os("WAYLAND_DISPLAY").is_some();
-
-        if is_wayland_session {
-            unsafe {
-                std::env::set_var("WEBKIT_DISABLE_DMABUF_RENDERER", "1");
-            }
-        }
-    }
+    // 必须在 Builder 创建前调用：WebKit 环境 workaround
+    cores::env::init_env();
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_store::Builder::new().build())
+        .plugin(tauri_plugin_autostart::init(
+            tauri_plugin_autostart::MacosLauncher::LaunchAgent,
+            None,
+        ))
         .setup(cores::setup_cores)
         .invoke_handler(invoke_handlers!())
         .run(tauri::generate_context!())
