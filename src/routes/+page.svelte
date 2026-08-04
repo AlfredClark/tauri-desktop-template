@@ -7,6 +7,8 @@
   import { error, info, trace, warn } from "$lib/logger";
   import { sendNotification } from "@tauri-apps/plugin-notification";
   import { getSystemFonts, type SystemFont } from "tauri-plugin-system-fonts-api";
+  import { checkForUpdate, installUpdate } from "$lib/utils";
+  import type { Update } from "@tauri-apps/plugin-updater";
 
   // $state 为 Svelte 5 的响应式状态声明
   let name = $state("");
@@ -23,6 +25,13 @@
   let fonts = $state<SystemFont[]>([]);
   let fontsLoading = $state(false);
   let fontsError = $state("");
+
+  // 演示用：应用更新（经 $lib/utils 封装，配置见 tauri.conf.json plugins.updater，无需国际化）
+  let updateAvailable = $state<Update | null>(null);
+  let updateChecking = $state(false);
+  let updateInstalling = $state(false);
+  let updateProgress = $state("");
+  let updateResult = $state("");
 
   onMount(async () => {
     tray = (await invokeCommand<boolean>("get_config", { key: "tray" })) ?? true;
@@ -75,6 +84,41 @@
       fonts = [];
     } finally {
       fontsLoading = false;
+    }
+  }
+
+  // 演示检查更新：未配置 pubkey/endpoints 时 check 抛错，catch 后展示错误信息
+  async function checkUpdate() {
+    updateChecking = true;
+    updateResult = "";
+    updateProgress = "";
+    updateAvailable = null;
+    try {
+      updateAvailable = await checkForUpdate();
+      updateResult = updateAvailable ? `发现新版本：${updateAvailable.version}` : "已是最新版本";
+    } catch (error) {
+      updateResult = `检查更新失败：${error}`;
+    } finally {
+      updateChecking = false;
+    }
+  }
+
+  // 演示手动更新：仅检查到新版本后可点，下载安装完成后自动重启应用
+  async function installUpdateDemo() {
+    if (!updateAvailable) return;
+    updateInstalling = true;
+    updateResult = "";
+    updateProgress = "";
+    try {
+      await installUpdate(updateAvailable, (downloaded, total) => {
+        const mb = (bytes: number) => `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+        updateProgress = total ? `下载进度：${mb(downloaded)} / ${mb(total)}` : `已下载：${mb(downloaded)}`;
+      });
+      updateResult = "更新完成，正在重启应用...";
+    } catch (error) {
+      updateResult = `更新失败：${error}`;
+    } finally {
+      updateInstalling = false;
     }
   }
 </script>
@@ -133,6 +177,21 @@
         <li>{font.name}</li>
       {/each}
     </ul>
+  {/if}
+
+  <div class="row">
+    <button onclick={checkUpdate} disabled={updateChecking}>
+      {updateChecking ? "检查中..." : "检查更新"}
+    </button>
+    <button onclick={installUpdateDemo} disabled={!updateAvailable || updateInstalling}>
+      {updateInstalling ? "更新中..." : "更新"}
+    </button>
+  </div>
+  {#if updateProgress}
+    <p>{updateProgress}</p>
+  {/if}
+  {#if updateResult}
+    <p>{updateResult}</p>
   {/if}
 </main>
 

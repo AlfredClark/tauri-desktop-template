@@ -26,6 +26,8 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_system_fonts::init())
+        .plugin(tauri_plugin_updater::Builder::new().build())
+        .plugin(tauri_plugin_process::init())
         .setup(cores::setup_cores)
         .invoke_handler(invoke_handlers!())
         .run(tauri::generate_context!())

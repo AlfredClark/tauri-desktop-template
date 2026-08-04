@@ -10,6 +10,8 @@
     "log:default",
     "notification:default",
     "system-fonts:default",
-    "global-shortcut:default"
+    "global-shortcut:default",
+    "updater:default",
+    "process:default"
   ]
 }
