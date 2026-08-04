@@ -8,6 +8,7 @@
   "permissions": [
     "opener:default",
     "log:default",
-    "notification:default"
+    "notification:default",
+    "system-fonts:default"
   ]
 }

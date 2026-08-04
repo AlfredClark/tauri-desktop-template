@@ -10,13 +10,13 @@
 
 ## 技术栈与工具链
 
-| 类别     | 选型                                                                                                                                                                                                                                                                                      |
-| -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 包管理器 | bun（`bun.lock` 已提交，勿用 npm/yarn/pnpm）                                                                                                                                                                                                                                              |
-| 前端     | SvelteKit 5、Vite 8、TypeScript 6                                                                                                                                                                                                                                                         |
-| 桌面端   | Tauri 2.11、tauri-plugin-opener、tauri-plugin-store（config.json）、tauri-plugin-autostart、tauri-plugin-log（前后端共用日志）、tauri-plugin-single-instance（单实例）、tauri-plugin-notification（系统通知）、系统托盘（tauri 内置 tray-icon）、@tauri-apps/api、rust-i18n（后端国际化） |
-| Rust     | stable 工具链（`rust-toolchain.toml`），edition 2024                                                                                                                                                                                                                                      |
-| 环境要求 | Node >= 24（`package.json` engines），Linux 需 webkit2gtk 等 Tauri 系统依赖                                                                                                                                                                                                               |
+| 类别     | 选型                                                                                                                                                                                                                                                                                                                             |
+| -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 包管理器 | bun（`bun.lock` 已提交，勿用 npm/yarn/pnpm）                                                                                                                                                                                                                                                                                     |
+| 前端     | SvelteKit 5、Vite 8、TypeScript 6                                                                                                                                                                                                                                                                                                |
+| 桌面端   | Tauri 2.11、tauri-plugin-opener、tauri-plugin-store（config.json）、tauri-plugin-autostart、tauri-plugin-log（前后端共用日志）、tauri-plugin-single-instance（单实例）、tauri-plugin-notification（系统通知）、tauri-plugin-system-fonts（系统字体）、系统托盘（tauri 内置 tray-icon）、@tauri-apps/api、rust-i18n（后端国际化） |
+| Rust     | stable 工具链（`rust-toolchain.toml`），edition 2024                                                                                                                                                                                                                                                                             |
+| 环境要求 | Node >= 24（`package.json` engines），Linux 需 webkit2gtk 等 Tauri 系统依赖                                                                                                                                                                                                                                                      |
 
 ## 目录结构
 
@@ -32,7 +32,7 @@
 │   └── routes/                 页面路由
 │       ├── +layout.ts          全局布局（关闭 SSR、启动同步 locale）
 │       ├── +layout.svelte      html lang 属性客户端同步（app.html 硬编码 en）
-│       └── +page.svelte        IPC 调用示例（invoke("greet")、日志与托盘/通知开关演示）
+│       └── +page.svelte        IPC 调用示例（invoke("greet")、日志与托盘/通知/字体演示）
 ├── static/                     静态资源（favicon、logo）
 ├── src-tauri/                  桌面端（Rust）
 │   ├── src/lib.rs              模块组装：Builder / setup / 命令注册 / rust-i18n 初始化
@@ -41,7 +41,7 @@
 │   ├── locales/                后端消息源（rust-i18n，en.yml / zh-CN.yml）
 │   ├── src/main.rs             二进制入口（调用 lib::run()）
 │   ├── capabilities/default.json  窗口核心权限（main + core:default）
-│   ├── capabilities/plugins.json  插件权限（opener:default + log:default + notification:default）
+│   ├── capabilities/plugins.json  插件权限（opener:default + log:default + notification:default + system-fonts:default）
 │   ├── tauri.conf.json         窗口 / CSP / 打包配置
 │   ├── build.rs                tauri-build 构建脚本
 │   └── icons/                  应用图标（勿删）
@@ -234,6 +234,7 @@ Response::ok(t!("greet", name = name).to_string())
   - 新增模块时，同步在 AGENTS.md「前端模块」章节添加对应小节（文件职责表 + 用法 + 约定），「目录结构」添加模块目录及说明
 - **新增 IPC 命令**：命令定义在 `src-tauri/src/commands/<模块>.rs`（薄层，核心逻辑经 `State` 注入或调用 `cores/` 模块，统一返回 `cores/response.rs` 的 `Response<T>`，错误码 0 成功 / 1 内部错误）→ 在 `commands/mod.rs` 的 `invoke_handlers!` 宏中追加（`lib.rs` 的 `invoke_handler` 无需改动）→ 前端经 `invokeCommand` 调用；如涉及新权限需同步修改 `capabilities/`
 - **系统级配置**：`config.json`（应用数据目录，tauri-plugin-store）经 `cores/config.rs` 的 `setup` 初始化并存入 Tauri State（避免重复读文件），读取统一走 `get_config`（键值通用读，条目缺失返回 null，前端 `??` 兜底），写入按配置项专项专用：`set_locale` 写 locale（校验 + 同步 rust-i18n 运行时 + 重建托盘菜单）、`toggle_autostart` 切换 autostart、`toggle_tray` 切换系统托盘、`toggle_notification` 切换系统通知（纯配置切换，无 OS 副作用），无需新增 capabilities 权限（notification 的发送权限见「系统通知」条目）；`locale` 为前后端 i18n 共用的真相源（前端 `changeLocale` 写回同步，后端 rust-i18n 运行时经 `set_locale` 钩子同步，见「后端国际化」小节）；`autostart`（开机自启）同样以 config.json 为真相源：插件装配于 `cores/autostart.rs`（插件链仅一行 `.plugin(cores::autostart::plugin())`），启动时按持久化值 apply 到 OS，切换必须走 `toggle_autostart` 命令（先 OS 生效再写回 config，防双写路径不一致）；`tray`（系统托盘）同样以 config.json 为真相源（默认开启）：`cores/tray.rs` 启动时无条件创建托盘一次并按持久化值设置显隐（左键切换窗口显隐、右键弹菜单：显示/隐藏 + 退出），切换必须走 `toggle_tray` 命令（先 `set_visible` 显隐再写回 config）；注意托盘显隐用 `set_visible` 而非移除/重建——Linux 下 remove/recreate 会因 libappindicator 不注销 D-Bus 对象导致路径注册冲突、无法重新显示（上游限制）；菜单文案经 rust-i18n `t!` 本地化，`set_locale` 时经 `rebuild_menu` 重建菜单；系统级配置与前端 UI 偏好（localStorage stores 模块）按配置归属分层，不混用
+- **系统字体**：tauri-plugin-system-fonts 在 `lib.rs` 直链注册（`init()` 无参，同 opener/notification 模式）；前端经 `tauri-plugin-system-fonts-api` 的 `getSystemFonts` 获取全部系统字体（需 `system-fonts:default` 权限），基于 fontdb、全平台支持；加载为重量级操作，演示时需 loading 态
 - **系统通知**：tauri-plugin-notification 在 `lib.rs` 直链注册（`init()` 无参，同 opener/store 模式）；开关以 config.json 为真相源（`notification` key，默认关闭），切换走 `toggle_notification` 命令（纯配置写入）；发送在前端：经 `@tauri-apps/plugin-notification` 的 `sendNotification`（需 `notification:default` 权限），双条件门控也在前端——`get_config` 读开关 + `@tauri-apps/api/window` 判主窗口状态（不可视或最小化），同时满足才发送；桌面端权限恒 Granted（macOS 首次发送时系统自动弹授权），Linux 需通知守护进程（GNOME/KDE 自带，独立环境需 dunst）
 - **单实例**：装配于 `cores/instance.rs`（插件链仅一行 `.plugin(cores::instance::plugin())`，置于链首）；Linux 下首个实例注册 D-Bus 名 `{identifier}.SingleInstance`，第二实例启动时回调于首个实例进程内执行（仅聚焦主窗口：取消最小化 + 显示 + 聚焦）后自行退出；纯 Rust 侧，无 capabilities 权限
 - **日志**：前后端共用 tauri-plugin-log（Rust 侧 `log::info!` 等宏，前端 `$lib/logger` 封装，前端命令需 `log:default` 权限）；装配于 `cores/logger.rs`（插件链仅一行 `.plugin(cores::logger::plugin())`）：dev Trace / release Info，stdout + LogDir（Linux `~/.local/share/{bundleIdentifier}/logs/`）+ Webview 目标，1MB KeepAll 轮转、本地时区；`attachConsole` 经 `initLogger` 挂载于 `+layout.svelte` 的 onMount（前端日志镜像到浏览器控制台）

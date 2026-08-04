@@ -6,6 +6,7 @@
   import { changeLocale } from "$lib/i18n";
   import { error, info, trace, warn } from "$lib/logger";
   import { sendNotification } from "@tauri-apps/plugin-notification";
+  import { getSystemFonts, type SystemFont } from "tauri-plugin-system-fonts-api";
 
   // $state 为 Svelte 5 的响应式状态声明
   let name = $state("");
@@ -17,6 +18,11 @@
   // 演示用：系统通知开关（状态持久化于 Rust 端 config.json，无需国际化）
   let notification = $state(false);
   let notifyResult = $state("");
+
+  // 演示用：系统字体列表（经 tauri-plugin-system-fonts-api 获取，无需国际化）
+  let fonts = $state<SystemFont[]>([]);
+  let fontsLoading = $state(false);
+  let fontsError = $state("");
 
   onMount(async () => {
     tray = (await invokeCommand<boolean>("get_config", { key: "tray" })) ?? true;
@@ -56,6 +62,20 @@
     }
     sendNotification({ title: "Notification Demo", body: "Main window is hidden or minimized" });
     notifyResult = "已发送";
+  }
+
+  // 演示系统字体：经 npm 包获取本机全部字体（重量级操作，加载期间防重复点击）
+  async function loadSystemFonts() {
+    fontsLoading = true;
+    fontsError = "";
+    try {
+      fonts = await getSystemFonts();
+    } catch (error) {
+      fontsError = `字体加载失败：${error}`;
+      fonts = [];
+    } finally {
+      fontsLoading = false;
+    }
   }
 </script>
 
@@ -97,6 +117,22 @@
   </div>
   {#if notifyResult}
     <p>{notifyResult}</p>
+  {/if}
+
+  <div class="row">
+    <button onclick={loadSystemFonts} disabled={fontsLoading}>
+      {fontsLoading ? "Loading..." : "Load System Fonts"}
+    </button>
+  </div>
+  {#if fontsError}
+    <p>{fontsError}</p>
+  {:else if fonts.length > 0}
+    <p>共 {fonts.length} 个系统字体：</p>
+    <ul class="font-list">
+      {#each fonts as font, i (i)}
+        <li>{font.name}</li>
+      {/each}
+    </ul>
   {/if}
 </main>
 
@@ -192,6 +228,15 @@
 
   #greet-input {
     margin-right: 5px;
+  }
+
+  .font-list {
+    max-height: 240px;
+    overflow-y: auto;
+    margin: 0 auto;
+    padding-left: 1.5em;
+    text-align: left;
+    width: max-content;
   }
 
   @media (prefers-color-scheme: dark) {
