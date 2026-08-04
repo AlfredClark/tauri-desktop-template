@@ -7,7 +7,7 @@
 use tauri::State;
 use tauri_plugin_autostart::AutoLaunchManager;
 
-use crate::cores::config::{ConfigState, KEY_AUTOSTART, KEY_LOCALE, KEY_TRAY};
+use crate::cores::config::{ConfigState, KEY_AUTOSTART, KEY_LOCALE, KEY_NOTIFICATION, KEY_TRAY};
 use crate::cores::locale::Locale;
 use crate::cores::response::{CODE_ERROR, Response};
 
@@ -91,6 +91,22 @@ pub fn toggle_tray(app: tauri::AppHandle, config: State<'_, ConfigState>) -> Res
 
     let value = serde_json::Value::Bool(enabled);
     if let Err(error) = config.set(KEY_TRAY.to_string(), value) {
+        return Response::err(error.code, error.message);
+    }
+    Response::ok(enabled)
+}
+
+/// 切换系统通知开关：`invokeCommand("toggle_notification")`。
+/// 纯配置切换（无 OS 副作用）：读 config 当前值取反 → 写回 config。
+/// @param config 系统配置状态（经 setup 初始化）
+/// @returns 切换后的 notification 值
+#[tauri::command]
+pub fn toggle_notification(config: State<'_, ConfigState>) -> Response<bool> {
+    let enabled = config.get(KEY_NOTIFICATION).and_then(|v| v.as_bool()).unwrap_or(false);
+    let enabled = !enabled;
+
+    let value = serde_json::Value::Bool(enabled);
+    if let Err(error) = config.set(KEY_NOTIFICATION.to_string(), value) {
         return Response::err(error.code, error.message);
     }
     Response::ok(enabled)

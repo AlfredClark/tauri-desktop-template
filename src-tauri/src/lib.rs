@@ -23,6 +23,7 @@ pub fn run() {
         .plugin(tauri_plugin_store::Builder::new().build())
         .plugin(cores::autostart::plugin())
         .plugin(cores::logger::plugin())
+        .plugin(tauri_plugin_notification::init())
         .setup(cores::setup_cores)
         .invoke_handler(invoke_handlers!())
         .run(tauri::generate_context!())

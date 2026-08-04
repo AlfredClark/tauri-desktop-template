@@ -11,6 +11,7 @@ macro_rules! invoke_handlers {
             $crate::commands::config::set_locale,
             $crate::commands::config::toggle_autostart,
             $crate::commands::config::toggle_tray,
+            $crate::commands::config::toggle_notification,
         ]
     };
 }

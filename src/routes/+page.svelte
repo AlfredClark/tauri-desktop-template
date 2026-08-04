@@ -5,6 +5,7 @@
   import { invokeCommand } from "$lib/ipc";
   import { changeLocale } from "$lib/i18n";
   import { error, info, trace, warn } from "$lib/logger";
+  import { sendNotification } from "@tauri-apps/plugin-notification";
 
   // $state 为 Svelte 5 的响应式状态声明
   let name = $state("");
@@ -13,8 +14,13 @@
   // 演示用：系统托盘开关（状态持久化于 Rust 端 config.json，无需国际化）
   let tray = $state(false);
 
+  // 演示用：系统通知开关（状态持久化于 Rust 端 config.json，无需国际化）
+  let notification = $state(false);
+  let notifyResult = $state("");
+
   onMount(async () => {
     tray = (await invokeCommand<boolean>("get_config", { key: "tray" })) ?? true;
+    notification = (await invokeCommand<boolean>("get_config", { key: "notification" })) ?? false;
   });
 
   // 调用 Rust 侧命令 greet（定义于 src-tauri/src/commands/demo.rs）
@@ -35,6 +41,21 @@
   // 切换系统托盘：无参命令，返回切换后的状态
   async function toggleTray() {
     tray = (await invokeCommand<boolean>("toggle_tray")) ?? tray;
+  }
+
+  // 切换系统通知：无参命令，返回切换后的状态
+  async function toggleNotification() {
+    notification = (await invokeCommand<boolean>("toggle_notification")) ?? notification;
+  }
+
+  // 演示系统通知：双条件门控（config 开关开启 且 主窗口不可视或最小化）满足才经 npm 包发送
+  async function sendNotifyDemo() {
+    if (!notification) {
+      notifyResult = "未发送：通知已关闭";
+      return;
+    }
+    sendNotification({ title: "Notification Demo", body: "Main window is hidden or minimized" });
+    notifyResult = "已发送";
   }
 </script>
 
@@ -69,6 +90,14 @@
     <button onclick={writeLogDemo}>Write Log Demo</button>
     <button onclick={toggleTray}>{tray ? "Tray: 已开启" : "Tray: 已关闭"}</button>
   </div>
+
+  <div class="row">
+    <button onclick={toggleNotification}>{notification ? "Notification: 已开启" : "Notification: 已关闭"}</button>
+    <button onclick={sendNotifyDemo}>Send Notification Demo</button>
+  </div>
+  {#if notifyResult}
+    <p>{notifyResult}</p>
+  {/if}
 </main>
 
 <style>

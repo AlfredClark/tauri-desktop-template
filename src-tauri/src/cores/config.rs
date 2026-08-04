@@ -22,6 +22,9 @@ pub(crate) const KEY_AUTOSTART: &str = "autostart";
 /// 系统托盘配置项 key（读写必须经 toggle_tray 命令，故 pub(crate)）
 pub(crate) const KEY_TRAY: &str = "tray";
 
+/// 系统通知配置项 key（读写必须经 toggle_notification 命令，故 pub(crate)）
+pub(crate) const KEY_NOTIFICATION: &str = "notification";
+
 /// 默认语言标签（与前端 paraglide baseLocale 一致）
 const DEFAULT_LOCALE: &str = "en";
 
@@ -34,6 +37,8 @@ pub struct Config {
     pub autostart: bool,
     /// 系统托盘开关，默认开启
     pub tray: bool,
+    /// 系统通知开关，默认关闭
+    pub notification: bool,
 }
 
 impl Default for Config {
@@ -43,6 +48,7 @@ impl Default for Config {
             locale: Locale::new(DEFAULT_LOCALE).expect("default locale must be available"),
             autostart: false,
             tray: true,
+            notification: false,
         }
     }
 }
@@ -59,6 +65,7 @@ impl Config {
                     locale,
                     autostart: Self::load_autostart(store),
                     tray: Self::load_tray(store),
+                    notification: Self::load_notification(store),
                 }),
                 None => Self::default_and_persist(store),
             },
@@ -80,6 +87,13 @@ impl Config {
         store.get(KEY_TRAY).and_then(|v| v.as_bool()).unwrap_or(true)
     }
 
+    /// 读取系统通知开关，条目缺失或非布尔时回退默认值。
+    /// @param store plugin-store 的 store 引用
+    /// @returns 持久化的 notification 值；缺失/损坏时默认 false
+    fn load_notification(store: &Store<tauri::Wry>) -> bool {
+        store.get(KEY_NOTIFICATION).and_then(|v| v.as_bool()).unwrap_or(false)
+    }
+
     /// 构造默认配置并写入存储（修复缺失/损坏的 locale 条目）。
     /// @param store plugin-store 的 store 引用
     /// @returns 默认配置；落盘失败时返回错误
@@ -88,6 +102,7 @@ impl Config {
         store.set(KEY_LOCALE, serde_json::Value::String(config.locale.as_str().to_string()));
         store.set(KEY_AUTOSTART, serde_json::Value::Bool(config.autostart));
         store.set(KEY_TRAY, serde_json::Value::Bool(config.tray));
+        store.set(KEY_NOTIFICATION, serde_json::Value::Bool(config.notification));
         store.save()?;
         Ok(config)
     }
