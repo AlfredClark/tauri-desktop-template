@@ -3,6 +3,7 @@
   import { m } from "$lib/i18n/paraglide/messages";
   import { invokeCommand } from "$lib/ipc";
   import { changeLocale } from "$lib/i18n";
+  import { error, info, trace, warn } from "$lib/logger";
 
   // $state 为 Svelte 5 的响应式状态声明
   let name = $state("");
@@ -13,6 +14,14 @@
     event.preventDefault();
     // invokeCommand 自动解包统一响应（Response<T>），失败时 console.error 并返回 null
     greetMsg = (await invokeCommand<string>("greet", { name })) ?? "";
+  }
+
+  // 演示前后端共用日志：写入四个级别，控制台与 LogDir 日志文件均可见
+  function writeLogDemo() {
+    void trace("trace demo message");
+    void info("info demo message");
+    void warn("warn demo message");
+    void error("error demo message");
   }
 </script>
 
@@ -42,6 +51,10 @@
     <button type="submit">{m.greet_button()}</button>
   </form>
   <p>{greetMsg}</p>
+
+  <div class="row">
+    <button onclick={writeLogDemo}>Write Log Demo</button>
+  </div>
 </main>
 
 <style>

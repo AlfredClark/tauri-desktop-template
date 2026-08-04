@@ -10,13 +10,13 @@
 
 ## 技术栈与工具链
 
-| 类别     | 选型                                                                                                                                 |
-| -------- | ------------------------------------------------------------------------------------------------------------------------------------ |
-| 包管理器 | bun（`bun.lock` 已提交，勿用 npm/yarn/pnpm）                                                                                         |
-| 前端     | SvelteKit 5、Vite 8、TypeScript 6                                                                                                    |
-| 桌面端   | Tauri 2.11、tauri-plugin-opener、tauri-plugin-store（config.json）、tauri-plugin-autostart、@tauri-apps/api、rust-i18n（后端国际化） |
-| Rust     | stable 工具链（`rust-toolchain.toml`），edition 2024                                                                                 |
-| 环境要求 | Node >= 24（`package.json` engines），Linux 需 webkit2gtk 等 Tauri 系统依赖                                                          |
+| 类别     | 选型                                                                                                                                                                     |
+| -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 包管理器 | bun（`bun.lock` 已提交，勿用 npm/yarn/pnpm）                                                                                                                             |
+| 前端     | SvelteKit 5、Vite 8、TypeScript 6                                                                                                                                        |
+| 桌面端   | Tauri 2.11、tauri-plugin-opener、tauri-plugin-store（config.json）、tauri-plugin-autostart、tauri-plugin-log（前后端共用日志）、@tauri-apps/api、rust-i18n（后端国际化） |
+| Rust     | stable 工具链（`rust-toolchain.toml`），edition 2024                                                                                                                     |
+| 环境要求 | Node >= 24（`package.json` engines），Linux 需 webkit2gtk 等 Tauri 系统依赖                                                                                              |
 
 ## 目录结构
 
@@ -27,6 +27,7 @@
 │   ├── lib/                    前端功能模块
 │   │   ├── i18n/               国际化（paraglide-js 配置 / 消息源 / 生成产物 / 模块）
 │   │   ├── ipc/                IPC 封装（invokeCommand 统一响应解包）
+│   │   ├── logger/             日志模块（tauri-plugin-log 前端封装，与后端共用链路）
 │   │   └── stores/             状态管理模块（types.ts / utils.ts / index.ts）
 │   └── routes/                 页面路由
 │       ├── +layout.ts          全局布局（关闭 SSR、启动同步 locale）
@@ -35,11 +36,11 @@
 ├── static/                     静态资源（favicon、logo）
 ├── src-tauri/                  桌面端（Rust）
 │   ├── src/lib.rs              模块组装：Builder / setup / 命令注册 / rust-i18n 初始化
-│   ├── src/cores/              核心逻辑（含初始化 setup、自动启动 autostart.rs、Linux 环境准备 env.rs、统一响应协议 response.rs、locale 类型 locale.rs）
+│   ├── src/cores/              核心逻辑（含初始化 setup、自动启动 autostart.rs、Linux 环境准备 env.rs、日志装配 logger.rs、统一响应协议 response.rs、locale 类型 locale.rs）
 │   ├── src/commands/           IPC 命令薄层（如 config.rs，含 get_config / set_locale / toggle_autostart）
 │   ├── locales/                后端消息源（rust-i18n，en.yml / zh-CN.yml）
 │   ├── src/main.rs             二进制入口（调用 lib::run()）
-│   ├── capabilities/default.json  窗口权限（main + core:default + opener:default）
+│   ├── capabilities/default.json  窗口权限（main + core:default + opener:default + log:default）
 │   ├── tauri.conf.json         窗口 / CSP / 打包配置
 │   ├── build.rs                tauri-build 构建脚本
 │   └── icons/                  应用图标（勿删）
@@ -146,6 +147,26 @@ const locale = await invokeCommand<string>("get_config", { key: "locale" });
 - 成功时返回业务数据（`T`）；失败（code !== 0）时 console.error 打印并返回 null，调用方用 `??` 兜底
 - 命令参数键名与 Rust 参数名一致（Tauri 自动转换驼峰命名）
 
+### 日志（log）
+
+位于 `src/lib/logger/`：tauri-plugin-log 的前端封装，与后端（log crate 宏）共用同一日志链路。
+
+| 文件       | 职责                                                                                            |
+| ---------- | ----------------------------------------------------------------------------------------------- |
+| `utils.ts` | `initLogger`：挂载 `attachConsole`（插件日志镜像到浏览器控制台），应用启动时调用一次            |
+| `index.ts` | 统一出口：重导出 `trace` / `debug` / `info` / `warn` / `error` / `attachConsole` + `initLogger` |
+
+```ts
+import { initLogger, info, error } from "$lib/logger";
+
+await initLogger(); // 挂载于 +layout.svelte 的 onMount
+info("message"); // 写入日志：浏览器控制台（attachConsole）+ LogDir 文件
+```
+
+- 无自有类型契约（插件自带完整类型），故省略 `types.ts`
+- 组件内直接 `import { info } from "$lib/logger"` 使用；后端 Rust 侧对应 `log::info!` 等宏
+- 非 Tauri 环境（纯前端 dev）下 `initLogger` 静默失败，不影响应用
+
 ### 国际化（i18n）
 
 位于 `src/lib/i18n/`：基于 paraglide-js 的国际化，配置、消息源与生成产物统一收拢于此。
@@ -210,7 +231,8 @@ Response::ok(t!("greet", name = name).to_string())
   - 消费方统一从 `$lib/<模块名>` 导入，禁止跨模块内部文件引用
   - 新增模块时，同步在 AGENTS.md「前端模块」章节添加对应小节（文件职责表 + 用法 + 约定），「目录结构」添加模块目录及说明
 - **新增 IPC 命令**：命令定义在 `src-tauri/src/commands/<模块>.rs`（薄层，核心逻辑经 `State` 注入或调用 `cores/` 模块，统一返回 `cores/response.rs` 的 `Response<T>`，错误码 0 成功 / 1 内部错误）→ 在 `commands/mod.rs` 的 `invoke_handlers!` 宏中追加（`lib.rs` 的 `invoke_handler` 无需改动）→ 前端经 `invokeCommand` 调用；如涉及新权限需同步修改 `capabilities/`
-- **系统级配置**：`config.json`（应用数据目录，tauri-plugin-store）经 `cores/config.rs` 的 `setup` 初始化并存入 Tauri State（避免重复读文件），读取统一走 `get_config`（键值通用读，条目缺失返回 null，前端 `??` 兜底），写入按配置项专项专用：`set_locale` 写 locale（校验 + 同步 rust-i18n 运行时）、`toggle_autostart` 切换 autostart，无需新增 capabilities 权限；`locale` 为前后端 i18n 共用的真相源（前端 `changeLocale` 写回同步，后端 rust-i18n 运行时经 `set_locale` 钩子同步，见「后端国际化」小节）；`autostart`（开机自启）同样以 config.json 为真相源：启动时 `cores/autostart.rs` 按持久化值 apply 到 OS，切换必须走 `toggle_autostart` 命令（先 OS 生效再写回 config，防双写路径不一致）；系统级配置与前端 UI 偏好（localStorage stores 模块）按配置归属分层，不混用
+- **系统级配置**：`config.json`（应用数据目录，tauri-plugin-store）经 `cores/config.rs` 的 `setup` 初始化并存入 Tauri State（避免重复读文件），读取统一走 `get_config`（键值通用读，条目缺失返回 null，前端 `??` 兜底），写入按配置项专项专用：`set_locale` 写 locale（校验 + 同步 rust-i18n 运行时）、`toggle_autostart` 切换 autostart，无需新增 capabilities 权限；`locale` 为前后端 i18n 共用的真相源（前端 `changeLocale` 写回同步，后端 rust-i18n 运行时经 `set_locale` 钩子同步，见「后端国际化」小节）；`autostart`（开机自启）同样以 config.json 为真相源：插件装配于 `cores/autostart.rs`（插件链仅一行 `.plugin(cores::autostart::plugin())`），启动时按持久化值 apply 到 OS，切换必须走 `toggle_autostart` 命令（先 OS 生效再写回 config，防双写路径不一致）；系统级配置与前端 UI 偏好（localStorage stores 模块）按配置归属分层，不混用
+- **日志**：前后端共用 tauri-plugin-log（Rust 侧 `log::info!` 等宏，前端 `$lib/logger` 封装，前端命令需 `log:default` 权限）；装配于 `cores/logger.rs`（插件链仅一行 `.plugin(cores::logger::plugin())`）：dev Trace / release Info，stdout + LogDir（Linux `~/.local/share/{bundleIdentifier}/logs/`）+ Webview 目标，1MB KeepAll 轮转、本地时区；`attachConsole` 经 `initLogger` 挂载于 `+layout.svelte` 的 onMount（前端日志镜像到浏览器控制台）
 - **CSP**：`tauri.conf.json` 中 dev/prod 两套 CSP；prod 无 `unsafe-inline`，若前端需访问外部服务，必须同步更新 CSP 对应字段
 - **端口**：dev 固定 1420（HMR websocket 1420/1421），与 vite.config.ts 及 CSP 一致，修改需三处同步
 - **cores/env.rs 中 Linux Wayland 处理**（`init_env` 设置 `WEBKIT_DISABLE_DMABUF_RENDERER`）为必要 workaround，勿删除；需在 Builder 创建前调用

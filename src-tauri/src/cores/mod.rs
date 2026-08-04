@@ -2,6 +2,7 @@ pub mod autostart;
 pub mod config;
 pub mod env;
 pub mod locale;
+pub mod logger;
 pub mod response;
 
 /// 整合 cores 下所有模块的初始化 setup，供 lib.rs 统一调用。
