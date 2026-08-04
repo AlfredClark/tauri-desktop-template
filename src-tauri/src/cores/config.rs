@@ -19,6 +19,9 @@ pub(crate) const KEY_LOCALE: &str = "locale";
 /// 自动启动配置项 key（读写必须经 toggle_autostart 命令，故 pub(crate)）
 pub(crate) const KEY_AUTOSTART: &str = "autostart";
 
+/// 系统托盘配置项 key（读写必须经 toggle_tray 命令，故 pub(crate)）
+pub(crate) const KEY_TRAY: &str = "tray";
+
 /// 默认语言标签（与前端 paraglide baseLocale 一致）
 const DEFAULT_LOCALE: &str = "en";
 
@@ -29,6 +32,8 @@ pub struct Config {
     pub locale: Locale,
     /// 开机自启开关，默认关闭
     pub autostart: bool,
+    /// 系统托盘开关，默认开启
+    pub tray: bool,
 }
 
 impl Default for Config {
@@ -37,6 +42,7 @@ impl Default for Config {
             // DEFAULT_LOCALE 恒在可用 locale 列表中（en.yml 消息源存在）
             locale: Locale::new(DEFAULT_LOCALE).expect("default locale must be available"),
             autostart: false,
+            tray: true,
         }
     }
 }
@@ -52,6 +58,7 @@ impl Config {
                 Some(locale) => Ok(Self {
                     locale,
                     autostart: Self::load_autostart(store),
+                    tray: Self::load_tray(store),
                 }),
                 None => Self::default_and_persist(store),
             },
@@ -66,6 +73,13 @@ impl Config {
         store.get(KEY_AUTOSTART).and_then(|v| v.as_bool()).unwrap_or(false)
     }
 
+    /// 读取系统托盘开关，条目缺失或非布尔时回退默认值。
+    /// @param store plugin-store 的 store 引用
+    /// @returns 持久化的 tray 值；缺失/损坏时默认 true
+    fn load_tray(store: &Store<tauri::Wry>) -> bool {
+        store.get(KEY_TRAY).and_then(|v| v.as_bool()).unwrap_or(true)
+    }
+
     /// 构造默认配置并写入存储（修复缺失/损坏的 locale 条目）。
     /// @param store plugin-store 的 store 引用
     /// @returns 默认配置；落盘失败时返回错误
@@ -73,6 +87,7 @@ impl Config {
         let config = Self::default();
         store.set(KEY_LOCALE, serde_json::Value::String(config.locale.as_str().to_string()));
         store.set(KEY_AUTOSTART, serde_json::Value::Bool(config.autostart));
+        store.set(KEY_TRAY, serde_json::Value::Bool(config.tray));
         store.save()?;
         Ok(config)
     }

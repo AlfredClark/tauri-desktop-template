@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { onMount } from "svelte";
   import { ParaglideMessage } from "@inlang/paraglide-js-svelte";
   import { m } from "$lib/i18n/paraglide/messages";
   import { invokeCommand } from "$lib/ipc";
@@ -8,6 +9,13 @@
   // $state 为 Svelte 5 的响应式状态声明
   let name = $state("");
   let greetMsg = $state("");
+
+  // 演示用：系统托盘开关（状态持久化于 Rust 端 config.json，无需国际化）
+  let tray = $state(false);
+
+  onMount(async () => {
+    tray = (await invokeCommand<boolean>("get_config", { key: "tray" })) ?? true;
+  });
 
   // 调用 Rust 侧命令 greet（定义于 src-tauri/src/commands/demo.rs）
   async function greet(event: Event) {
@@ -22,6 +30,11 @@
     void info("info demo message");
     void warn("warn demo message");
     void error("error demo message");
+  }
+
+  // 切换系统托盘：无参命令，返回切换后的状态
+  async function toggleTray() {
+    tray = (await invokeCommand<boolean>("toggle_tray")) ?? tray;
   }
 </script>
 
@@ -54,6 +67,7 @@
 
   <div class="row">
     <button onclick={writeLogDemo}>Write Log Demo</button>
+    <button onclick={toggleTray}>{tray ? "Tray: 已开启" : "Tray: 已关闭"}</button>
   </div>
 </main>
 

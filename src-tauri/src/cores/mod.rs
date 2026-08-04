@@ -4,6 +4,7 @@ pub mod env;
 pub mod locale;
 pub mod logger;
 pub mod response;
+pub mod tray;
 
 /// 整合 cores 下所有模块的初始化 setup，供 lib.rs 统一调用。
 /// @param app Tauri 应用实例
@@ -11,5 +12,6 @@ pub mod response;
 pub fn setup_cores(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
     config::setup(app)?;
     autostart::setup(app)?;
+    tray::setup(app)?;
     Ok(())
 }
