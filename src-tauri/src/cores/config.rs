@@ -4,11 +4,16 @@
 //! 本模块管理系统级配置（如 locale），前端偏好持久化归 stores 模块。
 
 use std::sync::Arc;
-use tauri::Manager;
+use tauri::{Manager, Runtime, plugin::TauriPlugin};
 use tauri_plugin_store::{Store, StoreExt};
 
 use crate::cores::locale::Locale;
 use crate::cores::response::{AppError, AppResult};
+
+/// 构建 store 插件（config.json 持久化底层，经本模块统一装配）。
+pub fn plugin<R: Runtime>() -> TauriPlugin<R> {
+    tauri_plugin_store::Builder::new().build()
+}
 
 /// config.json 文件名（存放于应用数据目录）
 const FILE_NAME: &str = "config.json";

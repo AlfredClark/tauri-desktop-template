@@ -19,10 +19,11 @@ pub fn run() {
     tauri::Builder::default()
         // 单实例插件置于链首：尽早注册单例锁，避免窗口建好后回调竞态
         .plugin(cores::instance::plugin())
-        .plugin(tauri_plugin_opener::init())
-        .plugin(tauri_plugin_store::Builder::new().build())
+        .plugin(cores::config::plugin())
         .plugin(cores::autostart::plugin())
         .plugin(cores::logger::plugin())
+        .plugin(cores::shortcut::plugin())
+        .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_system_fonts::init())
         .setup(cores::setup_cores)

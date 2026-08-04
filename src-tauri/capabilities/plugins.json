@@ -9,6 +9,7 @@
     "opener:default",
     "log:default",
     "notification:default",
-    "system-fonts:default"
+    "system-fonts:default",
+    "global-shortcut:default"
   ]
 }
