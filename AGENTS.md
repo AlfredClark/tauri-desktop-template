@@ -2,14 +2,14 @@
 
 ## 项目说明
 
-本项目是基于 Tauri 2 的桌面应用开发模板，前端使用 SvelteKit 5 + TypeScript，后端使用 Rust。项目已集成托盘、全局快捷键、开机自启、单实例、自动更新、多语言、日志等桌面应用常见能力，可作为新桌面应用项目的起点。
+本项目是基于 Tauri 2 的桌面应用开发模板，前端使用 SvelteKit 5 + TypeScript，后端使用 Rust。项目已集成托盘、全局快捷键、开机自启、单实例、自动更新、对话框、文件系统、系统信息、多语言、日志等桌面应用常见能力，可作为新桌面应用项目的起点。
 
 ## 技术栈
 
 - **前端**：SvelteKit 5 / Svelte 5 / TypeScript / Vite / Tailwind CSS v4 / shadcn-svelte，包管理器 bun
 - **后端**：Tauri 2 / Rust（edition 2024），Cargo workspace（成员为 `src-tauri`）
 - **国际化**：前端 Paraglide（inlang），后端 rust-i18n
-- **集成能力**：系统托盘、全局快捷键、开机自启、单实例、自动更新、通知、日志
+- **集成能力**：系统托盘、全局快捷键、开机自启、单实例、自动更新、对话框、文件系统、系统信息、通知、日志
 - **质量工具**：ESLint / Stylelint / Prettier / Clippy / rustfmt / Husky + lint-staged
 - **授权**：GPL-3.0-only
 
@@ -22,6 +22,7 @@
 │   │   └── ui/                     # shadcn-svelte 生成组件（仅经 CLI 添加，components.json 管理）
 │   ├── libs/                       # 前端模块库
 │   │   ├── errors/                 # 错误处理
+│   │   ├── hooks/                  # shadcn-svelte hooks 目录
 │   │   ├── i18n/                   # 国际化（Paraglide 编译产物与消息文件）
 │   │   ├── ipc/                    # Tauri 命令调用封装（invokeCommand + 类型定义）
 │   │   ├── logger/                 # 日志（对接 tauri-plugin-log）
@@ -66,6 +67,7 @@
 ├── Cargo.lock                      # Rust 依赖锁定
 ├── Cargo.toml                      # workspace 根：成员、lints、profile
 ├── cliff.toml                      # git-cliff 变更日志生成配置
+├── components.json                 # shadcn-svelte 组件配置
 ├── eslint.config.ts                # ESLint 配置
 ├── LICENSE                         # GPL-3.0-only
 ├── package.json                    # 前端依赖与脚本（bun）、lint-staged
@@ -114,7 +116,7 @@
 - **错误分级**：可恢复错误不阻断启动（`log::warn!` 后继续，如自启/快捷键同步失败）；关键错误返回 `Err` 阻断
 - **损坏恢复**：配置损坏备份为 `*.corrupt` 后重建，不阻断启动
 - **插件装配**：需业务配置/事件的插件经 cores 的 `plugin()` 统一封装（如 `config::plugin()` 装配 store、`logger::plugin()` 配置日志目标、`shortcut::plugin()` 注册快捷键 handler），lib.rs 仅链式调用，不写插件细节
-- **官方插件**：无需定制的插件（opener/process/notification/system-fonts/updater）直接在 lib.rs 以 `tauri_plugin_xxx::init()` 注册
+- **官方插件**：无需定制的插件（opener/process/notification/system-fonts/dialog/fs/os/updater）直接在 lib.rs 以 `tauri_plugin_xxx::init()` 注册
 - **注册顺序**：单实例插件置于链首——尽早注册单例锁，避免窗口建好后回调竞态
 - **职责分离**：事件/回调逻辑放 plugin()（如快捷键 handler、单实例聚焦回调），setup() 只做初始化与状态同步，不混写
 - **权限同步**：新增插件且前端需调用其 API 时，同步在 `capabilities/plugins.json` 追加权限（如 `global-shortcut:default`）
@@ -164,7 +166,7 @@
 - **SPA 模式**：`+layout.ts` 关闭 SSR（`ssr = false`）；adapter-static + fallback 单页渲染，适配 Tauri 本地文件加载
 - **routes/**：页面与布局（+page.svelte / +layout.svelte）
 - **components/**：业务组件目录——简单与复杂组件均放此处（不再按复杂度分层），内部按功能分类（svelte.config.ts 已预留 `$components` 别名）
-- **components/ui/**：shadcn-svelte 生成组件（`$components/ui` 别名）——经 `bunx shadcn-svelte add <name>` 拉取，源码即项目代码可直接修改；**生成区禁手动添加组件**，需定制的基础组件放 components 对应功能分类；别名配置见 components.json（ui=$components/ui、utils=$libs/utils/shadcn）
+- **components/ui/**：shadcn-svelte 生成组件（`$components/ui` 别名）——经 `bunx shadcn-svelte add <name>` 拉取，源码即项目代码，允许按需修改（尽可能不修改，本地修改后升级组件时须注意差异）；**生成区禁手动添加组件**，需定制的基础组件放 components 对应功能分类；别名配置见 components.json（ui=$components/ui、utils=$libs/utils/shadcn）
 - **libs/**：前端模块库，每模块的文件约定——`index.ts` 统一出口、`core.ts` 实现、`types.ts` 类型契约
 - **模块出口**：`index.ts` 仅重导出（`export { x } from "./core"` + `export * from "./types"`），不写实现；无自有类型契约可省略 `types.ts`（如 logger/updater 复用 npm 包类型）
 - **散装工具**：跨模块通用、无业务归属的小函数放 `$libs/utils`（复用性强的独立函数，不绑定具体业务模块）
@@ -173,8 +175,8 @@
 ### UI 组件规范（shadcn-svelte）
 
 - **优先复用**：为保证风格统一，UI 一律尽可能使用 shadcn-svelte 已有组件（`$components/ui`）；缺失的组件经 `bunx shadcn-svelte add <name>` 添加，确需定制的基础组件才手写（放 components 对应功能分类）
-- **禁止覆盖**：`add` 添加组件时不覆盖已有组件（不使用 `-o/--overwrite`，避免冲掉本地定制）；已有组件的升级另行处理（确认差异后手动合并，或作为新组件引入）
-- **样式外置**：`src/components/ui` 中的组件源码尽可能避免影响逻辑的修改——样式定制优先经组件 `class` 属性（cn 合并）与外部 class 解决，源码仅在确需改变行为时修改
+- **禁止覆盖**：`add` 添加组件时不覆盖已有组件（不使用 `-o/--overwrite`，避免冲掉本地修改）；已有组件的升级经 `bunx shadcn-svelte update` 时手动核对差异，或作为新组件引入
+- **样式外置**：允许修改组件源码，但尽可能不修改——样式定制优先经组件 `class` 属性（cn 合并）与外部 class 解决，仅确需改变行为/修复缺陷时才改源码
 
 ### 状态管理（stores）
 
@@ -190,6 +192,27 @@
 - **解包**：自动解包统一响应——业务失败返回 null 并写日志；调用处用 `?? 默认值` 兜底
 - **参数**：args 键名与 Rust 命令参数一致（Tauri 驼峰转换）
 - **类型对齐**：前端接口（`Response<T>` / `SystemConfig`）与 Rust 侧 cores 一一对应，后端类型变更时同步更新 types.ts
+
+### 原生对话框（dialog）
+
+- **能力来源**：原生文件选择/保存/消息/询问框经 `@tauri-apps/plugin-dialog` 提供的 `open` / `save` / `message` / `ask` / `confirm` API 调用，**不经 `invokeCommand`**——官方插件自带 IPC 封装，与 notification 同模式
+- **权限**：`dialog:default`（capabilities/plugins.json）
+- **返回约定**：`open`/`save` 用户取消时返回 `null`；`ask`/`confirm` 返回用户选择（boolean）；`message` 完成时 resolve
+- **调用示例**：`const file = await open({ multiple: false, filters: [{ name: "文本", extensions: ["txt"] }] })`
+
+### 文件系统（fs）
+
+- **能力来源**：文件读写/查询经 `@tauri-apps/plugin-fs` 提供的 API 调用（如 `exists`），**不经 `invokeCommand`**——官方插件自带 IPC 封装，与 notification/dialog 同模式
+- **权限**：`fs:default`（应用目录读写）+ `fs:allow-exists` 内联权限对象限定 scope 为 `$APPDATA/*`（capabilities/plugins.json）；新增 fs 能力时按需扩展权限与 scope
+- **路径约定**：`BaseDirectory.AppData` 展开即 `$APPDATA`（store 插件经 AppData 解析，config.json 真实落盘于此），调用路径须落在权限 scope 内，否则被拒绝
+- **调用示例**：`await exists("config.json", { baseDir: BaseDirectory.AppData })`
+
+### 系统信息（os）
+
+- **能力来源**：经 `@tauri-apps/plugin-os` 提供的 API 调用——`platform` / `version` / `type` / `arch` / `family` / `exeExtension` / `eol` 同步，`hostname` / `locale` 异步（Promise），**不经 `invokeCommand`**——官方插件自带封装，与 notification/dialog/fs 同模式
+- **权限**：`os:default`（capabilities/plugins.json，覆盖全部系统信息命令）
+- **注意事项**：`type()` 与 TS 关键字冲突，import 须重命名（`type as osType`）
+- **调用示例**：`platform()` / `await hostname()`
 
 ### 错误处理
 

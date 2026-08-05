@@ -1,11 +1,8 @@
-/* Tailwind v4 编译入口（@tailwindcss/vite 识别）：递归处理 @import 链，
- * 主题真相源在 ./themes/default.css（换主题/新增主题只改该文件）。 */
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "./themes/default.css";
-
-/* 深色模式 class 策略：dark: 前缀工具类在 .dark 祖先内生效（themeStore 挂载 class） */
-@custom-variant dark (&:is(.dark *));
+@import "shadcn-svelte/tailwind.css";
+@import "@fontsource-variable/inter";
 
 @layer base {
   * {
@@ -14,5 +11,9 @@
 
   body {
     @apply bg-background text-foreground;
+  }
+
+  html {
+    @apply font-sans;
   }
 }

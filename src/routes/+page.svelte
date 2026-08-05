@@ -6,6 +6,9 @@
   import { changeLocale } from "$libs/i18n";
   import { error, info, trace, warn } from "$libs/logger";
   import { sendNotification } from "@tauri-apps/plugin-notification";
+  import { ask, confirm, message, open, save } from "@tauri-apps/plugin-dialog";
+  import { exists, BaseDirectory } from "@tauri-apps/plugin-fs";
+  import { arch, exeExtension, family, locale, platform, type as osType, version } from "@tauri-apps/plugin-os";
   import { getCurrentWindow } from "@tauri-apps/api/window";
   import { getSystemFonts, type SystemFont } from "tauri-plugin-system-fonts-api";
   import { checkForUpdate, installUpdate, type Update } from "$libs/updater";
@@ -37,6 +40,19 @@
   let fonts = $state<SystemFont[]>([]);
   let fontsLoading = $state(false);
   let fontsError = $state("");
+
+  // 演示用：原生对话框结果（经 @tauri-apps/plugin-dialog 直调，无需国际化）
+  let dialogResult = $state("");
+  let dialogOk = $state(false);
+
+  // 演示用：文件系统检查结果（经 @tauri-apps/plugin-fs 直调，无需国际化）
+  let fsResult = $state("");
+  let fsOk = $state(false);
+
+  // 演示用：系统信息列表（经 @tauri-apps/plugin-os 直调，无需国际化）
+  let osInfo = $state<{ label: string; value: string }[]>([]);
+  let osLoading = $state(false);
+  let osError = $state("");
 
   // 演示用：应用更新（经 $libs/updater 封装，配置见 tauri.conf.json plugins.updater，无需国际化）
   let updateAvailable = $state<Update | null>(null);
@@ -115,6 +131,113 @@
     } catch (error) {
       notifyResult = `发送失败：${error}`;
       notifyOk = false;
+    }
+  }
+
+  // 演示文件选择：open 单文件，取消返回 null
+  async function pickFileDemo() {
+    try {
+      const file = await open({ multiple: false, filters: [{ name: "文本", extensions: ["txt"] }] });
+      dialogResult = file ? `已选择：${file}` : "已取消";
+      dialogOk = !!file;
+    } catch (error) {
+      dialogResult = `选择失败：${error}`;
+      dialogOk = false;
+    }
+  }
+
+  // 演示多文件选择：open 多选返回路径数组，取消返回 null
+  async function pickFilesDemo() {
+    try {
+      const files = await open({ multiple: true, filters: [{ name: "图片", extensions: ["png", "jpg", "jpeg"] }] });
+      dialogResult = files ? `已选择 ${files.length} 个文件` : "已取消";
+      dialogOk = !!files;
+    } catch (error) {
+      dialogResult = `选择失败：${error}`;
+      dialogOk = false;
+    }
+  }
+
+  // 演示保存对话框：返回保存路径，取消返回 null
+  async function saveFileDemo() {
+    try {
+      const path = await save({ defaultPath: "demo.txt", filters: [{ name: "文本", extensions: ["txt"] }] });
+      dialogResult = path ? `保存路径：${path}` : "已取消";
+      dialogOk = !!path;
+    } catch (error) {
+      dialogResult = `保存失败：${error}`;
+      dialogOk = false;
+    }
+  }
+
+  // 演示消息框：完成时 resolve，无返回值
+  async function messageDemo() {
+    try {
+      await message("这是原生消息对话框", { title: "消息", kind: "info" });
+      dialogResult = "消息框已弹出";
+      dialogOk = true;
+    } catch (error) {
+      dialogResult = `弹出失败：${error}`;
+      dialogOk = false;
+    }
+  }
+
+  // 演示询问框：返回用户选择（boolean）
+  async function askDemo() {
+    try {
+      const ok = await ask("是否继续执行？", { title: "询问", kind: "warning" });
+      dialogResult = `用户选择：${ok ? "是" : "否"}`;
+      dialogOk = ok;
+    } catch (error) {
+      dialogResult = `弹出失败：${error}`;
+      dialogOk = false;
+    }
+  }
+
+  // 演示确认框：返回用户选择（boolean）
+  async function confirmDemo() {
+    try {
+      const ok = await confirm("确认执行该操作？", { title: "确认", kind: "error" });
+      dialogResult = `用户选择：${ok ? "确认" : "取消"}`;
+      dialogOk = ok;
+    } catch (error) {
+      dialogResult = `弹出失败：${error}`;
+      dialogOk = false;
+    }
+  }
+
+  // 演示文件系统：检查 config.json 是否存在（BaseDirectory.AppData 即 $APPDATA，与权限 scope 对齐）
+  async function checkConfigExists() {
+    try {
+      const existed = await exists("config.json", { baseDir: BaseDirectory.AppData });
+      fsResult = existed ? "config.json 存在" : "config.json 不存在";
+      fsOk = true;
+    } catch (error) {
+      fsResult = `检查失败：${error}`;
+      fsOk = false;
+    }
+  }
+
+  // 演示系统信息：同步 API（platform/version/type/arch/family/exeExtension）+ 异步 API（hostname/locale）
+  async function loadOsInfo() {
+    osLoading = true;
+    osError = "";
+    try {
+      const [localeTag] = await Promise.all([locale()]);
+      osInfo = [
+        { label: "平台", value: platform() },
+        { label: "版本", value: version() },
+        { label: "类型", value: osType() },
+        { label: "架构", value: arch() },
+        { label: "族系", value: family() },
+        { label: "可执行文件后缀", value: exeExtension() || "(无)" },
+        { label: "语言环境", value: localeTag ?? "未知" },
+      ];
+    } catch (error) {
+      osError = `获取失败：${error}`;
+      osInfo = [];
+    } finally {
+      osLoading = false;
     }
   }
 
@@ -218,7 +341,7 @@
       <form class="flex flex-col gap-3" onsubmit={greet}>
         <div class="flex flex-col gap-1.5">
           <Label for="greet-input">{m.greet_placeholder()}</Label>
-          <Input id="greet-input" bind:value={name} placeholder={m.greet_placeholder()} />
+          <Input id="greet-input" type="text" bind:value={name} placeholder={m.greet_placeholder()} />
         </div>
         <Button type="submit" class="self-start">{m.greet_button()}</Button>
       </form>
@@ -239,21 +362,21 @@
           <Label>系统托盘</Label>
           <p class="text-xs text-muted-foreground">切换托盘可见性</p>
         </div>
-        <Switch checked={tray} onCheckedChange={toggleTray} />
+        <Switch id="switch-tray" size="default" checked={tray} onCheckedChange={toggleTray} />
       </div>
       <div class="flex items-center justify-between gap-4">
         <div>
           <Label>开机自启</Label>
           <p class="text-xs text-muted-foreground">随系统启动自动运行</p>
         </div>
-        <Switch checked={autostart} onCheckedChange={toggleAutostart} />
+        <Switch id="switch-autostart" checked={autostart} onCheckedChange={toggleAutostart} />
       </div>
       <div class="flex items-center justify-between gap-4">
         <div>
-          <Label>系统通知</Label>
+          <Label for="switch-notification">系统通知</Label>
           <p class="text-xs text-muted-foreground">主窗口隐藏/最小化时发送通知</p>
         </div>
-        <Switch checked={notification} onCheckedChange={toggleNotification} />
+        <Switch id="switch-notification" checked={notification} onCheckedChange={toggleNotification} />
       </div>
     </CardContent>
     <CardFooter class="flex flex-wrap items-center gap-2">
@@ -262,6 +385,65 @@
         <Badge variant={notifyOk ? "default" : "destructive"}>{notifyResult}</Badge>
       {/if}
     </CardFooter>
+  </Card>
+
+  <Card>
+    <CardHeader>
+      <CardTitle>原生对话框</CardTitle>
+      <CardDescription>经 @tauri-apps/plugin-dialog 调用系统文件选择/保存/消息/询问框</CardDescription>
+    </CardHeader>
+    <CardContent class="flex flex-wrap gap-2">
+      <Button variant="outline" onclick={pickFileDemo}>选择文件</Button>
+      <Button variant="outline" onclick={pickFilesDemo}>选择多文件</Button>
+      <Button variant="outline" onclick={saveFileDemo}>保存文件</Button>
+      <Button variant="outline" onclick={messageDemo}>消息框</Button>
+      <Button variant="outline" onclick={askDemo}>询问框</Button>
+      <Button variant="outline" onclick={confirmDemo}>确认框</Button>
+    </CardContent>
+    {#if dialogResult}
+      <CardFooter>
+        <Badge class="max-w-full break-all" variant={dialogOk ? "default" : "destructive"}>{dialogResult}</Badge>
+      </CardFooter>
+    {/if}
+  </Card>
+
+  <Card>
+    <CardHeader>
+      <CardTitle>文件系统</CardTitle>
+      <CardDescription>经 @tauri-apps/plugin-fs 检查 $APPDATA 下的 config.json</CardDescription>
+    </CardHeader>
+    <CardContent class="flex flex-wrap items-center gap-2">
+      <Button variant="outline" onclick={checkConfigExists}>检查 config.json 是否存在</Button>
+      {#if fsResult}
+        <Badge variant={fsOk ? "default" : "destructive"}>{fsResult}</Badge>
+      {/if}
+    </CardContent>
+  </Card>
+
+  <Card>
+    <CardHeader>
+      <CardTitle>系统信息</CardTitle>
+      <CardDescription>经 @tauri-apps/plugin-os 获取操作系统信息（同步 API + hostname/locale）</CardDescription>
+    </CardHeader>
+    <CardContent class="flex flex-col gap-3">
+      <div class="flex flex-wrap items-center gap-2">
+        <Button variant="outline" onclick={loadOsInfo} disabled={osLoading}>
+          {osLoading ? "获取中..." : "获取系统信息"}
+        </Button>
+        {#if osError}
+          <Badge variant="destructive">{osError}</Badge>
+        {/if}
+      </div>
+      {#if osInfo.length > 0}
+        <ul class="flex flex-col gap-1 text-sm">
+          {#each osInfo as item (item.label)}
+            <li class="rounded-md bg-muted px-3 py-1.5">
+              <span class="font-medium">{item.label}</span>：{item.value}
+            </li>
+          {/each}
+        </ul>
+      {/if}
+    </CardContent>
   </Card>
 
   <Card>

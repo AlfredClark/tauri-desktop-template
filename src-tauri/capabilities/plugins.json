@@ -9,7 +9,14 @@
     "opener:default",
     "log:default",
     "notification:default",
+    "dialog:default",
+    "fs:default",
+    {
+      "identifier": "fs:allow-exists",
+      "allow": [{ "path": "$APPDATA/*" }]
+    },
     "system-fonts:default",
+    "os:default",
     "global-shortcut:default",
     "updater:default",
     "process:default"

@@ -9,7 +9,8 @@
     ],
     "lightness-notation": null,
     "hue-degree-notation": null,
-    "import-notation": null
+    "import-notation": null,
+    "nesting-selector-no-missing-scoping-root": null
   },
   "overrides": [
     {
