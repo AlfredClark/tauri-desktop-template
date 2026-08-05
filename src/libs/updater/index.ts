@@ -2,5 +2,5 @@
 //!
 //! 复用 npm 包类型（Update），无自有类型契约，故省略 types.ts。
 
-export { checkForUpdate, installUpdate } from "./utils";
+export { checkForUpdate, installUpdate } from "./core";
 export type { Update } from "@tauri-apps/plugin-updater";

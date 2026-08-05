@@ -1,2 +1,2 @@
-export { invokeCommand } from "./utils";
+export { invokeCommand } from "./core";
 export * from "./types";

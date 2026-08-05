@@ -1,1 +1,1 @@
-export { initErrorHooks, logBoundaryError, logSvelteKitError } from "./utils";
+export { initErrorHooks, logBoundaryError, logSvelteKitError } from "./core";

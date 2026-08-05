@@ -4,4 +4,4 @@
 //! 均落盘到应用日志目录（LogDir）。无自有类型契约，故省略 types.ts。
 
 export { trace, debug, info, warn, error, attachConsole } from "@tauri-apps/plugin-log";
-export { initLogger } from "./utils";
+export { initLogger } from "./core";

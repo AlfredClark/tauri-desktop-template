@@ -1,2 +1,2 @@
-export { createStore } from "./utils";
+export { createStore } from "./core";
 export * from "./types";
