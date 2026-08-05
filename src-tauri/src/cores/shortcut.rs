@@ -4,14 +4,19 @@
 //! 当前未调用；如前端需动态注册/注销快捷键，直接使用 npm 包即可，无需后端改动。
 
 use tauri::{Runtime, plugin::TauriPlugin};
-use tauri_plugin_global_shortcut::{Code, Modifiers, Shortcut};
+use tauri_plugin_global_shortcut::{Code, Modifiers, Shortcut, ShortcutState};
+
+/// 退出快捷键（Ctrl+Q）：setup 注册与 handler 校验共用同一组合，避免两处漂移
+fn quit_shortcut() -> Shortcut {
+    Shortcut::new(Some(Modifiers::CONTROL), Code::KeyQ)
+}
 
 /// 构建全局快捷键插件：注册统一的快捷键事件处理器（退出应用）。
 pub fn plugin<R: Runtime>() -> TauriPlugin<R> {
     tauri_plugin_global_shortcut::Builder::new()
-        .with_handler(|app, _shortcut, event| {
-            // 当前仅注册 Ctrl+Q 一个快捷键：按下即退出
-            if event.state() == tauri_plugin_global_shortcut::ShortcutState::Pressed {
+        .with_handler(|app, shortcut, event| {
+            // 仅响应 Ctrl+Q 按下：前端动态注册的其他快捷键一律忽略，防止误触发退出
+            if *shortcut == quit_shortcut() && event.state() == ShortcutState::Pressed {
                 app.exit(0);
             }
         })
@@ -25,8 +30,7 @@ pub fn plugin<R: Runtime>() -> TauriPlugin<R> {
 pub fn setup(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
     use tauri_plugin_global_shortcut::GlobalShortcutExt;
 
-    let ctrl_q_shortcut = Shortcut::new(Some(Modifiers::CONTROL), Code::KeyQ);
-    match app.global_shortcut().register(ctrl_q_shortcut) {
+    match app.global_shortcut().register(quit_shortcut()) {
         Ok(()) => log::info!("[shortcut] registered Ctrl+Q to quit"),
         Err(error) => log::warn!("[shortcut] failed to register Ctrl+Q: {error}"),
     }

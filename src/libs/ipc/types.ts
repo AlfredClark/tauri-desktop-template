@@ -7,3 +7,11 @@ export interface Response<T> {
 
 /** 成功业务码 */
 export const CODE_OK = 0;
+
+/** 系统级配置快照（与 Rust 侧 cores/config.rs 的 SystemConfig 对齐） */
+export interface SystemConfig {
+  locale: string; // 界面语言标签
+  autostart: boolean; // 开机自启开关
+  tray: boolean; // 系统托盘开关
+  notification: boolean; // 系统通知开关
+}

@@ -16,6 +16,8 @@ rust_i18n::i18n!("locales", fallback = "en");
 pub fn run() {
     // 必须在 Builder 创建前调用：WebKit 环境 workaround
     cores::env::init_env();
+    // 全局 panic hook：panic 写入日志链路（logger 插件初始化前的早期 panic 仅 stderr 输出）
+    cores::panic::init_hook();
     tauri::Builder::default()
         // 单实例插件置于链首：尽早注册单例锁，避免窗口建好后回调竞态
         .plugin(cores::instance::plugin())
@@ -24,10 +26,10 @@ pub fn run() {
         .plugin(cores::logger::plugin())
         .plugin(cores::shortcut::plugin())
         .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_system_fonts::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
-        .plugin(tauri_plugin_process::init())
         .setup(cores::setup_cores)
         .invoke_handler(invoke_handlers!())
         .run(tauri::generate_context!())

@@ -5,5 +5,7 @@
   "greet_button": "Greet",
   "lang_en": "English",
   "lang_zh_cn": "简体中文",
-  "click_hint": "Click on the Tauri, Vite, and SvelteKit logos to learn more."
+  "click_hint": "Click on the Tauri, Vite, and SvelteKit logos to learn more.",
+  "boundary_error": "Component render error: {message} (see logs)",
+  "boundary_retry": "Retry"
 }

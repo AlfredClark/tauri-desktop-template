@@ -46,7 +46,12 @@ function loadPersisted(adapter: StorageAdapter, key: string): { found: boolean; 
     if (raw == null) return { found: false, value: undefined };
     return { found: true, value: JSON.parse(raw) as unknown };
   } catch {
-    // 数据损坏时回退到默认值，不向外抛出
+    // 数据损坏时回退到默认值，并清理损坏条目（避免每次启动重复解析失败）
+    try {
+      adapter.removeItem(key);
+    } catch {
+      // 清理失败静默忽略
+    }
     return { found: true, value: undefined };
   }
 }

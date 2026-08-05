@@ -24,7 +24,7 @@ jobs:
               - '.github/workflows/ci.yml'
 
   checks-fast:
-    name: Lint / Check (JS/TS)
+    name: Validate (JS/TS)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -40,13 +40,11 @@ jobs:
       - name: Compile i18n
         run: bun run i18n:compile
 
-      - run: bun run lint
-      - run: bun run format:check
-      - run: bun run lint:css
-      - run: bun run check
+      - name: Validate
+        run: bun run validate:js
 
   checks-rust:
-    name: Lint / Check (Rust)
+    name: Validate (Rust)
     needs: changes
     if: ${{ needs.changes.outputs.rust == 'true' }}
     runs-on: ubuntu-latest
@@ -75,5 +73,8 @@ jobs:
             libjavascriptcoregtk-4.1-dev \
             libsoup-3.0-dev
 
-      - run: cargo clippy --locked --no-deps --manifest-path src-tauri/Cargo.toml -- -D warnings
-      - run: cargo fmt --manifest-path src-tauri/Cargo.toml --all -- --check
+      - name: Check
+        run: cargo clippy --locked --no-deps --manifest-path src-tauri/Cargo.toml -- -D warnings
+
+      - name: Formate
+        run: cargo fmt --manifest-path src-tauri/Cargo.toml --all -- --check

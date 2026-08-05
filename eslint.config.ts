@@ -1,10 +1,10 @@
 import js from "@eslint/js";
-import prettier from "eslint-config-prettier";
-import { defineConfig, globalIgnores } from "eslint/config";
 import globals from "globals";
-import svelte from "eslint-plugin-svelte";
 import tseslint from "typescript-eslint";
+import svelte from "eslint-plugin-svelte";
+import prettier from "eslint-config-prettier";
 import svelteConfig from "./svelte.config.ts";
+import { defineConfig, globalIgnores } from "eslint/config";
 
 export default defineConfig([
   {
@@ -24,8 +24,8 @@ export default defineConfig([
     "node_modules/",
     "src-tauri/",
     "target/",
-    "src/lib/i18n/paraglide/",
-    "src/lib/i18n/project.inlang/",
+    "src/libs/i18n/paraglide/",
+    "src/libs/i18n/project.inlang/",
     "**/.*",
   ]),
   {

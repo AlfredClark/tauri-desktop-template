@@ -1,23 +1,22 @@
 //! 系统配置 IPC 命令：薄层封装，核心逻辑位于 `crate::cores::config`。
 //!
-//! 读写约定：读取统一走 `get_config`（键值通用读）；写入按配置项专项专用——
+//! 读写约定：读取统一走 `get_config`（返回全部系统配置的类型化快照）；写入按配置项专项专用——
 //! `set_locale` 写 locale（校验 + 同步 rust-i18n 运行时 + 重建托盘菜单），
 //! `toggle_autostart` 切换 autostart、`toggle_tray` 切换系统托盘（先令操作系统生效再写回 config）。
 
 use tauri::State;
 use tauri_plugin_autostart::AutoLaunchManager;
 
-use crate::cores::config::{ConfigState, KEY_AUTOSTART, KEY_LOCALE, KEY_NOTIFICATION, KEY_TRAY};
+use crate::cores::config::{ConfigState, KEY_AUTOSTART, KEY_LOCALE, KEY_NOTIFICATION, KEY_TRAY, SystemConfig};
 use crate::cores::locale::Locale;
 use crate::cores::response::{CODE_ERROR, Response};
 
-/// 读取系统配置项：`invokeCommand("get_config", { key: "locale" })`。
+/// 读取全部系统配置：`invokeCommand("get_config")`（无参数）。
 /// @param state 系统配置状态（经 setup 初始化）
-/// @param key 配置项 key
-/// @returns 配置值；条目不存在时 data 为 null
+/// @returns 类型化配置快照（locale/autostart/tray/notification）
 #[tauri::command]
-pub fn get_config(state: State<'_, ConfigState>, key: String) -> Response<Option<serde_json::Value>> {
-    Response::ok(state.get(&key))
+pub fn get_config(state: State<'_, ConfigState>) -> Response<SystemConfig> {
+    Response::ok(state.get_all())
 }
 
 /// 写入 locale 配置项并立即落盘：`invokeCommand("set_locale", { locale: "zh-CN" })`。

@@ -29,13 +29,15 @@ fn build_menu<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Menu<R>> {
     Menu::with_items(app, &[&toggle_window, &quit])
 }
 
-/// 切换主窗口显示/隐藏（菜单项与托盘左键共用）：可见则隐藏，不可见则取消最小化并显示聚焦。
+/// 切换主窗口显示/隐藏（菜单项与托盘左键共用）：
+/// 最小化 → 恢复显示聚焦；可见 → 隐藏；其余（已隐藏）→ 显示聚焦。
 /// @param app 应用句柄
 fn toggle_window<R: Runtime>(app: &AppHandle<R>) {
     let Some(window) = app.get_webview_window("main") else {
         return;
     };
-    if window.is_visible().unwrap_or(false) {
+    // 最小化窗口的 is_visible() 仍为 true（WS_VISIBLE/GTK 语义），必须先行排除
+    if window.is_visible().unwrap_or(false) && !window.is_minimized().unwrap_or(false) {
         let _ = window.hide();
     } else {
         let _ = window.unminimize();
@@ -51,7 +53,15 @@ fn toggle_window<R: Runtime>(app: &AppHandle<R>) {
 pub fn create_tray<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<()> {
     let menu = build_menu(app)?;
     // 应用图标在 tauri.conf.json bundle 中配置（icons/icon.png），恒存在
-    let icon = app.default_window_icon().expect("window icon must be configured").clone();
+    let icon = match app.default_window_icon() {
+        Some(icon) => icon.clone(),
+        None => {
+            return Err(tauri::Error::Io(std::io::Error::new(
+                std::io::ErrorKind::NotFound,
+                "default window icon must be configured",
+            )));
+        }
+    };
 
     TrayIconBuilder::with_id(TRAY_ID)
         .icon(icon)
@@ -76,8 +86,7 @@ pub fn create_tray<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<()> {
     Ok(())
 }
 
-/// 设置托盘显隐（Linux 上对应 appindicator Active/Passive）。
-/// 切换命令经此显隐托盘，避免移除/重建导致 D-Bus 路径注册冲突。
+/// 设置托盘显隐（Linux 上对应 appindicator Active/Passive；不移除重建的原因见模块文档）。
 /// @param app 应用句柄
 /// @param visible 是否显示
 /// @returns 设置结果；托盘缺失时返回 Ok 并记录警告（正常不会发生）

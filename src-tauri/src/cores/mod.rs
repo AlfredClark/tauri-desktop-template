@@ -4,6 +4,7 @@ pub mod env;
 pub mod instance;
 pub mod locale;
 pub mod logger;
+pub mod panic;
 pub mod response;
 pub mod shortcut;
 pub mod tray;

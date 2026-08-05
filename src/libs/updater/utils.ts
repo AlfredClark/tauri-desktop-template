@@ -14,7 +14,7 @@ import { relaunch } from "@tauri-apps/plugin-process";
  * @returns 有新版本时返回 Update 对象，否则返回 null；配置缺失（pubkey/endpoints 未配置）时抛错
  */
 export async function checkForUpdate(): Promise<Update | null> {
-  return await check();
+  return check();
 }
 
 /**

@@ -23,10 +23,11 @@
     "node": ">=24.0.0"
   },
   "scripts": {
-    "validate": "npm run lint:all && npm run format:all:check && npm run check:rust && npm run check",
+    "validate": "bun run lint:all && bun run format:all:check && bun run check:rust && bun run check",
+    "validate:js": "eslint . && stylelint \"src/**/*.{css,svelte}\" && prettier --check . && svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
     "tauri:dev": "tauri dev",
     "tauri:build": "tauri build",
-    "i18n:compile": "paraglide-js compile --project ./src/lib/i18n/project.inlang --outdir ./src/lib/i18n/paraglide --strategy globalVariable baseLocale --emit-ts-declarations",
+    "i18n:compile": "paraglide-js compile --project ./src/libs/i18n/project.inlang --outdir ./src/libs/i18n/paraglide --strategy localStorage baseLocale --emit-ts-declarations",
     "dev": "vite dev",
     "build": "vite build",
     "preview": "vite preview",
@@ -77,7 +78,7 @@
     "@inlang/paraglide-js": "^2.23.1",
     "@inlang/paraglide-js-svelte": "^1.0.3",
     "@inlang/plugin-m-function-matcher": "^2.2.9",
-    "@inlang/plugin-message-format": "^4.4.0",
+    "@inlang/plugin-message-format": "^4.4.1",
     "@sveltejs/adapter-static": "^3.0.10",
     "@sveltejs/kit": "^2.70.2",
     "@sveltejs/vite-plugin-svelte": "^7.2.0",
@@ -98,7 +99,7 @@
     "svelte": "^5.56.8",
     "svelte-check": "^4.7.4",
     "typescript": "^6.0.3",
-    "typescript-eslint": "^8.65.0",
+    "typescript-eslint": "^8.66.0",
     "vite": "^8.2.0"
   }
 }

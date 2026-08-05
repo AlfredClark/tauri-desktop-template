@@ -26,18 +26,21 @@
         "connect-src": "ipc: http://ipc.localhost http://localhost:1420 ws://localhost:1420 ws://localhost:1421",
         "script-src": "'self' 'unsafe-inline'",
         "style-src": "'self' 'unsafe-inline' http://localhost:1420",
-        "img-src": "'self' http://localhost:1420 asset: http://asset.localhost blob: data:",
+        "img-src": "'self' http://localhost:1420",
         "font-src": "'self'",
         "object-src": "'none'"
       },
       "csp": {
-        "default-src": "'self' asset:",
+        "default-src": "'self'",
         "connect-src": "ipc: http://ipc.localhost",
         "script-src": "'self'",
         "style-src": "'self'",
-        "img-src": "'self' asset: http://asset.localhost blob: data:",
+        "img-src": "'self'",
         "font-src": "'self'",
-        "object-src": "'none'"
+        "object-src": "'none'",
+        "base-uri": "'self'",
+        "form-action": "'self'",
+        "frame-ancestors": "'none'"
       }
     }
   },

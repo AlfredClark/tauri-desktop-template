@@ -1,6 +1,6 @@
-import { paraglideVitePlugin } from "@inlang/paraglide-js";
 import { defineConfig } from "vite";
 import { sveltekit } from "@sveltejs/kit/vite";
+import { paraglideVitePlugin } from "@inlang/paraglide-js";
 
 // TAURI_DEV_HOST：远程/移动端调试时传入目标主机地址
 const host = process.env.TAURI_DEV_HOST;
@@ -8,16 +8,17 @@ const host = process.env.TAURI_DEV_HOST;
 export default defineConfig(() => ({
   plugins: [
     sveltekit(),
-    // 国际化：编译 messages 生成 paraglide 运行时（src/lib/i18n/paraglide）
+    // 国际化：编译 messages 生成 paraglide 运行时（src/libs/i18n/paraglide）
     paraglideVitePlugin({
-      project: "./src/lib/i18n/project.inlang",
-      outdir: "./src/lib/i18n/paraglide",
+      project: "./src/libs/i18n/project.inlang",
+      outdir: "./src/libs/i18n/paraglide",
       emitTsDeclarations: true,
-      // 纯内存策略：locale 真相源为 Rust config.json，禁止 paraglide 自行持久化（cookie/localStorage 等）
-      strategy: ["globalVariable", "baseLocale"],
+      // locale 经 localStorage 跨 reload 存活（首帧渲染前即可解析正确语言）；
+      // config.json 为持久真相源，changeLocale 双写保持两者一致，
+      // 外部改动 config 导致失同步时 syncLocale 以 config 为准自愈（reload 一次）
+      strategy: ["localStorage", "baseLocale"],
     }),
   ],
-
   clearScreen: false,
   server: {
     // dev 端口固定 1420，与 tauri.conf.json 的 devUrl 及 CSP 保持一致

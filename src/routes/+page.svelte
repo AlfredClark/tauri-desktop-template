@@ -1,14 +1,14 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import { ParaglideMessage } from "@inlang/paraglide-js-svelte";
-  import { m } from "$lib/i18n/paraglide/messages";
-  import { invokeCommand } from "$lib/ipc";
-  import { changeLocale } from "$lib/i18n";
-  import { error, info, trace, warn } from "$lib/logger";
+  import { m } from "$libs/i18n/paraglide/messages";
+  import { invokeCommand, type SystemConfig } from "$libs/ipc";
+  import { changeLocale } from "$libs/i18n";
+  import { error, info, trace, warn } from "$libs/logger";
   import { sendNotification } from "@tauri-apps/plugin-notification";
+  import { getCurrentWindow } from "@tauri-apps/api/window";
   import { getSystemFonts, type SystemFont } from "tauri-plugin-system-fonts-api";
-  import { checkForUpdate, installUpdate } from "$lib/utils";
-  import type { Update } from "@tauri-apps/plugin-updater";
+  import { checkForUpdate, installUpdate, type Update } from "$libs/updater";
 
   // $state 为 Svelte 5 的响应式状态声明
   let name = $state("");
@@ -16,6 +16,9 @@
 
   // 演示用：系统托盘开关（状态持久化于 Rust 端 config.json，无需国际化）
   let tray = $state(false);
+
+  // 演示用：开机自启开关（状态持久化于 Rust 端 config.json，无需国际化）
+  let autostart = $state(false);
 
   // 演示用：系统通知开关（状态持久化于 Rust 端 config.json，无需国际化）
   let notification = $state(false);
@@ -26,16 +29,22 @@
   let fontsLoading = $state(false);
   let fontsError = $state("");
 
-  // 演示用：应用更新（经 $lib/utils 封装，配置见 tauri.conf.json plugins.updater，无需国际化）
+  // 演示用：应用更新（经 $libs/updater 封装，配置见 tauri.conf.json plugins.updater，无需国际化）
   let updateAvailable = $state<Update | null>(null);
   let updateChecking = $state(false);
   let updateInstalling = $state(false);
   let updateProgress = $state("");
   let updateResult = $state("");
 
+  // 演示用：全局异常拦截（uncaught / unhandled rejection / 渲染边界三层，无需国际化）
+  let boundaryThrow = $state(false);
+
   onMount(async () => {
-    tray = (await invokeCommand<boolean>("get_config", { key: "tray" })) ?? true;
-    notification = (await invokeCommand<boolean>("get_config", { key: "notification" })) ?? false;
+    // get_config 一次返回全部系统配置（类型化快照，含 locale/autostart）
+    const config = await invokeCommand<SystemConfig>("get_config");
+    tray = config?.tray ?? true;
+    notification = config?.notification ?? false;
+    autostart = config?.autostart ?? false;
   });
 
   // 调用 Rust 侧命令 greet（定义于 src-tauri/src/commands/demo.rs）
@@ -58,6 +67,11 @@
     tray = (await invokeCommand<boolean>("toggle_tray")) ?? tray;
   }
 
+  // 切换开机自启：无参命令，返回切换后的状态
+  async function toggleAutostart() {
+    autostart = (await invokeCommand<boolean>("toggle_autostart")) ?? autostart;
+  }
+
   // 切换系统通知：无参命令，返回切换后的状态
   async function toggleNotification() {
     notification = (await invokeCommand<boolean>("toggle_notification")) ?? notification;
@@ -69,8 +83,18 @@
       notifyResult = "未发送：通知已关闭";
       return;
     }
-    sendNotification({ title: "Notification Demo", body: "Main window is hidden or minimized" });
-    notifyResult = "已发送";
+    try {
+      const win = getCurrentWindow();
+      const hidden = !(await win.isVisible()) || (await win.isMinimized());
+      if (!hidden) {
+        notifyResult = "未发送：主窗口可见（需最小化或隐藏）";
+        return;
+      }
+      sendNotification({ title: "Notification Demo", body: "Main window is hidden or minimized" });
+      notifyResult = "已发送";
+    } catch (error) {
+      notifyResult = `发送失败：${error}`;
+    }
   }
 
   // 演示系统字体：经 npm 包获取本机全部字体（重量级操作，加载期间防重复点击）
@@ -121,6 +145,29 @@
       updateInstalling = false;
     }
   }
+
+  // 触发未捕获异常：经 window error 监听写入日志链路
+  function triggerUncaughtError() {
+    throw new Error("demo uncaught error");
+  }
+
+  // 触发未处理 Promise rejection：经 unhandledrejection 监听写入日志链路
+  function triggerUnhandledRejection() {
+    void Promise.reject(new Error("demo unhandled rejection"));
+  }
+
+  // 触发渲染错误：svelte:boundary 捕获 → 回退 UI + 手动重试按钮
+  function triggerBoundaryError() {
+    boundaryThrow = true;
+  }
+
+  // 渲染期抛错函数：抛错前调度清理标志，边界手动重置后不再抛（一次性渲染异常演示）
+  function throwRenderError(): never {
+    queueMicrotask(() => {
+      boundaryThrow = false;
+    });
+    throw new Error("demo render error");
+  }
 </script>
 
 <main class="container">
@@ -153,6 +200,7 @@
   <div class="row">
     <button onclick={writeLogDemo}>Write Log Demo</button>
     <button onclick={toggleTray}>{tray ? "Tray: 已开启" : "Tray: 已关闭"}</button>
+    <button onclick={toggleAutostart}>{autostart ? "Autostart: 已开启" : "Autostart: 已关闭"}</button>
   </div>
 
   <div class="row">
@@ -192,6 +240,15 @@
   {/if}
   {#if updateResult}
     <p>{updateResult}</p>
+  {/if}
+
+  <div class="row">
+    <button onclick={triggerUncaughtError}>触发未捕获异常</button>
+    <button onclick={triggerUnhandledRejection}>触发未处理 Promise</button>
+    <button onclick={triggerBoundaryError}>触发渲染错误</button>
+  </div>
+  {#if boundaryThrow}
+    {throwRenderError()}
   {/if}
 </main>
 
