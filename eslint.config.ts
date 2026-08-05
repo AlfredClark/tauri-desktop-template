@@ -46,6 +46,14 @@ export default defineConfig([
     },
   },
   {
+    // shadcn-svelte 生成组件豁免：按钮类组件 href 为动态绑定（外链/禁用态），
+    // 不适用 SPA 的 resolve() 导航约束（svelte/no-navigation-without-resolve 误报）
+    files: ["src/components/ui/**/*.svelte"],
+    rules: {
+      "svelte/no-navigation-without-resolve": "off",
+    },
+  },
+  {
     // Node 环境下的构建配置文件
     files: ["*.config.ts", "eslint.config.ts"],
     languageOptions: { globals: globals.node },

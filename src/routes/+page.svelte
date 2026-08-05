@@ -9,6 +9,14 @@
   import { getCurrentWindow } from "@tauri-apps/api/window";
   import { getSystemFonts, type SystemFont } from "tauri-plugin-system-fonts-api";
   import { checkForUpdate, installUpdate, type Update } from "$libs/updater";
+  import { themeStore, type ThemeMode } from "$libs/stores";
+  import { Badge } from "$components/ui/badge";
+  import { Button } from "$components/ui/button";
+  import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "$components/ui/card";
+  import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "$components/ui/dialog";
+  import { Input } from "$components/ui/input";
+  import { Label } from "$components/ui/label";
+  import { Switch } from "$components/ui/switch";
 
   // $state 为 Svelte 5 的响应式状态声明
   let name = $state("");
@@ -23,6 +31,7 @@
   // 演示用：系统通知开关（状态持久化于 Rust 端 config.json，无需国际化）
   let notification = $state(false);
   let notifyResult = $state("");
+  let notifyOk = $state(false);
 
   // 演示用：系统字体列表（经 tauri-plugin-system-fonts-api 获取，无需国际化）
   let fonts = $state<SystemFont[]>([]);
@@ -38,6 +47,14 @@
 
   // 演示用：全局异常拦截（uncaught / unhandled rejection / 渲染边界三层，无需国际化）
   let boundaryThrow = $state(false);
+
+  // 演示用：主题偏好（$libs/stores themeStore，localStorage 持久化，system 跟随系统）
+  const themeCycle: ThemeMode[] = ["system", "light", "dark"];
+  const themeLabels: Record<ThemeMode, string> = {
+    system: "跟随系统",
+    light: "浅色",
+    dark: "深色",
+  };
 
   onMount(async () => {
     // get_config 一次返回全部系统配置（类型化快照，含 locale/autostart）
@@ -62,7 +79,7 @@
     void error("error demo message");
   }
 
-  // 切换系统托盘：无参命令，返回切换后的状态
+  // 切换系统托盘：无参命令，返回切换后的状态（Switch 状态由后端结果驱动，不做本地双写）
   async function toggleTray() {
     tray = (await invokeCommand<boolean>("toggle_tray")) ?? tray;
   }
@@ -81,6 +98,7 @@
   async function sendNotifyDemo() {
     if (!notification) {
       notifyResult = "未发送：通知已关闭";
+      notifyOk = false;
       return;
     }
     try {
@@ -88,12 +106,15 @@
       const hidden = !(await win.isVisible()) || (await win.isMinimized());
       if (!hidden) {
         notifyResult = "未发送：主窗口可见（需最小化或隐藏）";
+        notifyOk = false;
         return;
       }
       sendNotification({ title: "Notification Demo", body: "Main window is hidden or minimized" });
       notifyResult = "已发送";
+      notifyOk = true;
     } catch (error) {
       notifyResult = `发送失败：${error}`;
+      notifyOk = false;
     }
   }
 
@@ -168,211 +189,175 @@
     });
     throw new Error("demo render error");
   }
+
+  // 循环切换主题偏好：system → light → dark → system（themeStore 持久化于 localStorage）
+  function cycleTheme() {
+    const current = themeStore.get();
+    const next = themeCycle[(themeCycle.indexOf(current) + 1) % themeCycle.length];
+    themeStore.set(next);
+  }
 </script>
 
-<main class="container">
-  <h1><ParaglideMessage message={m.welcome} /></h1>
+<main class="mx-auto flex w-full max-w-3xl flex-col gap-4 p-6">
+  <h1 class="text-center text-2xl font-bold">
+    <ParaglideMessage message={m.welcome} />
+  </h1>
 
-  <div class="row">
-    <button onclick={() => void changeLocale("en")}>{m.lang_en()}</button>
-    <button onclick={() => void changeLocale("zh-CN")}>{m.lang_zh_cn()}</button>
+  <div class="flex flex-wrap justify-center gap-2">
+    <Button variant="outline" onclick={() => void changeLocale("en")}>{m.lang_en()}</Button>
+    <Button variant="outline" onclick={() => void changeLocale("zh-CN")}>{m.lang_zh_cn()}</Button>
+    <Button variant="ghost" onclick={cycleTheme}>主题：{themeLabels[$themeStore]}</Button>
   </div>
 
-  <div class="row">
+  <Card>
+    <CardHeader>
+      <CardTitle>Greet Demo</CardTitle>
+      <CardDescription>前后端 IPC 调用演示（Rust 命令 greet）</CardDescription>
+    </CardHeader>
+    <CardContent>
+      <form class="flex flex-col gap-3" onsubmit={greet}>
+        <div class="flex flex-col gap-1.5">
+          <Label for="greet-input">{m.greet_placeholder()}</Label>
+          <Input id="greet-input" bind:value={name} placeholder={m.greet_placeholder()} />
+        </div>
+        <Button type="submit" class="self-start">{m.greet_button()}</Button>
+      </form>
+      {#if greetMsg}
+        <p class="mt-3 text-sm text-muted-foreground">{greetMsg}</p>
+      {/if}
+    </CardContent>
+  </Card>
+
+  <Card>
+    <CardHeader>
+      <CardTitle>系统能力</CardTitle>
+      <CardDescription>托盘 / 自启 / 通知开关（状态持久化于 Rust 端 config.json）</CardDescription>
+    </CardHeader>
+    <CardContent class="flex flex-col gap-4">
+      <div class="flex items-center justify-between gap-4">
+        <div>
+          <Label>系统托盘</Label>
+          <p class="text-xs text-muted-foreground">切换托盘可见性</p>
+        </div>
+        <Switch checked={tray} onCheckedChange={toggleTray} />
+      </div>
+      <div class="flex items-center justify-between gap-4">
+        <div>
+          <Label>开机自启</Label>
+          <p class="text-xs text-muted-foreground">随系统启动自动运行</p>
+        </div>
+        <Switch checked={autostart} onCheckedChange={toggleAutostart} />
+      </div>
+      <div class="flex items-center justify-between gap-4">
+        <div>
+          <Label>系统通知</Label>
+          <p class="text-xs text-muted-foreground">主窗口隐藏/最小化时发送通知</p>
+        </div>
+        <Switch checked={notification} onCheckedChange={toggleNotification} />
+      </div>
+    </CardContent>
+    <CardFooter class="flex flex-wrap items-center gap-2">
+      <Button variant="outline" onclick={sendNotifyDemo}>发送通知演示</Button>
+      {#if notifyResult}
+        <Badge variant={notifyOk ? "default" : "destructive"}>{notifyResult}</Badge>
+      {/if}
+    </CardFooter>
+  </Card>
+
+  <Card>
+    <CardHeader>
+      <CardTitle>系统字体</CardTitle>
+      <CardDescription>经 tauri-plugin-system-fonts-api 获取本机全部字体</CardDescription>
+    </CardHeader>
+    <CardContent class="flex flex-wrap items-center gap-2">
+      <Button variant="outline" onclick={loadSystemFonts} disabled={fontsLoading}>
+        {fontsLoading ? "加载中..." : "加载系统字体"}
+      </Button>
+      {#if fonts.length > 0}
+        <Badge>共 {fonts.length} 个字体</Badge>
+      {/if}
+      {#if fontsError}
+        <Badge variant="destructive">{fontsError}</Badge>
+      {:else if fonts.length > 0}
+        <Dialog>
+          <DialogTrigger>
+            {#snippet child({ props })}
+              <Button variant="secondary" {...props}>查看字体列表</Button>
+            {/snippet}
+          </DialogTrigger>
+          <DialogContent class="max-w-md">
+            <DialogHeader>
+              <DialogTitle>系统字体（{fonts.length}）</DialogTitle>
+              <DialogDescription>本机可用字体，滚动查看全部</DialogDescription>
+            </DialogHeader>
+            <ul class="max-h-72 space-y-1 overflow-y-auto text-sm">
+              {#each fonts as font, i (i)}
+                <li class="rounded-md px-2 py-1 hover:bg-muted">{font.name}</li>
+              {/each}
+            </ul>
+          </DialogContent>
+        </Dialog>
+      {/if}
+    </CardContent>
+  </Card>
+
+  <Card>
+    <CardHeader>
+      <CardTitle>应用更新</CardTitle>
+      <CardDescription>自动更新演示（tauri-plugin-updater，需配置签名与端点）</CardDescription>
+    </CardHeader>
+    <CardContent class="flex flex-wrap items-center gap-2">
+      <Button variant="outline" onclick={checkUpdate} disabled={updateChecking}>
+        {updateChecking ? "检查中..." : "检查更新"}
+      </Button>
+      <Button onclick={installUpdateDemo} disabled={!updateAvailable || updateInstalling}>
+        {updateInstalling ? "更新中..." : "更新"}
+      </Button>
+    </CardContent>
+    {#if updateProgress || updateResult}
+      <CardFooter class="flex flex-col items-start gap-1 text-xs text-muted-foreground">
+        {#if updateProgress}<p>{updateProgress}</p>{/if}
+        {#if updateResult}<p>{updateResult}</p>{/if}
+      </CardFooter>
+    {/if}
+  </Card>
+
+  <Card>
+    <CardHeader>
+      <CardTitle>异常拦截演示</CardTitle>
+      <CardDescription>三层拦截：window error / unhandledrejection / 渲染边界</CardDescription>
+    </CardHeader>
+    <CardContent class="flex flex-wrap gap-2">
+      <Button variant="outline" onclick={triggerUncaughtError}>触发未捕获异常</Button>
+      <Button variant="outline" onclick={triggerUnhandledRejection}>触发未处理 Promise</Button>
+      <Button variant="destructive" onclick={triggerBoundaryError}>触发渲染错误</Button>
+    </CardContent>
+  </Card>
+
+  <Card>
+    <CardHeader>
+      <CardTitle>日志演示</CardTitle>
+      <CardDescription>前后端共用日志链路（控制台 + LogDir 落盘）</CardDescription>
+    </CardHeader>
+    <CardContent>
+      <Button variant="outline" onclick={writeLogDemo}>写入四级日志</Button>
+    </CardContent>
+  </Card>
+
+  <div class="flex flex-wrap justify-center gap-4 py-4">
     <a href="https://vite.dev" target="_blank">
-      <img src="/vite.svg" class="logo vite" alt="Vite Logo" />
+      <img src="/vite.svg" class="h-10 transition hover:drop-shadow-[0_0_2em_#747bff]" alt="Vite Logo" />
     </a>
     <a href="https://tauri.app" target="_blank">
-      <img src="/tauri.svg" class="logo tauri" alt="Tauri Logo" />
+      <img src="/tauri.svg" class="h-10 transition hover:drop-shadow-[0_0_2em_#24c8db]" alt="Tauri Logo" />
     </a>
     <a href="https://svelte.dev" target="_blank">
-      <img src="/svelte.svg" class="logo svelte-kit" alt="SvelteKit Logo" />
+      <img src="/svelte.svg" class="h-10 transition hover:drop-shadow-[0_0_2em_#ff3e00]" alt="SvelteKit Logo" />
     </a>
   </div>
-  <p>{m.click_hint()}</p>
+  <p class="text-center text-sm text-muted-foreground">{m.click_hint()}</p>
 
-  <form class="row" onsubmit={greet}>
-    <input id="greet-input" placeholder={m.greet_placeholder()} bind:value={name} />
-    <button type="submit">{m.greet_button()}</button>
-  </form>
-  <p>{greetMsg}</p>
-
-  <div class="row">
-    <button onclick={writeLogDemo}>Write Log Demo</button>
-    <button onclick={toggleTray}>{tray ? "Tray: 已开启" : "Tray: 已关闭"}</button>
-    <button onclick={toggleAutostart}>{autostart ? "Autostart: 已开启" : "Autostart: 已关闭"}</button>
-  </div>
-
-  <div class="row">
-    <button onclick={toggleNotification}>{notification ? "Notification: 已开启" : "Notification: 已关闭"}</button>
-    <button onclick={sendNotifyDemo}>Send Notification Demo</button>
-  </div>
-  {#if notifyResult}
-    <p>{notifyResult}</p>
-  {/if}
-
-  <div class="row">
-    <button onclick={loadSystemFonts} disabled={fontsLoading}>
-      {fontsLoading ? "Loading..." : "Load System Fonts"}
-    </button>
-  </div>
-  {#if fontsError}
-    <p>{fontsError}</p>
-  {:else if fonts.length > 0}
-    <p>共 {fonts.length} 个系统字体：</p>
-    <ul class="font-list">
-      {#each fonts as font, i (i)}
-        <li>{font.name}</li>
-      {/each}
-    </ul>
-  {/if}
-
-  <div class="row">
-    <button onclick={checkUpdate} disabled={updateChecking}>
-      {updateChecking ? "检查中..." : "检查更新"}
-    </button>
-    <button onclick={installUpdateDemo} disabled={!updateAvailable || updateInstalling}>
-      {updateInstalling ? "更新中..." : "更新"}
-    </button>
-  </div>
-  {#if updateProgress}
-    <p>{updateProgress}</p>
-  {/if}
-  {#if updateResult}
-    <p>{updateResult}</p>
-  {/if}
-
-  <div class="row">
-    <button onclick={triggerUncaughtError}>触发未捕获异常</button>
-    <button onclick={triggerUnhandledRejection}>触发未处理 Promise</button>
-    <button onclick={triggerBoundaryError}>触发渲染错误</button>
-  </div>
   {#if boundaryThrow}
     {throwRenderError()}
   {/if}
 </main>
-
-<style>
-  .logo.vite:hover {
-    filter: drop-shadow(0 0 2em #747bff);
-  }
-
-  .logo.svelte-kit:hover {
-    filter: drop-shadow(0 0 2em #ff3e00);
-  }
-
-  :root {
-    font-family: Inter, Avenir, Helvetica, Arial, sans-serif;
-    font-size: 16px;
-    line-height: 24px;
-    font-weight: 400;
-    color: #0f0f0f;
-    background-color: #f6f6f6;
-    font-synthesis: none;
-    text-rendering: optimizelegibility;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-    text-size-adjust: 100%;
-  }
-
-  .container {
-    margin: 0;
-    padding-top: 10vh;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    text-align: center;
-  }
-
-  .logo {
-    height: 6em;
-    padding: 1.5em;
-    will-change: filter;
-    transition: 0.75s;
-  }
-
-  .logo.tauri:hover {
-    filter: drop-shadow(0 0 2em #24c8db);
-  }
-
-  .row {
-    display: flex;
-    justify-content: center;
-  }
-
-  a {
-    font-weight: 500;
-    color: #646cff;
-    text-decoration: inherit;
-  }
-
-  a:hover {
-    color: #535bf2;
-  }
-
-  h1 {
-    text-align: center;
-  }
-
-  input,
-  button {
-    border-radius: 8px;
-    border: 1px solid transparent;
-    padding: 0.6em 1.2em;
-    font-size: 1em;
-    font-weight: 500;
-    font-family: inherit;
-    color: #0f0f0f;
-    background-color: #fff;
-    transition: border-color 0.25s;
-    box-shadow: 0 2px 2px rgb(0 0 0 / 20%);
-    outline: none;
-  }
-
-  button {
-    cursor: pointer;
-  }
-
-  button:hover {
-    border-color: #396cd8;
-  }
-
-  button:active {
-    border-color: #396cd8;
-    background-color: #e8e8e8;
-  }
-
-  #greet-input {
-    margin-right: 5px;
-  }
-
-  .font-list {
-    max-height: 240px;
-    overflow-y: auto;
-    margin: 0 auto;
-    padding-left: 1.5em;
-    text-align: left;
-    width: max-content;
-  }
-
-  @media (prefers-color-scheme: dark) {
-    :root {
-      color: #f6f6f6;
-      background-color: #2f2f2f;
-    }
-
-    a:hover {
-      color: #24c8db;
-    }
-
-    input,
-    button {
-      color: #fff;
-      background-color: #0f0f0f98;
-    }
-
-    button:active {
-      background-color: #0f0f0f69;
-    }
-  }
-</style>

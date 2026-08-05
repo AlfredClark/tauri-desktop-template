@@ -6,7 +6,7 @@
 
 ## 技术栈
 
-- **前端**：SvelteKit 5 / Svelte 5 / TypeScript / Vite，包管理器 bun
+- **前端**：SvelteKit 5 / Svelte 5 / TypeScript / Vite / Tailwind CSS v4 / shadcn-svelte，包管理器 bun
 - **后端**：Tauri 2 / Rust（edition 2024），Cargo workspace（成员为 `src-tauri`）
 - **国际化**：前端 Paraglide（inlang），后端 rust-i18n
 - **集成能力**：系统托盘、全局快捷键、开机自启、单实例、自动更新、通知、日志
@@ -18,7 +18,8 @@
 ```
 ├── .github/                        # CI / Release 工作流（ci.yml / release.yml）
 ├── src/                            # 前端（SvelteKit + TypeScript）
-│   ├── components/                 # 复杂可复用组件（按功能分类）
+│   ├── components/                 # 业务组件（按功能分类，含简单与复杂组件）
+│   │   └── ui/                     # shadcn-svelte 生成组件（仅经 CLI 添加，components.json 管理）
 │   ├── libs/                       # 前端模块库
 │   │   ├── errors/                 # 错误处理
 │   │   ├── i18n/                   # 国际化（Paraglide 编译产物与消息文件）
@@ -28,7 +29,7 @@
 │   │   ├── updater/                # 自动更新
 │   │   └── utils/                  # 可复用散装工具（跨模块通用）
 │   ├── routes/                     # 页面与布局（+layout.svelte / +layout.ts / +page.svelte）
-│   ├── widgets/                    # 小型单体组件（按功能分类）
+│   ├── styles/                     # 样式（app.css 为唯一入口；themes/ 存放主题文件）
 │   ├── app.html                    # 应用 HTML 模板（首帧 lang 硬编码）
 │   └── hooks.client.ts             # 客户端钩子
 ├── src-tauri/                      # 后端（Rust，Cargo workspace 成员）
@@ -162,12 +163,18 @@
 
 - **SPA 模式**：`+layout.ts` 关闭 SSR（`ssr = false`）；adapter-static + fallback 单页渲染，适配 Tauri 本地文件加载
 - **routes/**：页面与布局（+page.svelte / +layout.svelte）
-- **components/**：复杂可复用组件目录——组合 widgets 的组件或逻辑较复杂的组件放此处，内部按功能分类（svelte.config.ts 已预留 `$components` 别名）
-- **widgets/**：小型单体组件目录——逻辑简单的小组件放此处（可含内部状态，不组合其他组件），内部按功能分类（svelte.config.ts 已添加 `$widgets` 别名）
+- **components/**：业务组件目录——简单与复杂组件均放此处（不再按复杂度分层），内部按功能分类（svelte.config.ts 已预留 `$components` 别名）
+- **components/ui/**：shadcn-svelte 生成组件（`$components/ui` 别名）——经 `bunx shadcn-svelte add <name>` 拉取，源码即项目代码可直接修改；**生成区禁手动添加组件**，需定制的基础组件放 components 对应功能分类；别名配置见 components.json（ui=$components/ui、utils=$libs/utils/shadcn）
 - **libs/**：前端模块库，每模块的文件约定——`index.ts` 统一出口、`core.ts` 实现、`types.ts` 类型契约
 - **模块出口**：`index.ts` 仅重导出（`export { x } from "./core"` + `export * from "./types"`），不写实现；无自有类型契约可省略 `types.ts`（如 logger/updater 复用 npm 包类型）
 - **散装工具**：跨模块通用、无业务归属的小函数放 `$libs/utils`（复用性强的独立函数，不绑定具体业务模块）
-- **别名**：`$libs` → `src/libs`、`$components` → `src/components`、`$widgets` → `src/widgets`（svelte.config.ts）
+- **别名**：`$libs` → `src/libs`、`$components` → `src/components`（svelte.config.ts）
+
+### UI 组件规范（shadcn-svelte）
+
+- **优先复用**：为保证风格统一，UI 一律尽可能使用 shadcn-svelte 已有组件（`$components/ui`）；缺失的组件经 `bunx shadcn-svelte add <name>` 添加，确需定制的基础组件才手写（放 components 对应功能分类）
+- **禁止覆盖**：`add` 添加组件时不覆盖已有组件（不使用 `-o/--overwrite`，避免冲掉本地定制）；已有组件的升级另行处理（确认差异后手动合并，或作为新组件引入）
+- **样式外置**：`src/components/ui` 中的组件源码尽可能避免影响逻辑的修改——样式定制优先经组件 `class` 属性（cn 合并）与外部 class 解决，源码仅在确需改变行为时修改
 
 ### 状态管理（stores）
 
@@ -208,6 +215,11 @@
 
 - **成对依赖**：前端用到的 Tauri 能力需 npm 包 + Rust 侧 tauri-plugin 依赖 + `capabilities/plugins.json` 权限三者齐备（如 notification/updater/system-fonts）
 - **构建配置**：vite dev 端口固定 1420（strictPort），与 tauri.conf.json 的 devUrl/CSP 一致；watch 忽略 `src-tauri`；改端口需同步改 tauri.conf.json
+- **Tailwind v4**：经 `@tailwindcss/vite` 插件编译（vite.config.ts，无 postcss 配置）；`src/styles/app.css` 为唯一入口（`@import "tailwindcss"` + `@import "./themes/default.css"`）；**主题真相源在 `src/styles/themes/`**（shadcn 语义 token + `@theme inline` 映射，换主题只改主题文件）；新增主题在 themes/ 下直接以名字命名（default.css、blue.css…），app.css 追加 import，运行期经 `data-theme` 切换；`@theme`/`@custom-variant`/`@apply` 等 at-rule 与 oklch 数字写法已在 stylelint 豁免（.stylelintrc.json）
+- **CSP**：bits-ui 浮层组件（popover/dropdown/tooltip）经 floating-ui 内联 style 定位，生产 csp 的 style-src 必须含 `'unsafe-inline'`（已配置，勿删）
+- **主题**：深色模式为 class 策略——`document.documentElement` 挂 `.dark`（styles/app.css `@custom-variant dark`）；主题偏好经 `$libs/stores` 的 themeStore（`system | light | dark`，localStorage 持久化）+ `applyTheme()` 应用（+layout.svelte onMount 挂载）
+- **prettier**：prettier-plugin-tailwindcss 自动排序 Tailwind 类（`tailwindStylesheet` 指向 src/styles/app.css，插件顺序 svelte 在前）
+- **eslint 豁免**：`src/components/ui/**` 关闭 `svelte/no-navigation-without-resolve`（按钮类组件 href 为动态绑定，规则误报）
 - **质量门槛**：提交前通过 `bun run validate`（见「校验约定」）
 
 ## 校验约定
@@ -229,5 +241,5 @@
 ## 新增功能流程
 
 - **后端**：`features/` 写业务逻辑（返回 `AppResult<T>`）→ `commands/` 写命令（校验 + 调 features + 转 `Response<T>`）→ 追加 `invoke_handlers!` 宏 → 文案加 `locales/*.yml`；涉及新能力时同步 Cargo.toml 依赖与 capabilities 权限
-- **前端**：`ipc/types.ts` 对齐新增返回类型 → `invokeCommand` 调用 → 文案经 `m.xxx()` 并加入 `messages/*.json` → 运行 `bun run i18n:compile`；UI 偏好经 `$libs/stores` 持久化
+- **前端**：`ipc/types.ts` 对齐新增返回类型 → `invokeCommand` 调用 → 文案经 `m.xxx()` 并加入 `messages/*.json` → 运行 `bun run i18n:compile`；UI 偏好经 `$libs/stores` 持久化；UI 基础组件经 `bunx shadcn-svelte add <name>` 拉取到 `$components/ui`（不覆盖已有组件）
 - **收尾**：运行 `bun run validate` 通过后，由开发者按 Conventional Commits 手动提交

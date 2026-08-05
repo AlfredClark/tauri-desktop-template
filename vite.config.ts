@@ -1,5 +1,6 @@
 import { defineConfig } from "vite";
 import { sveltekit } from "@sveltejs/kit/vite";
+import tailwindcss from "@tailwindcss/vite";
 import { paraglideVitePlugin } from "@inlang/paraglide-js";
 
 // TAURI_DEV_HOST：远程/移动端调试时传入目标主机地址
@@ -7,6 +8,8 @@ const host = process.env.TAURI_DEV_HOST;
 
 export default defineConfig(() => ({
   plugins: [
+    // Tailwind CSS v4：Vite 插件编译（无需 postcss 配置）
+    tailwindcss(),
     sveltekit(),
     // 国际化：编译 messages 生成 paraglide 运行时（src/libs/i18n/paraglide）
     paraglideVitePlugin({

@@ -27,3 +27,6 @@ export interface Store<T> extends Writable<T> {
   get(): T; // 同步读取当前值
   reset(): void; // 恢复默认值：删除持久化条目 → 内存重置 → 写回默认值
 }
+
+/** 主题偏好：system 跟随操作系统，light/dark 手动指定 */
+export type ThemeMode = "system" | "light" | "dark";

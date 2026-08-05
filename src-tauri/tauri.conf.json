@@ -34,7 +34,7 @@
         "default-src": "'self'",
         "connect-src": "ipc: http://ipc.localhost",
         "script-src": "'self'",
-        "style-src": "'self'",
+        "style-src": "'self' 'unsafe-inline'",
         "img-src": "'self'",
         "font-src": "'self'",
         "object-src": "'none'",

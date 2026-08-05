@@ -1,5 +1,16 @@
 {
   "extends": ["stylelint-config-standard"],
+  "rules": {
+    "at-rule-no-unknown": [
+      true,
+      {
+        "ignoreAtRules": ["theme", "source", "utility", "variant", "custom-variant", "apply", "reference", "config"]
+      }
+    ],
+    "lightness-notation": null,
+    "hue-degree-notation": null,
+    "import-notation": null
+  },
   "overrides": [
     {
       "files": ["**/*.svelte"],
