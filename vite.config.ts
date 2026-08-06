@@ -2,6 +2,7 @@ import { defineConfig } from "vite";
 import { sveltekit } from "@sveltejs/kit/vite";
 import tailwindcss from "@tailwindcss/vite";
 import { paraglideVitePlugin } from "@inlang/paraglide-js";
+import tauriConf from "./src-tauri/tauri.conf.json" with { type: "json" };
 
 // TAURI_DEV_HOST：远程/移动端调试时传入目标主机地址
 const host = process.env.TAURI_DEV_HOST;
@@ -21,7 +22,23 @@ export default defineConfig(() => ({
       // 外部改动 config 导致失同步时 syncLocale 以 config 为准自愈（reload 一次）
       strategy: ["localStorage", "baseLocale"],
     }),
+    // 守卫 Svelte 虚拟 CSS 模块：vite-plugin-svelte 在 HMR 竞态下 load 返回 undefined 时，
+    // Vite 会回退读取原始 .svelte 源码，被 @tailwindcss/vite 当作 CSS 解析报错
+    // （Invalid declaration: onMount）。此处兜底返回空 CSS，阻断回退路径；
+    // 上游修复源码文件竞态后可移除（见 sveltejs/vite-plugin-svelte#1333/#1325）
+    {
+      name: "guard-svelte-virtual-css",
+      load(id) {
+        if (/[?&]svelte&type=style&lang\.css$/.test(id)) return "";
+      },
+    },
   ],
+  // 经 define 暴露 tauri.conf.json 的配置值，供前端静态引用（build 期替换）：
+  // 与 tauri.conf.json 的 app.windows 主窗口 title 保持一致；
+  // 注意 server.watch 忽略了 src-tauri，改配置后需重启 dev 生效
+  define: {
+    __APP_WINDOW_TITLE__: JSON.stringify(tauriConf.app.windows[0].title),
+  },
   clearScreen: false,
   server: {
     // dev 端口固定 1420，与 tauri.conf.json 的 devUrl 及 CSP 保持一致

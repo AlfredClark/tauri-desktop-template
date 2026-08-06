@@ -6,6 +6,11 @@ import prettier from "eslint-config-prettier";
 import svelteConfig from "./svelte.config.ts";
 import { defineConfig, globalIgnores } from "eslint/config";
 
+// vite define 注入的全局常量（与 vite.config.ts 的 define 保持一致）
+const viteDefineGlobals = {
+  __APP_WINDOW_TITLE__: "readonly",
+};
+
 export default defineConfig([
   {
     // 基础规则集：JS 推荐 + TS 推荐 + Svelte 推荐 + 与 prettier 兼容
@@ -31,13 +36,15 @@ export default defineConfig([
   {
     // 浏览器环境下的 TS 文件
     files: ["src/**/*.ts"],
-    languageOptions: { globals: globals.browser },
+    languageOptions: {
+      globals: { ...globals.browser, ...viteDefineGlobals },
+    },
   },
   {
     // Svelte 组件：使用 TS 解析器 + 浏览器 globals
     files: ["src/**/*.svelte"],
     languageOptions: {
-      globals: globals.browser,
+      globals: { ...globals.browser, ...viteDefineGlobals },
       parserOptions: {
         parser: tseslint.parser,
         extraFileExtensions: [".svelte"],

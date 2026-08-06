@@ -20,7 +20,8 @@
 ├── src/                            # 前端（SvelteKit + TypeScript）
 │   ├── components/                 # 业务组件（按功能分类，含简单与复杂组件）
 │   │   ├── layout/                 # 布局系统（LayoutContainer 容器 + 布局注册表）
-│   │   └── ui/                     # shadcn-svelte 生成组件（仅经 CLI 添加，components.json 管理）
+│   │   ├── ui/                     # shadcn-svelte 生成组件（仅经 CLI 添加，components.json 管理）
+│   │   └── widgets/                # 自定义小组件（自包含、可插拔）
 │   ├── libs/                       # 前端模块库
 │   │   ├── errors/                 # 错误处理
 │   │   ├── hooks/                  # shadcn-svelte hooks 目录
@@ -249,7 +250,8 @@
 
 - **成对依赖**：前端用到的 Tauri 能力需 npm 包 + Rust 侧 tauri-plugin 依赖 + `capabilities/plugins.json` 权限三者齐备（如 notification/updater/system-fonts）
 - **构建配置**：vite dev 端口固定 1420（strictPort），与 tauri.conf.json 的 devUrl/CSP 一致；watch 忽略 `src-tauri`；改端口需同步改 tauri.conf.json
-- **Tailwind v4**：经 `@tailwindcss/vite` 插件编译（vite.config.ts，无 postcss 配置）；`src/styles/app.css` 为唯一入口（`@import "tailwindcss"` + `@import "./themes/default.css"`）；**主题真相源在 `src/styles/themes/`**（shadcn 语义 token + `@theme inline` 映射，换主题只改主题文件）；新增主题在 themes/ 下直接以名字命名（default.css、blue.css…），app.css 追加 import，运行期经 `data-theme` 切换；`@theme`/`@custom-variant`/`@apply` 等 at-rule 与 oklch 数字写法已在 stylelint 豁免（.stylelintrc.json）
+- **全局常量注入**：经 vite `define` 暴露 tauri.conf.json 配置值（如 `__APP_WINDOW_TITLE__`），新增常量须同步 `src/vite-env.d.ts` 类型声明与 eslint.config.ts 的 `viteDefineGlobals`；watch 忽略 src-tauri，改配置需重启 dev 生效
+- **Tailwind v4**：经 `@tailwindcss/vite` 插件编译（vite.config.ts，无 postcss 配置）；`src/styles/app.css` 为唯一入口（`@import "tailwindcss"` + `@import "./themes/default.css"`）；**主题真相源在 `src/styles/themes/`**（shadcn 语义 token，换主题只改主题文件）；Tailwind 变量映射（`@theme inline`，`--color-*` 桥接语义 token）集中在 app.css 单一真相源，主题文件只承载变量值；新增主题在 themes/ 下直接以名字命名（default.css、blue.css…），app.css 追加 import，运行期经 `data-theme` 切换；`@theme`/`@custom-variant`/`@apply` 等 at-rule 与 oklch 数字写法已在 stylelint 豁免（.stylelintrc.json）
 - **CSP**：bits-ui 浮层组件（popover/dropdown/tooltip）经 floating-ui 内联 style 定位，生产 csp 的 style-src 必须含 `'unsafe-inline'`（已配置，勿删）
 - **主题**：深色模式为 class 策略——`document.documentElement` 挂 `.dark`（styles/app.css `@custom-variant dark`）；主题偏好经 `$libs/stores` 的 `settings.colorScheme`（`system | light | dark`，localStorage 持久化），经 `storeDef` 的 `subscribe` 声明式应用（创建时应用 + 变更跟随）
 - **prettier**：prettier-plugin-tailwindcss 自动排序 Tailwind 类（`tailwindStylesheet` 指向 src/styles/app.css，插件顺序 svelte 在前）

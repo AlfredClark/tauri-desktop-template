@@ -7,5 +7,9 @@
   "lang_zh_cn": "简体中文",
   "click_hint": "点击 Tauri、Vite 和 SvelteKit 的 logo 了解更多。",
   "boundary_error": "组件渲染出错：{message}（详情见日志）",
-  "boundary_retry": "重试"
+  "boundary_retry": "重试",
+  "window_control_pin": "置顶",
+  "window_control_minimize": "最小化",
+  "window_control_maximize": "最大化",
+  "window_control_close": "关闭"
 }
