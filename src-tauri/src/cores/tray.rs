@@ -13,6 +13,8 @@ use tauri::{
     tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
 };
 
+use crate::cores::config::{ConfigKey, ConfigState};
+
 /// 托盘 id（固定：托盘仅创建一次，显隐经 set_visible，勿改）
 const TRAY_ID: &str = "main-tray";
 /// 显示/隐藏窗口菜单项 id
@@ -119,11 +121,7 @@ pub fn rebuild_menu(app: &AppHandle) {
 /// @returns 创建或显隐设置失败时返回错误（阻断启动）
 pub fn setup(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
     create_tray(app.handle())?;
-    let visible = app
-        .state::<crate::cores::config::ConfigState>()
-        .get(crate::cores::config::KEY_TRAY)
-        .and_then(|value| value.as_bool())
-        .unwrap_or(true);
+    let visible = app.state::<ConfigState>().read_bool(ConfigKey::Tray, true);
     set_visible(app.handle(), visible)?;
     Ok(())
 }

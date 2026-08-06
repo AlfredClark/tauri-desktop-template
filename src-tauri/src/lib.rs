@@ -6,6 +6,7 @@
 
 mod commands;
 mod cores;
+mod features;
 
 use commands::invoke_handlers;
 

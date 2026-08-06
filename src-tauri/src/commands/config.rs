@@ -7,7 +7,7 @@
 use tauri::State;
 use tauri_plugin_autostart::AutoLaunchManager;
 
-use crate::cores::config::{ConfigState, KEY_AUTOSTART, KEY_LOCALE, KEY_NOTIFICATION, KEY_TRAY, SystemConfig};
+use crate::cores::config::{ConfigKey, ConfigState, SystemConfig};
 use crate::cores::locale::Locale;
 use crate::cores::response::{CODE_ERROR, Response};
 
@@ -35,14 +35,14 @@ pub fn set_locale(app: tauri::AppHandle, state: State<'_, ConfigState>, locale: 
 
     // 与当前持久化值相同则直接返回（不落盘、不重建托盘菜单）
     let changed = state
-        .get(KEY_LOCALE)
+        .get(ConfigKey::Locale)
         .and_then(|value| value.as_str().map(|current| current != locale.as_str()))
         .unwrap_or(true);
     if !changed {
         return Response::ok(locale.as_str().to_string());
     }
 
-    if let Err(error) = state.set(KEY_LOCALE.to_string(), serde_json::Value::String(locale.as_str().to_string())) {
+    if let Err(error) = state.set(ConfigKey::Locale, serde_json::Value::String(locale.as_str().to_string())) {
         return Response::err(error.code, error.message);
     }
     rust_i18n::set_locale(locale.as_str());
@@ -57,7 +57,7 @@ pub fn set_locale(app: tauri::AppHandle, state: State<'_, ConfigState>, locale: 
 /// @returns 切换后的 autostart 值；操作系统同步失败时返回错误码
 #[tauri::command]
 pub fn toggle_autostart(config: State<'_, ConfigState>, manager: State<'_, AutoLaunchManager>) -> Response<bool> {
-    let enabled = config.get(KEY_AUTOSTART).and_then(|v| v.as_bool()).unwrap_or(false);
+    let enabled = config.read_bool(ConfigKey::Autostart, false);
     let enabled = !enabled;
 
     // 先 OS 生效，失败直接返回（不写回 config，避免两侧不一致）
@@ -67,7 +67,7 @@ pub fn toggle_autostart(config: State<'_, ConfigState>, manager: State<'_, AutoL
     }
 
     let value = serde_json::Value::Bool(enabled);
-    if let Err(error) = config.set(KEY_AUTOSTART.to_string(), value) {
+    if let Err(error) = config.set(ConfigKey::Autostart, value) {
         return Response::err(error.code, error.message);
     }
     Response::ok(enabled)
@@ -80,7 +80,7 @@ pub fn toggle_autostart(config: State<'_, ConfigState>, manager: State<'_, AutoL
 /// @returns 切换后的 tray 值；显隐设置失败时返回错误码
 #[tauri::command]
 pub fn toggle_tray(app: tauri::AppHandle, config: State<'_, ConfigState>) -> Response<bool> {
-    let enabled = config.get(KEY_TRAY).and_then(|v| v.as_bool()).unwrap_or(true);
+    let enabled = config.read_bool(ConfigKey::Tray, true);
     let enabled = !enabled;
 
     // 先设置托盘显隐，失败直接返回（不写回 config，避免两侧不一致）
@@ -89,7 +89,7 @@ pub fn toggle_tray(app: tauri::AppHandle, config: State<'_, ConfigState>) -> Res
     }
 
     let value = serde_json::Value::Bool(enabled);
-    if let Err(error) = config.set(KEY_TRAY.to_string(), value) {
+    if let Err(error) = config.set(ConfigKey::Tray, value) {
         return Response::err(error.code, error.message);
     }
     Response::ok(enabled)
@@ -101,11 +101,11 @@ pub fn toggle_tray(app: tauri::AppHandle, config: State<'_, ConfigState>) -> Res
 /// @returns 切换后的 notification 值
 #[tauri::command]
 pub fn toggle_notification(config: State<'_, ConfigState>) -> Response<bool> {
-    let enabled = config.get(KEY_NOTIFICATION).and_then(|v| v.as_bool()).unwrap_or(false);
+    let enabled = config.read_bool(ConfigKey::Notification, false);
     let enabled = !enabled;
 
     let value = serde_json::Value::Bool(enabled);
-    if let Err(error) = config.set(KEY_NOTIFICATION.to_string(), value) {
+    if let Err(error) = config.set(ConfigKey::Notification, value) {
         return Response::err(error.code, error.message);
     }
     Response::ok(enabled)

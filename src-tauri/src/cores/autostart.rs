@@ -7,7 +7,7 @@
 use tauri::{Manager, Runtime, plugin::TauriPlugin};
 use tauri_plugin_autostart::{MacosLauncher, ManagerExt};
 
-use crate::cores::config::{ConfigState, KEY_AUTOSTART};
+use crate::cores::config::{ConfigKey, ConfigState};
 
 /// 构建自动启动插件：macOS 采用 LaunchAgent 方式，不附加额外启动参数。
 pub fn plugin<R: Runtime>() -> TauriPlugin<R> {
@@ -20,11 +20,7 @@ pub fn plugin<R: Runtime>() -> TauriPlugin<R> {
 /// @param app Tauri 应用实例
 /// @returns 恒为 Ok；同步失败仅记录日志
 pub fn setup(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
-    let enabled = app
-        .state::<ConfigState>()
-        .get(KEY_AUTOSTART)
-        .and_then(|value| value.as_bool())
-        .unwrap_or(false);
+    let enabled = app.state::<ConfigState>().read_bool(ConfigKey::Autostart, false);
     let manager = app.autolaunch();
     let result = if enabled { manager.enable() } else { manager.disable() };
     if let Err(error) = result {

@@ -203,7 +203,7 @@
 ### 文件系统（fs）
 
 - **能力来源**：文件读写/查询经 `@tauri-apps/plugin-fs` 提供的 API 调用（如 `exists`），**不经 `invokeCommand`**——官方插件自带 IPC 封装，与 notification/dialog 同模式
-- **权限**：`fs:default`（应用目录读写）+ `fs:allow-exists` 内联权限对象限定 scope 为 `$APPDATA/*`（capabilities/plugins.json）；新增 fs 能力时按需扩展权限与 scope
+- **权限**：`fs:default`（只读 + mkdir，无写入命令）——`read_dir`/`read_file`/`read_text_file`/`read_text_file_lines`/`read_text_file_lines_next`/`exists`/`mkdir`，scope 覆盖五个应用专属目录（$APPCONFIG/$APPDATA/$APPLOCALDATA/$APPCACHE/$APPLOG）及其递归子目录，默认拒绝 webview 数据目录（Linux $APPLOCALDATA、Windows $APPLOCALDATA/EBWebView）；**不含文件写入**，写文件（writeFile/remove/rename 等）须显式追加 `fs:allow-*` 权限；新增 fs 能力时按需扩展权限与 scope
 - **路径约定**：`BaseDirectory.AppData` 展开即 `$APPDATA`（store 插件经 AppData 解析，config.json 真实落盘于此），调用路径须落在权限 scope 内，否则被拒绝
 - **调用示例**：`await exists("config.json", { baseDir: BaseDirectory.AppData })`
 
