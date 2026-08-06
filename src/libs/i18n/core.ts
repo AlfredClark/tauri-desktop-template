@@ -17,13 +17,13 @@ export async function changeLocale(locale: Locale, reload: boolean = true): Prom
 }
 
 /**
- * 启动时从后端同步 locale（onMount 调用）：
+ * 启动时初始化 locale（onMount 调用）：
  * - 前后端一致（正常情况）：无需任何修改——首帧已按 localStorage 渲染正确，仅同步 lang 属性
  * - 不一致（如外部修改 config.json，极少见）：以 config.json 为准，setLocale(reload:true)
  *   先写入 localStorage 再刷新——刷新后首帧即正确，此分支只执行一次
- * @returns 同步成功时返回 true；命令失败或条目缺失时返回 false（保持 paraglide 默认语言）
+ * @returns 初始化成功时返回 true；命令失败或条目缺失时返回 false（保持 paraglide 默认语言）
  */
-export async function syncLocale(): Promise<boolean> {
+export async function initLocale(): Promise<boolean> {
   try {
     const config = await invokeCommand<SystemConfig>("get_config");
     if (config === null) {

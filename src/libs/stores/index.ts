@@ -1,3 +1,3 @@
 export { createStore } from "./core";
-export { applyTheme, themeStore } from "./theme";
+export { settings } from "./settings";
 export * from "./types";

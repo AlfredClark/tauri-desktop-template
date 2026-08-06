@@ -19,6 +19,7 @@
 ├── .github/                        # CI / Release 工作流（ci.yml / release.yml）
 ├── src/                            # 前端（SvelteKit + TypeScript）
 │   ├── components/                 # 业务组件（按功能分类，含简单与复杂组件）
+│   │   ├── layout/                 # 布局系统（LayoutContainer 容器 + 布局注册表）
 │   │   └── ui/                     # shadcn-svelte 生成组件（仅经 CLI 添加，components.json 管理）
 │   ├── libs/                       # 前端模块库
 │   │   ├── errors/                 # 错误处理
@@ -29,7 +30,7 @@
 │   │   ├── stores/                 # 全局状态
 │   │   ├── updater/                # 自动更新
 │   │   └── utils/                  # 可复用散装工具（跨模块通用）
-│   ├── routes/                     # 页面与布局（+layout.svelte / +layout.ts / +page.svelte）
+│   ├── routes/                     # 页面与布局（(main) 分组为主窗口页面）
 │   ├── styles/                     # 样式（app.css 为唯一入口；themes/ 存放主题文件）
 │   ├── app.html                    # 应用 HTML 模板（首帧 lang 硬编码）
 │   └── hooks.client.ts             # 客户端钩子
@@ -164,11 +165,12 @@
 ### 架构与模块
 
 - **SPA 模式**：`+layout.ts` 关闭 SSR（`ssr = false`）；adapter-static + fallback 单页渲染，适配 Tauri 本地文件加载
-- **routes/**：页面与布局（+page.svelte / +layout.svelte）
+- **routes/**：分组路由——`(main)` 组存放主窗口页面；页面内容经 `(main)/+layout.svelte` 包裹 LayoutContainer 渲染
 - **components/**：业务组件目录——简单与复杂组件均放此处（不再按复杂度分层），内部按功能分类（svelte.config.ts 已预留 `$components` 别名）
 - **components/ui/**：shadcn-svelte 生成组件（`$components/ui` 别名）——经 `bunx shadcn-svelte add <name>` 拉取，源码即项目代码，允许按需修改（尽可能不修改，本地修改后升级组件时须注意差异）；**生成区禁手动添加组件**，需定制的基础组件放 components 对应功能分类；别名配置见 components.json（ui=$components/ui、utils=$libs/utils/shadcn）
 - **libs/**：前端模块库，每模块的文件约定——`index.ts` 统一出口、`core.ts` 实现、`types.ts` 类型契约
-- **模块出口**：`index.ts` 仅重导出（`export { x } from "./core"` + `export * from "./types"`），不写实现；无自有类型契约可省略 `types.ts`（如 logger/updater 复用 npm 包类型）
+- **模块出口**：`index.ts` 为统一出口 + 组装点——重导出各文件（`export { x } from "./core"` + `export * from "./types"`），并组装跨文件的实例与聚合 init（如 stores 的 `settings` / `initStores`），具体实现仍留在各功能文件；无自有类型契约可省略 `types.ts`（如 logger/updater 复用 npm 包类型）
+- **类型归属**：`types.ts` 仅存放模块通用类型（跨文件/跨模块复用，如 stores 的 `Store` / `StoreDefinition` / `ColorScheme` / `LayoutName`）；少数文件内部使用的类型直接在文件内定义，不写入 types.ts
 - **散装工具**：跨模块通用、无业务归属的小函数放 `$libs/utils`（复用性强的独立函数，不绑定具体业务模块）
 - **别名**：`$libs` → `src/libs`、`$components` → `src/components`（svelte.config.ts）
 
@@ -180,11 +182,20 @@
 
 ### 状态管理（stores）
 
-- **createStore**：UI 偏好状态一律经 `$libs/stores` 的 `createStore` 创建（Writable 兼容 + `get`/`reset` 增强）
-- **类型定义**：持久化相关类型（`PersistOptions` / `StorageType` / `StorageAdapter`）写入 `types.ts`
-- **初始化导出**：具体 store 实例在模块 `index.ts` 中用 `createStore` 初始化并导出，业务直接 import 使用
-- **持久化**：UI 偏好经 localStorage/sessionStorage（JSON）持久化，写入失败静默不影响内存；**系统级配置归后端 config.json，两类配置不混用**
-- **Svelte 5**：响应式用 `$state` 声明；事件绑定用 `onclick` 属性；初始化放 onMount（Tauri IPC 在 load 阶段会触发 fetch 检查误报）
+- **createStore**：基础 store 工厂（Writable 兼容 + `get`/`reset` 增强，可选持久化与值变更回调）
+- **组合 store**：`storeDef<T>(initial, persist?, subscribe?)` 声明子 store（携带精确类型，避免字面量变窄丢失联合类型）+ `createStoreGroup({...})` 按对象属性名映射为分组 store（如 `settings = { colorScheme, layout }`）；新增偏好在此追加
+- **类型定义**：模块通用类型（`Store` / `StoreDefinition` / `PersistOptions` / `StorageType` / `StorageAdapter` / `ColorScheme` / `LayoutName`）写入 `types.ts`，单文件使用的类型可以直接定义到文件中
+- **文件职责**：功能文件定义实例与订阅回调（如 settings.ts 的 `settings` 与 `onColorSchemeChange` 经 `storeDef` 的 subscribe 注入）；`index.ts` 为纯统一出口（re-export）——方法不反向依赖 index
+- **副作用订阅**：store 副作用（如主题应用）经 `storeDef` 的 `subscribe` 参数声明式注入——创建时执行一次 + 每次变更触发，无需显式 init 调用；回调无法返回 cleanup，临时监听状态外置模块级（如 mqCleanup）
+- **持久化**：UI 偏好经 localStorage/sessionStorage（JSON）持久化，key 由各 persist 显式指定（与属性名解耦）；写入失败静默不影响内存；**系统级配置归后端 config.json，两类配置不混用**
+- **读取兜底**：消费方对非法/未知值回退默认（如 LayoutContainer `layouts[$layout] ?? layouts.default`）
+- **Svelte 5**：`$` 自动订阅仅支持标识符（不支持 `$obj.store` 成员表达式）——先 `const { layout } = settings` 解构再 `$layout`；响应式用 `$state` 声明；事件绑定用 `onclick` 属性；初始化放 onMount（Tauri IPC 在 load 阶段会触发 fetch 检查误报）
+
+### 布局系统（components/layout）
+
+- **注册表**：`index.ts` 导出 `layouts: Record<LayoutName, Component>`——新增布局追加组件与 `LayoutName` 变体（Record 约束编译期强制同步）；`LayoutName` 为跨模块通用类型（stores/types.ts，与 `settings.layout` 偏好值域一致）
+- **容器**：`LayoutContainer` 订阅 `settings.layout` 经注册表动态渲染，非法/未知值回退 `layouts.default`；`(main)/+layout.svelte` 包裹 children 统一走容器
+- **布局组件**：各布局（Default/Baseline）仅实现基础骨架（header/nav/main/footer），children snippet 透传页面内容
 
 ### IPC 调用
 
@@ -231,8 +242,8 @@
 
 - **文案**：一律经 paraglide 编译产物 `m.xxx()` 取，不硬编码（+page.svelte 演示文案除外）；动态文案用 `ParaglideMessage` 组件
 - **消息源**：`messages/{locale}.json`；新增语言需同步 `project.inlang/settings.json` 的 locales；改动后运行 `bun run i18n:compile`
-- **locale 真相源**：config.json（后端）为准；`changeLocale` 先写后端成功才切前端（双写）；`syncLocale` 启动时同步，失同步以 config 为准 reload 自愈
-- **首帧**：app.html 硬编码 lang="en"，由 syncLocale 运行期更新 `document.documentElement.lang`
+- **locale 真相源**：config.json（后端）为准；`changeLocale` 先写后端成功才切前端（双写）；`initLocale` 启动时同步，失同步以 config 为准 reload 自愈
+- **首帧**：app.html 硬编码 lang="en"，由 initLocale 运行期更新 `document.documentElement.lang`
 
 ### 注意事项
 
@@ -240,7 +251,7 @@
 - **构建配置**：vite dev 端口固定 1420（strictPort），与 tauri.conf.json 的 devUrl/CSP 一致；watch 忽略 `src-tauri`；改端口需同步改 tauri.conf.json
 - **Tailwind v4**：经 `@tailwindcss/vite` 插件编译（vite.config.ts，无 postcss 配置）；`src/styles/app.css` 为唯一入口（`@import "tailwindcss"` + `@import "./themes/default.css"`）；**主题真相源在 `src/styles/themes/`**（shadcn 语义 token + `@theme inline` 映射，换主题只改主题文件）；新增主题在 themes/ 下直接以名字命名（default.css、blue.css…），app.css 追加 import，运行期经 `data-theme` 切换；`@theme`/`@custom-variant`/`@apply` 等 at-rule 与 oklch 数字写法已在 stylelint 豁免（.stylelintrc.json）
 - **CSP**：bits-ui 浮层组件（popover/dropdown/tooltip）经 floating-ui 内联 style 定位，生产 csp 的 style-src 必须含 `'unsafe-inline'`（已配置，勿删）
-- **主题**：深色模式为 class 策略——`document.documentElement` 挂 `.dark`（styles/app.css `@custom-variant dark`）；主题偏好经 `$libs/stores` 的 themeStore（`system | light | dark`，localStorage 持久化）+ `applyTheme()` 应用（+layout.svelte onMount 挂载）
+- **主题**：深色模式为 class 策略——`document.documentElement` 挂 `.dark`（styles/app.css `@custom-variant dark`）；主题偏好经 `$libs/stores` 的 `settings.colorScheme`（`system | light | dark`，localStorage 持久化），经 `storeDef` 的 `subscribe` 声明式应用（创建时应用 + 变更跟随）
 - **prettier**：prettier-plugin-tailwindcss 自动排序 Tailwind 类（`tailwindStylesheet` 指向 src/styles/app.css，插件顺序 svelte 在前）
 - **eslint 豁免**：`src/components/ui/**` 关闭 `svelte/no-navigation-without-resolve`（按钮类组件 href 为动态绑定，规则误报）
 - **质量门槛**：提交前通过 `bun run validate`（见「校验约定」）
@@ -264,5 +275,5 @@
 ## 新增功能流程
 
 - **后端**：`features/` 写业务逻辑（返回 `AppResult<T>`）→ `commands/` 写命令（校验 + 调 features + 转 `Response<T>`）→ 追加 `invoke_handlers!` 宏 → 文案加 `locales/*.yml`；涉及新能力时同步 Cargo.toml 依赖与 capabilities 权限
-- **前端**：`ipc/types.ts` 对齐新增返回类型 → `invokeCommand` 调用 → 文案经 `m.xxx()` 并加入 `messages/*.json` → 运行 `bun run i18n:compile`；UI 偏好经 `$libs/stores` 持久化；UI 基础组件经 `bunx shadcn-svelte add <name>` 拉取到 `$components/ui`（不覆盖已有组件）
+- **前端**：`ipc/types.ts` 对齐新增返回类型 → `invokeCommand` 调用 → 文案经 `m.xxx()` 并加入 `messages/*.json` → 运行 `bun run i18n:compile`；新 UI 偏好经 `storeDef` + `createStoreGroup` 组装进 `settings`（stores/index.ts），init 方法以参数注入模式（`(依赖 store) => () => void`）加入 `initStores`；UI 基础组件经 `bunx shadcn-svelte add <name>` 拉取到 `$components/ui`（不覆盖已有组件）
 - **收尾**：运行 `bun run validate` 通过后，由开发者按 Conventional Commits 手动提交

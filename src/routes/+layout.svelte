@@ -1,25 +1,20 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import { syncLocale } from "$libs/i18n";
+  import { initLocale } from "$libs/i18n";
   import { initLogger } from "$libs/logger";
   import { logBoundaryError } from "$libs/errors";
-  import { applyTheme } from "$libs/stores";
   import { m } from "$libs/i18n/paraglide/messages";
   import "../styles/app.css";
 
-  // SPA 无服务端 hooks：app.html 硬编码 lang="en"，此处同步实际语言（syncLocale 内部
+  // SPA 无服务端 hooks：app.html 硬编码 lang="en"，此处同步实际语言（initLocale 内部
   // 一并更新 document.documentElement.lang）。同步在 onMount（而非 layout load）执行：
   // Tauri IPC 内部使用 window.fetch，在 load 阶段会触发 SvelteKit dev 的 fetch 检查警告
-  // （误报）。首帧已按 localStorage 持久化的 locale 渲染正确；syncLocale 兜底自愈——
+  // （误报）。首帧已按 localStorage 持久化的 locale 渲染正确；initLocale 兜底自愈——
   // 与 config.json 一致时仅同步 lang 属性，失同步（外部改配置）时以 config 为准 reload 一次
   onMount(async () => {
     await initLogger();
-    await syncLocale();
+    await initLocale();
   });
-
-  // 主题应用：shadcn class 策略深色模式（system 跟随系统，持久化于 localStorage）；
-  // 独立 onMount 以便返回清理函数（async 回调不支持返回 cleanup）
-  onMount(() => applyTheme());
 </script>
 
 <!-- 渲染边界：子组件渲染错误 → 写入日志 + 回退提示（手动重试，不自动重挂载） -->

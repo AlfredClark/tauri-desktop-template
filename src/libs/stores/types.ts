@@ -28,5 +28,15 @@ export interface Store<T> extends Writable<T> {
   reset(): void; // 恢复默认值：删除持久化条目 → 内存重置 → 写回默认值
 }
 
-/** 主题偏好：system 跟随操作系统，light/dark 手动指定 */
-export type ThemeMode = "system" | "light" | "dark";
+/** 子 store 定义：initial 为初始值（支持惰性函数），persist 沿用 createStore 持久化约定 */
+export interface StoreDefinition<T> {
+  initial: T | (() => T); // 初始值，字面量或惰性函数（惰性函数在创建时执行一次）
+  persist?: string | PersistOptions; // 持久化配置：字符串简写（本地存储）或完整配置
+  subscribe?: (value: T) => void; // 值变更回调：创建时执行一次，此后每次值变更触发，与持久化相互独立
+}
+
+/** 配色方案偏好：system 跟随操作系统，light/dark 手动指定 */
+export type ColorScheme = "system" | "light" | "dark";
+
+/** 布局偏好：default 默认布局，baseline 基线布局 */
+export type LayoutName = "default" | "baseline";

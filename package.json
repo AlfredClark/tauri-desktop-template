@@ -27,6 +27,7 @@
     "validate:js": "eslint . && stylelint \"src/**/*.{css,svelte}\" && prettier --check . && svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
     "tauri:dev": "tauri dev",
     "tauri:build": "tauri build",
+    "tauri:icon": "tauri icon ./static/icon.png",
     "i18n:compile": "paraglide-js compile --project ./src/libs/i18n/project.inlang --outdir ./src/libs/i18n/paraglide --strategy localStorage baseLocale --emit-ts-declarations",
     "dev": "vite dev",
     "build": "vite build",

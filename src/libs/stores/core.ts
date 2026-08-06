@@ -1,6 +1,6 @@
 import { get as getStore, writable } from "svelte/store";
 import { StorageType } from "./types";
-import type { PersistOptions, StorageAdapter, Store } from "./types";
+import type { PersistOptions, StorageAdapter, Store, StoreDefinition } from "./types";
 
 /** 存储介质 → 适配器映射表，新增介质只需在此注册 */
 const adapters: Record<StorageType, StorageAdapter> = {
@@ -125,4 +125,47 @@ export function createStore<T>(
       persistValue(defaultValue);
     },
   };
+}
+
+/**
+ * 声明子 store 定义：携带精确类型参数，避免字面量变窄丢失联合类型。
+ * @param initial 初始值，字面量或惰性函数
+ * @param persist 持久化配置（字符串简写默认本地存储）
+ * @param subscribe 值变更回调（创建时执行一次，此后每次值变更触发，与持久化相互独立）
+ * @returns 子 store 定义（供 createStoreGroup 组合）
+ */
+export function storeDef<T>(
+  initial: T | (() => T),
+  persist?: string | PersistOptions,
+  subscribe?: (value: T) => void,
+): StoreDefinition<T> {
+  return { initial, persist, subscribe };
+}
+
+/** createStoreGroup 约束用结构子集：仅含协变字段（initial/persist），
+ * 规避 subscribe 回调参数逆变导致 `StoreDefinition<T>` 无法赋给 `StoreDefinition<unknown>` 约束 */
+type StoreGroupDefinition = {
+  initial: unknown | (() => unknown);
+  persist?: string | PersistOptions;
+};
+
+/**
+ * 组合多个子 store 为分组对象：键名即返回对象的属性名，类型逐项映射（属性名为
+ * `Store<定义类型>`）。持久化 key 由各定义的 persist 显式指定，与属性名解耦。
+ * @param defs 子 store 定义对象（经 storeDef 声明）
+ * @returns 分组 store：每个属性为独立的增强型 store（持久化/回退逻辑同 createStore）
+ */
+export function createStoreGroup<S extends Record<string, StoreGroupDefinition>>(
+  defs: S,
+): { [K in keyof S]: Store<S[K] extends StoreDefinition<infer T> ? T : never> } {
+  // 公开签名已保证类型安全：内部经 Record 装配后统一断言
+  const result = {} as Record<string, Store<unknown>>;
+  for (const [name, def] of Object.entries(defs)) {
+    const definition = def as StoreDefinition<unknown>;
+    result[name] = createStore(definition.initial, {
+      persist: definition.persist,
+      subscribe: definition.subscribe,
+    });
+  }
+  return result as { [K in keyof S]: Store<S[K] extends StoreDefinition<infer T> ? T : never> };
 }
