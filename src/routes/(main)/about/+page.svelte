@@ -3,5 +3,5 @@
 </script>
 
 <div class="flex h-full w-full flex-col items-center p-6">
-  <h1 class="text-lg font-semibold">{m.nav_home()}</h1>
+  <h1 class="text-lg font-semibold">{m.nav_about()}</h1>
 </div>

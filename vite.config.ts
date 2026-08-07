@@ -3,6 +3,7 @@ import { sveltekit } from "@sveltejs/kit/vite";
 import tailwindcss from "@tailwindcss/vite";
 import { paraglideVitePlugin } from "@inlang/paraglide-js";
 import tauriConf from "./src-tauri/tauri.conf.json" with { type: "json" };
+import pkg from "./package.json" with { type: "json" };
 
 // TAURI_DEV_HOST：远程/移动端调试时传入目标主机地址
 const host = process.env.TAURI_DEV_HOST;
@@ -33,11 +34,13 @@ export default defineConfig(() => ({
       },
     },
   ],
-  // 经 define 暴露 tauri.conf.json 的配置值，供前端静态引用（build 期替换）：
-  // 与 tauri.conf.json 的 app.windows 主窗口 title 保持一致；
+  // 经 define 整体注入配置对象，供前端静态引用（build 期替换）：
+  // __APP_TAURI_CONF__ 为整份 tauri.conf.json、__APP_PKG__ 为整份 package.json；
+  // 消费方按需取属性（如 __APP_TAURI_CONF__.app.windows[0].title）；
   // 注意 server.watch 忽略了 src-tauri，改配置后需重启 dev 生效
   define: {
-    __APP_WINDOW_TITLE__: JSON.stringify(tauriConf.app.windows[0].title),
+    __APP_TAURI_CONF__: JSON.stringify(tauriConf),
+    __APP_PKG__: JSON.stringify(pkg),
   },
   clearScreen: false,
   server: {
@@ -54,8 +57,10 @@ export default defineConfig(() => ({
         }
       : undefined,
     watch: {
-      // 避免监听 Rust 后端目录引发无谓的重启
-      ignored: ["**/src-tauri/**"],
+      // 避免监听 Rust 后端目录与构建产物引发无谓重启；
+      // target/ 为 workspace 根产物目录（不在 src-tauri/ 内），Windows 上 watch 被
+      // cargo 锁定的构建脚本 exe 会报 EBUSY 崩溃（Linux 仅浪费资源）
+      ignored: ["**/src-tauri/**", "**/target/**"],
     },
   },
 }));

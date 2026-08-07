@@ -21,13 +21,16 @@
 │   ├── components/                 # 业务组件（按功能分类，含简单与复杂组件）
 │   │   ├── layout/                 # 布局系统（LayoutContainer 容器 + 布局注册表）
 │   │   ├── ui/                     # shadcn-svelte 生成组件（仅经 CLI 添加，components.json 管理）
-│   │   └── widgets/                # 自定义小组件（自包含、可插拔）
+│   │   └── widgets/                # 自定义小组件（自包含、可插拔，按功能分子目录）
+│   │       ├── navigation/         # 导航组件（NavBar 分段式导航条）
+│   │       └── window/             # 窗口控制（WindowControl）
 │   ├── libs/                       # 前端模块库
 │   │   ├── errors/                 # 错误处理
 │   │   ├── hooks/                  # shadcn-svelte hooks 目录
 │   │   ├── i18n/                   # 国际化（Paraglide 编译产物与消息文件）
 │   │   ├── ipc/                    # Tauri 命令调用封装（invokeCommand + 类型定义）
 │   │   ├── logger/                 # 日志（对接 tauri-plugin-log）
+│   │   ├── navigation/             # 导航配置（NavItem 类型 + defaultNavItems）
 │   │   ├── stores/                 # 全局状态
 │   │   ├── updater/                # 自动更新
 │   │   └── utils/                  # 可复用散装工具（跨模块通用）
@@ -241,7 +244,8 @@
 
 ### 国际化
 
-- **文案**：一律经 paraglide 编译产物 `m.xxx()` 取，不硬编码（+page.svelte 演示文案除外）；动态文案用 `ParaglideMessage` 组件
+- **文案**：一律经 paraglide 编译产物 `m.xxx()` 取，不硬编码；动态文案用 `ParaglideMessage` 组件
+- **键命名**：`<前缀>_<具体含义>`（全小写 snake_case），前缀按归属域——`nav_` 导航标签 / `window_control_` 窗口控制 / `footer_` 页脚 / `boundary_` 错误边界；禁止裸名词键（如 `welcome`）
 - **消息源**：`messages/{locale}.json`；新增语言需同步 `project.inlang/settings.json` 的 locales；改动后运行 `bun run i18n:compile`
 - **locale 真相源**：config.json（后端）为准；`changeLocale` 先写后端成功才切前端（双写）；`initLocale` 启动时同步，失同步以 config 为准 reload 自愈
 - **首帧**：app.html 硬编码 lang="en"，由 initLocale 运行期更新 `document.documentElement.lang`
@@ -249,8 +253,8 @@
 ### 注意事项
 
 - **成对依赖**：前端用到的 Tauri 能力需 npm 包 + Rust 侧 tauri-plugin 依赖 + `capabilities/plugins.json` 权限三者齐备（如 notification/updater/system-fonts）
-- **构建配置**：vite dev 端口固定 1420（strictPort），与 tauri.conf.json 的 devUrl/CSP 一致；watch 忽略 `src-tauri`；改端口需同步改 tauri.conf.json
-- **全局常量注入**：经 vite `define` 暴露 tauri.conf.json 配置值（如 `__APP_WINDOW_TITLE__`），新增常量须同步 `src/vite-env.d.ts` 类型声明与 eslint.config.ts 的 `viteDefineGlobals`；watch 忽略 src-tauri，改配置需重启 dev 生效
+- **构建配置**：vite dev 端口固定 1420（strictPort），与 tauri.conf.json 的 devUrl/CSP 一致；watch 忽略 `src-tauri` 与根 `target/`（Windows 上 watch 被 cargo 锁定的构建脚本 exe 会 EBUSY 崩溃）；改端口需同步改 tauri.conf.json
+- **全局常量注入**：经 vite `define` 整体注入配置对象（`__APP_TAURI_CONF__` 为整份 tauri.conf.json、`__APP_PKG__` 为整份 package.json），消费方按需取属性；类型在 `src/vite-env.d.ts` 经 `import type ... from "*.json"` 引用 JSON 字面量推导（天然同步）；新增配置须同步 eslint.config.ts 的 `viteDefineGlobals`；watch 忽略 src-tauri，改配置需重启 dev 生效
 - **Tailwind v4**：经 `@tailwindcss/vite` 插件编译（vite.config.ts，无 postcss 配置）；`src/styles/app.css` 为唯一入口（`@import "tailwindcss"` + `@import "./themes/default.css"`）；**主题真相源在 `src/styles/themes/`**（shadcn 语义 token，换主题只改主题文件）；Tailwind 变量映射（`@theme inline`，`--color-*` 桥接语义 token）集中在 app.css 单一真相源，主题文件只承载变量值；新增主题在 themes/ 下直接以名字命名（default.css、blue.css…），app.css 追加 import，运行期经 `data-theme` 切换；`@theme`/`@custom-variant`/`@apply` 等 at-rule 与 oklch 数字写法已在 stylelint 豁免（.stylelintrc.json）
 - **CSP**：bits-ui 浮层组件（popover/dropdown/tooltip）经 floating-ui 内联 style 定位，生产 csp 的 style-src 必须含 `'unsafe-inline'`（已配置，勿删）
 - **主题**：深色模式为 class 策略——`document.documentElement` 挂 `.dark`（styles/app.css `@custom-variant dark`）；主题偏好经 `$libs/stores` 的 `settings.colorScheme`（`system | light | dark`，localStorage 持久化），经 `storeDef` 的 `subscribe` 声明式应用（创建时应用 + 变更跟随）

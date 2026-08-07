@@ -8,7 +8,8 @@ import { defineConfig, globalIgnores } from "eslint/config";
 
 // vite define 注入的全局常量（与 vite.config.ts 的 define 保持一致）
 const viteDefineGlobals = {
-  __APP_WINDOW_TITLE__: "readonly",
+  __APP_TAURI_CONF__: "readonly",
+  __APP_PKG__: "readonly",
 };
 
 export default defineConfig([

@@ -1,15 +1,13 @@
 {
   "$schema": "https://inlang.com/schema/inlang-message-format",
-  "welcome": "Welcome to Tauri + Svelte",
-  "greet_placeholder": "Enter a name...",
-  "greet_button": "Greet",
-  "lang_en": "English",
-  "lang_zh_cn": "简体中文",
-  "click_hint": "Click on the Tauri, Vite, and SvelteKit logos to learn more.",
   "boundary_error": "Component render error: {message} (see logs)",
   "boundary_retry": "Retry",
   "window_control_pin": "Always on top",
   "window_control_minimize": "Minimize",
   "window_control_maximize": "Maximize",
-  "window_control_close": "Close"
+  "window_control_close": "Close",
+  "nav_home": "Home",
+  "nav_settings": "Settings",
+  "nav_about": "About",
+  "footer_copyright": "Copyright © {year} {author}"
 }

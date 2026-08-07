@@ -28,7 +28,7 @@
   {/snippet}
 </svelte:boundary>
 
-<style>
+<style lang="css">
   .boundary-error {
     margin: 2rem auto;
     padding: 1rem 2rem;
