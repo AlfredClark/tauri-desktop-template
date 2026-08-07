@@ -21,7 +21,7 @@
 </script>
 
 <Tabs value={activeTab} onValueChange={handleValueChange} class="w-fit">
-  <TabsList>
+  <TabsList variant="line">
     {#each items as item (item.href)}
       <TabsTrigger value={item.href} class="px-3">
         {@const Icon = item.icon}

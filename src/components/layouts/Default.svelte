@@ -23,7 +23,7 @@
       <WindowControl />
     </div>
   </header>
-  <nav class="flex w-full shrink-0 items-center border-b p-0.5 select-none">
+  <nav class="flex w-full shrink-0 items-center border-b select-none">
     <TabsNavBar />
   </nav>
   <main class="flex-1 overflow-y-auto">

@@ -3,6 +3,7 @@
   import { Minus, Pin, PinOff, Square, X, Maximize } from "@lucide/svelte";
   import { onDestroy, onMount } from "svelte";
   import { Button } from "$components/ui/button";
+  import { Tooltip, TooltipContent, TooltipTrigger } from "$components/ui/tooltip";
   import { invokeCommand } from "$libs/ipc";
   import { m } from "$libs/i18n/paraglide/messages";
 
@@ -43,40 +44,77 @@
 
 <div class="flex h-8 items-center">
   {#if alwaysOnTopSupported}
-    <Button variant="ghost" class="h-8 w-11 rounded-none" aria-label={m.window_control_pin()} onclick={toggleAlwaysOnTop}>
-      {#if alwaysOnTop}
-        <PinOff class="size-4" />
-      {:else}
-        <Pin class="size-4" />
-      {/if}
-    </Button>
+    <Tooltip>
+      <TooltipTrigger>
+        {#snippet child({ props })}
+          <Button
+            {...props}
+            variant="ghost"
+            class="h-8 w-11 rounded-none"
+            aria-label={m.window_control_pin()}
+            onclick={toggleAlwaysOnTop}
+          >
+            {#if alwaysOnTop}
+              <PinOff class="size-4" />
+            {:else}
+              <Pin class="size-4" />
+            {/if}
+          </Button>
+        {/snippet}
+      </TooltipTrigger>
+      <TooltipContent>{m.window_control_pin()}</TooltipContent>
+    </Tooltip>
   {/if}
-  <Button
-    variant="ghost"
-    class="h-8 w-11 rounded-none"
-    aria-label={m.window_control_minimize()}
-    onclick={() => void appWindow.minimize()}
-  >
-    <Minus class="size-4" />
-  </Button>
-  <Button
-    variant="ghost"
-    class="h-8 w-11 rounded-none"
-    aria-label={m.window_control_maximize()}
-    onclick={() => void appWindow.toggleMaximize()}
-  >
-    {#if maximized}
-      <Square class="size-4" />
-    {:else}
-      <Maximize class="size-4" />
-    {/if}
-  </Button>
-  <Button
-    variant="ghost"
-    class="h-8 w-11 rounded-none hover:bg-destructive hover:text-white dark:hover:bg-destructive dark:hover:text-white"
-    aria-label={m.window_control_close()}
-    onclick={() => void appWindow.close()}
-  >
-    <X class="size-4" />
-  </Button>
+  <Tooltip>
+    <TooltipTrigger>
+      {#snippet child({ props })}
+        <Button
+          {...props}
+          variant="ghost"
+          class="h-8 w-11 rounded-none"
+          aria-label={m.window_control_minimize()}
+          onclick={() => void appWindow.minimize()}
+        >
+          <Minus class="size-4" />
+        </Button>
+      {/snippet}
+    </TooltipTrigger>
+    <TooltipContent>{m.window_control_minimize()}</TooltipContent>
+  </Tooltip>
+  <Tooltip>
+    <TooltipTrigger>
+      {#snippet child({ props })}
+        <Button
+          {...props}
+          variant="ghost"
+          class="h-8 w-11 rounded-none"
+          aria-label={m.window_control_maximize()}
+          onclick={() => void appWindow.toggleMaximize()}
+        >
+          {#if maximized}
+            <Square class="size-4" />
+          {:else}
+            <Maximize class="size-4" />
+          {/if}
+        </Button>
+      {/snippet}
+    </TooltipTrigger>
+    <TooltipContent>{m.window_control_maximize()}</TooltipContent>
+  </Tooltip>
+  <Tooltip>
+    <TooltipTrigger>
+      {#snippet child({ props })}
+        <Button
+          {...props}
+          variant="ghost"
+          class="h-8 w-11 rounded-none hover:bg-destructive hover:text-white dark:hover:bg-destructive dark:hover:text-white"
+          aria-label={m.window_control_close()}
+          onclick={() => void appWindow.close()}
+        >
+          <X class="size-4" />
+        </Button>
+      {/snippet}
+    </TooltipTrigger>
+    <TooltipContent>{m.window_control_close()}</TooltipContent>
+  </Tooltip>
 </div>

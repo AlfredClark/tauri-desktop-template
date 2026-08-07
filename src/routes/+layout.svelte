@@ -3,6 +3,7 @@
   import { initLocale } from "$libs/i18n";
   import { initLogger } from "$libs/logger";
   import { logBoundaryError } from "$libs/errors";
+  import { TooltipProvider } from "$components/ui/tooltip";
   import { m } from "$libs/i18n/paraglide/messages";
   import "../styles/app.css";
 
@@ -19,7 +20,9 @@
 
 <!-- 渲染边界：子组件渲染错误 → 写入日志 + 回退提示（手动重试，不自动重挂载） -->
 <svelte:boundary onerror={logBoundaryError}>
-  <slot />
+  <TooltipProvider delayDuration={500}>
+    <slot />
+  </TooltipProvider>
   {#snippet failed(error, reset)}
     <div class="boundary-error">
       <p>{m.boundary_error({ message: error instanceof Error ? error.message : String(error) })}</p>

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import LayoutContainer from "$components/layout/LayoutContainer.svelte";
+  import LayoutContainer from "$components/layouts/LayoutContainer.svelte";
   let { children } = $props();
 </script>
 
