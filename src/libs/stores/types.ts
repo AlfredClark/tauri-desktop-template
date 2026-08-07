@@ -40,3 +40,31 @@ export type ColorScheme = "system" | "light" | "dark";
 
 /** 布局偏好：default 默认布局，baseline 基线布局 */
 export type LayoutName = "default" | "baseline";
+
+/** 主题偏好：与 shadcn-svelte 官方主题一一对应，data-theme 属性值即主题名；
+ *  neutral 为基底主题（:root 兜底），其余主题仅覆盖部分 token */
+export type ThemeName =
+  | "neutral"
+  | "stone"
+  | "zinc"
+  | "mauve"
+  | "olive"
+  | "mist"
+  | "taupe"
+  | "amber"
+  | "blue"
+  | "cyan"
+  | "emerald"
+  | "fuchsia"
+  | "green"
+  | "indigo"
+  | "lime"
+  | "orange"
+  | "pink"
+  | "purple"
+  | "red"
+  | "rose"
+  | "sky"
+  | "teal"
+  | "violet"
+  | "yellow";
