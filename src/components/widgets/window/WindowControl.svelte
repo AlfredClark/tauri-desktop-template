@@ -4,10 +4,12 @@
   import { onDestroy, onMount } from "svelte";
   import { invokeCommand } from "$libs/ipc";
   import { m } from "$libs/i18n/paraglide/messages";
+  import { settings } from "$libs/stores";
   import ConfirmDialog from "$components/widgets/overlay/ConfirmDialog.svelte";
   import TooltipButton from "$components/widgets/overlay/TooltipButton.svelte";
 
   const appWindow = getCurrentWindow();
+  const { closeBehavior } = settings;
 
   let maximized = $state(false);
   let alwaysOnTop = $state(false);
@@ -40,6 +42,15 @@
       alwaysOnTop = !alwaysOnTop;
     }
   }
+
+  // 关闭行为（非 ask 分支）：minimize 隐藏到托盘（托盘点击可恢复），quit 直接关闭
+  function handleClose() {
+    if (closeBehavior.get() === "minimize") {
+      void appWindow.hide();
+    } else {
+      void appWindow.close();
+    }
+  }
 </script>
 
 <div class="flex h-8 items-center">
@@ -66,22 +77,33 @@
       <Maximize class="size-4" />
     {/if}
   </TooltipButton>
-  <!-- 关闭确认（复合组件式用法示例）：关闭按钮即 AlertDialog 触发器，确认后关闭窗口；
-       双委托（Tooltip + AlertDialog）经 TooltipButton 的 extraProps 内部合并，调用方无感知 -->
-  <ConfirmDialog
-    title={m.window_control_close_confirm_title()}
-    message={m.window_control_close_confirm_message()}
-    variant="destructive"
-    onConfirm={() => void appWindow.close()}
-  >
-    {#snippet trigger({ props })}
-      <TooltipButton
-        label={m.window_control_close()}
-        extraProps={props}
-        class="h-8 w-11 rounded-none hover:bg-destructive hover:text-white dark:hover:bg-destructive dark:hover:text-white"
-      >
-        <X class="size-4" />
-      </TooltipButton>
-    {/snippet}
-  </ConfirmDialog>
+  <!-- 关闭行为（ask 弹窗询问 / quit 直接关闭 / minimize 最小化到托盘）：
+       关闭按钮即 AlertDialog 触发器，确认后关闭窗口；ask 经双委托（Tooltip + AlertDialog）
+       由 TooltipButton 的 extraProps 内部合并，调用方无感知 -->
+  {#if $closeBehavior === "ask"}
+    <ConfirmDialog
+      title={m.window_control_close_confirm_title()}
+      message={m.window_control_close_confirm_message()}
+      variant="destructive"
+      onConfirm={() => void appWindow.close()}
+    >
+      {#snippet trigger({ props })}
+        <TooltipButton
+          label={m.window_control_close()}
+          extraProps={props}
+          class="h-8 w-11 rounded-none hover:bg-destructive hover:text-white dark:hover:bg-destructive dark:hover:text-white"
+        >
+          <X class="size-4" />
+        </TooltipButton>
+      {/snippet}
+    </ConfirmDialog>
+  {:else}
+    <TooltipButton
+      label={m.window_control_close()}
+      onclick={handleClose}
+      class="h-8 w-11 rounded-none hover:bg-destructive hover:text-white dark:hover:bg-destructive dark:hover:text-white"
+    >
+      <X class="size-4" />
+    </TooltipButton>
+  {/if}
 </div>

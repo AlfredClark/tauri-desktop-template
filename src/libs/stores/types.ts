@@ -42,3 +42,6 @@ export type LayoutName = "default" | "baseline";
 /** 主题偏好：真相源为 themes/index.ts 的 themeNames（data-theme 属性值即主题名，与官方主题一一对应）；
  *  neutral 为基底主题（:root 兜底），其余主题仅覆盖部分 token */
 export type { ThemeName };
+
+/** 关闭行为偏好：ask 弹窗询问，quit 直接关闭，minimize 最小化到托盘（仅托盘开启时可选） */
+export type CloseBehaviorName = "ask" | "quit" | "minimize";

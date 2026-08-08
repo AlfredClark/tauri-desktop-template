@@ -1,10 +1,13 @@
 import { createStoreGroup, storeDef } from "./core";
-import type { LayoutName, ThemeName } from "./types";
+import type { CloseBehaviorName, LayoutName, ThemeName } from "./types";
 import { themeNames } from "$styles/themes";
 
+/** 关闭行为合法值域（settings.closeBehavior 残留值校验用） */
+const closeBehaviorNames: readonly CloseBehaviorName[] = ["ask", "quit", "minimize"];
+
 /**
- * UI 偏好统一出口：createStoreGroup 组合两个偏好子 store（layout/theme），各自独立
- * 持久化于 localStorage（key: layout/theme），真相源与系统级配置（config.json）分离。
+ * UI 偏好统一出口：createStoreGroup 组合偏好子 store（layout/theme/closeBehavior），各自独立
+ * 持久化于 localStorage（key: layout/theme/closeBehavior），真相源与系统级配置（config.json）分离。
  * 暗色模式（.dark class）由 mode-watcher 负责（userPrefersMode 持久化于
  * mode-watcher-mode key，system 走 prefers-color-scheme），不在此维护。
  * 读写经成员访问：`$settings.layout` / `settings.theme.set(...)`。
@@ -13,12 +16,18 @@ import { themeNames } from "$styles/themes";
 export const settings = createStoreGroup({
   layout: storeDef<LayoutName>("default", "layout"),
   theme: storeDef<ThemeName>("neutral", "theme", createThemeListener()),
+  closeBehavior: storeDef<CloseBehaviorName>("ask", "closeBehavior"),
 });
 
 // 主题兜底：localStorage 残留已删除主题（如 red）时回退 neutral——
 // 经 set 触发监听器（data-theme）与持久化同步修正，仅启动时执行一次
 if (!themeNames.includes(settings.theme.get())) {
   settings.theme.set("neutral");
+}
+
+// 关闭行为兜底：残留非法值回退 ask（经 set 同步修正持久化，仅启动时执行一次）
+if (!closeBehaviorNames.includes(settings.closeBehavior.get())) {
+  settings.closeBehavior.set("ask");
 }
 
 /**
