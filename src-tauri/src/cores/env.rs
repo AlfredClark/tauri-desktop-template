@@ -4,6 +4,7 @@
 /// 是否为 Wayland 会话：XDG_SESSION_TYPE=wayland 或存在 WAYLAND_DISPLAY。
 /// 供 init_env（DMABUF workaround）与置顶能力判断共用。
 /// @returns 是否 Wayland 会话
+#[cfg(target_os = "linux")]
 pub(crate) fn is_wayland_session() -> bool {
     std::env::var("XDG_SESSION_TYPE").is_ok_and(|session_type| session_type.eq_ignore_ascii_case("wayland"))
         || std::env::var_os("WAYLAND_DISPLAY").is_some()
@@ -12,6 +13,7 @@ pub(crate) fn is_wayland_session() -> bool {
 /// 是否运行于 AppImage 环境：$APPDIR 由 AppImage runtime 注入，原生运行不存在。
 /// 供 init_env（EGL compositing workaround）判断用。
 /// @returns 是否 AppImage 环境
+#[cfg(target_os = "linux")]
 fn is_appimage() -> bool {
     std::env::var_os("APPDIR").is_some()
 }

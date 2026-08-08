@@ -25,6 +25,7 @@
   "scripts": {
     "tauri:dev": "tauri dev",
     "tauri:build": "tauri build",
+    "tauri:build:local": "tauri build --no-bundle",
     "tauri:icon": "tauri icon ./static/icon.png",
     "format:all": "prettier --write . && cargo fmt",
     "validate": "bun run lint:all && bun run format:all:check && bun run check:rust && bun run check",
