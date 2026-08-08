@@ -17,15 +17,16 @@ let handling = false;
 /**
  * 安全写错误日志：写入失败静默忽略（plugin-log 走 IPC，非 Tauri 环境会 reject；
  * 若不 catch，rejection 会触发 unhandledrejection → 处理器再写日志 → 无限循环）。
+ * 防重入守卫经 Promise 链释放：标志保持到日志写入尝试结束，异步期间不重入。
  */
 function logSafe(message: string): void {
   if (handling) return;
   handling = true;
-  try {
-    error(`${PREFIX} ${message}`).catch(() => {});
-  } finally {
-    handling = false;
-  }
+  error(`${PREFIX} ${message}`)
+    .catch(() => {})
+    .finally(() => {
+      handling = false;
+    });
 }
 
 /**

@@ -36,7 +36,7 @@
     <div class="flex items-center gap-2">
       <span class="text-sm text-muted-foreground">{__APP_PKG__.version}</span>
       {#if update.status === "idle" || update.status === "error"}
-        <Button variant="outline" size="sm" onclick={checkUpdate}>
+        <Button variant="outline" size="sm" onclick={() => void checkUpdate()}>
           {m.about_app_check_update()}
         </Button>
       {:else if update.status === "upToDate"}
@@ -47,7 +47,7 @@
       {:else if update.status === "checking"}
         <Button variant="outline" size="sm" disabled>{m.about_app_checking()}</Button>
       {:else if update.status === "available"}
-        <Button variant="outline" size="sm" onclick={installPendingUpdate}>
+        <Button variant="outline" size="sm" onclick={() => void installPendingUpdate()}>
           {m.about_app_update({ version: update.version ?? "" })}
         </Button>
       {:else if update.status === "downloading"}

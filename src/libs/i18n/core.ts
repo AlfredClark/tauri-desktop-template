@@ -35,8 +35,8 @@ export async function initLocale(): Promise<boolean> {
     }
     if (resolved !== getLocale()) {
       // 失同步自愈：写入 localStorage 并刷新，刷新后首帧即按新语言渲染
+      // （reload 丢弃当前页，刷新后由首帧与后续 onMount 同步 lang 属性，无需在此赋值）
       setLocale(resolved, { reload: true });
-      document.documentElement.lang = getLocale();
       return true;
     }
     document.documentElement.lang = getLocale();
