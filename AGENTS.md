@@ -27,6 +27,7 @@
 │   │   └── widgets/                # 自定义小组件（自包含、可插拔，按功能分子目录）
 │   │       ├── icon/               # 品牌/自定义图标（GithubIcon）
 │   │       ├── navigation/         # 导航组件（TabsNavBar 分段式导航条）
+│   │       ├── overlay/            # 浮层组件（ConfirmDialog 确认对话框 + TooltipButton 提示按钮，复合组件式）
 │   │       └── window/             # 窗口控制（WindowControl）
 │   ├── features/                   # 业务功能模块（与后端 src-tauri/src/features 镜像）
 │   │   └── demo/                   # 演示业务（greet 示例）
@@ -36,6 +37,7 @@
 │   │   ├── ipc/                    # Tauri 命令调用封装（invokeCommand + 类型定义）
 │   │   ├── logger/                 # 日志（对接 tauri-plugin-log）
 │   │   ├── navigation/             # 导航配置（NavItem 类型 + defaultNavItems）
+│   │   ├── overlay/                # 浮层（toast 统一出口）
 │   │   ├── stores/                 # 全局状态（settings 偏好 + store 工厂）
 │   │   ├── updater/                # 自动更新（check/install + 模块级状态 state.svelte.ts）
 │   │   └── utils/                  # 可复用散装工具（跨模块通用）
@@ -202,10 +204,10 @@
 ### 状态管理（stores）
 
 - **createStore**：基础 store 工厂（Writable 兼容 + `get`/`reset` 增强，可选持久化与值变更回调）
-- **组合 store**：`storeDef<T>(initial, persist?, subscribe?)` 声明子 store（携带精确类型，避免字面量变窄丢失联合类型）+ `createStoreGroup({...})` 按对象属性名映射为分组 store（如 `settings = { colorScheme, layout }`）；新增偏好在此追加
+- **组合 store**：`storeDef<T>(initial, persist?, subscribe?)` 声明子 store（携带精确类型，避免字面量变窄丢失联合类型）+ `createStoreGroup({...})` 按对象属性名映射为分组 store（如 `settings = { layout, theme }`）；新增偏好在此追加
 - **值校验**：非法/残留持久化值的兜底在模块级显式处理（如 settings.ts 启动时校验主题残留回退 neutral，经 set 同步修正 data-theme 与持久化）
-- **类型定义**：模块通用类型（`Store` / `StoreDefinition` / `PersistOptions` / `StorageType` / `StorageAdapter` / `ColorScheme` / `LayoutName`）写入 `types.ts`，单文件使用的类型可以直接定义到文件中
-- **文件职责**：功能文件定义实例与订阅回调（如 settings.ts 的 `settings` 与 `onColorSchemeChange` 经 `storeDef` 的 subscribe 注入）；`index.ts` 为纯统一出口（re-export）——方法不反向依赖 index
+- **类型定义**：模块通用类型（`Store` / `StoreDefinition` / `PersistOptions` / `StorageType` / `StorageAdapter` / `LayoutName`）写入 `types.ts`，单文件使用的类型可以直接定义到文件中
+- **文件职责**：功能文件定义实例与订阅回调（如 settings.ts 的 `settings` 经 `storeDef` 的 subscribe 注入）；`index.ts` 为纯统一出口（re-export）——方法不反向依赖 index
 - **副作用订阅**：store 副作用（如主题应用）经 `storeDef` 的 `subscribe` 参数声明式注入——创建时执行一次 + 每次变更触发，无需显式 init 调用；回调无法返回 cleanup，临时监听状态外置模块级（如 mqCleanup）
 - **持久化**：UI 偏好经 localStorage/sessionStorage（JSON）持久化，key 由各 persist 显式指定（与属性名解耦）；写入失败静默不影响内存；**系统级配置归后端 config.json，两类配置不混用**
 - **读取兜底**：消费方对非法/未知值回退默认（如 LayoutContainer `layouts[$layout] ?? layouts.default`）
@@ -230,6 +232,15 @@
 - **权限**：`dialog:default`（capabilities/plugins.json）
 - **返回约定**：`open`/`save` 用户取消时返回 `null`；`ask`/`confirm` 返回用户选择（boolean）；`message` 完成时 resolve
 - **调用示例**：`const file = await open({ multiple: false, filters: [{ name: "文本", extensions: ["txt"] }] })`
+
+### 应用内确认对话框（ConfirmDialog）
+
+- **组件来源**：`$components/widgets/overlay/ConfirmDialog`（复合组件式，shadcn Alert Dialog，WebView 内渲染、随主题联动）——**无全局单例**，调用方局部定义使用，经 `{#snippet trigger()}` 传入真实触发按钮（必传）
+- **使用场景**：需要应用主题化/自定义排版的关键操作二次确认（如关闭窗口）；系统级交互仍走 `@tauri-apps/plugin-dialog`（原生 `ask`/`confirm`）或文件选择
+- **props**：`trigger`（必传，接收 bits-ui 委托 props 须 `{...props}` 展开且勿覆盖 onclick）、`open`（可选 $bindable，仅需程序化控制时绑定）、`title`/`message`（调用处已 i18n）、`variant: "default" | "destructive"`（危险操作红色确认按钮）、`confirmLabel`/`cancelLabel`（默认 `m.common_confirm()` / `m.common_cancel()`）、`onConfirm`/`onCancel`
+- **语义**：确认按钮 → `onConfirm`（对话框自动关闭）；取消按钮/ESC/遮罩点击 → 仅关闭并触发 `onCancel`；内部 `confirmed` 标志防止 Action 关窗误触 onCancel
+- **双委托**：触发按钮同时需要其他 bits-ui 触发器（如 Tooltip）时，优先用 `TooltipButton` 的 `extraProps` 吸收外部委托 props（内部经 mergeProps 链式合并 ref/事件，勿用对象展开）；手写 `mergeProps` 仅保留给特殊场景
+- **调用示例**：`<ConfirmDialog title={m.xxx()} message={m.xxx()} variant="destructive" onConfirm={() => ...}>{#snippet trigger({ props })}<Button {...props}>删除</Button>{/snippet}</ConfirmDialog>`
 
 ### 文件系统（fs）
 
@@ -261,7 +272,7 @@
 ### 国际化
 
 - **文案**：一律经 paraglide 编译产物 `m.xxx()` 取，不硬编码；动态文案用 `ParaglideMessage` 组件
-- **键命名**：`<前缀>_<具体含义>`（全小写 snake_case），前缀按归属域——`nav_` 导航标签 / `window_control_` 窗口控制 / `settings_` 设置项 / `about_` 关于页 / `theme_` 主题 / `layout_` 布局 / `language_` 语言 / `footer_` 页脚 / `boundary_` 错误边界；禁止裸名词键（如 `welcome`）
+- **键命名**：`<前缀>_<具体含义>`（全小写 snake_case），前缀按归属域——`nav_` 导航标签 / `window_control_` 窗口控制 / `settings_` 设置项 / `about_` 关于页 / `theme_` 主题 / `layout_` 布局 / `language_` 语言 / `footer_` 页脚 / `boundary_` 错误边界 / `common_` 通用文案（确认/取消按钮）；禁止裸名词键（如 `welcome`）
 - **消息源**：`messages/{locale}.json`；新增语言需同步 `project.inlang/settings.json` 的 locales；改动后运行 `bun run i18n:compile`
 - **locale 真相源**：config.json（后端）为准；`changeLocale` 先写后端成功才切前端（双写）；`initLocale` 启动时同步，失同步以 config 为准 reload 自愈
 - **首帧**：app.html 硬编码 lang="en"，由 initLocale 运行期更新 `document.documentElement.lang`
@@ -270,10 +281,11 @@
 
 - **成对依赖**：前端用到的 Tauri 能力需 npm 包 + Rust 侧 tauri-plugin 依赖 + `capabilities/plugins.json` 权限三者齐备（如 notification/updater/system-fonts）
 - **构建配置**：vite dev 端口固定 1420（strictPort），与 tauri.conf.json 的 devUrl/CSP 一致；watch 忽略 `src-tauri` 与根 `target/`（Windows 上 watch 被 cargo 锁定的构建脚本 exe 会 EBUSY 崩溃）；改端口需同步改 tauri.conf.json
+- **首帧性能**：SPA 白屏经「单入口打包」缓解——`svelte.config.ts` 配 `kit.output.bundleStrategy: "single"` 收敛 JS 单入口（消除 modulepreload/动态 import 请求链，JS 仍外链不受 CSP 约束）
 - **全局常量注入**：经 vite `define` 整体注入配置对象（`__APP_TAURI_CONF__` 为整份 tauri.conf.json、`__APP_PKG__` 为整份 package.json），消费方按需取属性；类型在 `src/vite-env.d.ts` 经 `import type ... from "*.json"` 引用 JSON 字面量推导（天然同步）；新增配置须同步 eslint.config.ts 的 `viteDefineGlobals`；watch 忽略 src-tauri，改配置需重启 dev 生效
 - **Tailwind v4**：经 `@tailwindcss/vite` 插件编译（vite.config.ts，无 postcss 配置）；`src/styles/app.css` 为唯一入口（`@import "tailwindcss"` + `@import "./themes/index.css"`）；**主题真相源在 `src/styles/themes/`**（shadcn 语义 token，换主题只改主题文件）；Tailwind 变量映射（`@theme inline`，`--color-*` 桥接语义 token）集中在 app.css 单一真相源，主题文件只承载变量值；新增主题在 themes/ 下直接以名字命名（neutral.css、blue.css…），**经 `themes/index.css` 聚合 import + `themes/index.ts` 追加 `themeNames` + AppearanceSettings 的 label 映射（options 由 themeNames 驱动）**，运行期经 `data-theme` 切换；**主题可分完整 token 与局部覆盖两类——完整主题含全量语义 token（浅/深），局部覆盖主题基于 neutral 基底仅覆盖差异 token（如 primary/chart/sidebar），`data-theme` 未覆盖 token 回落基底值**；`@theme`/`@custom-variant`/`@apply` 等 at-rule 与 oklch 数字写法已在 stylelint 豁免（.stylelintrc.json）
 - **CSP**：bits-ui 浮层组件（popover/dropdown/tooltip）经 floating-ui 内联 style 定位，生产 csp 的 style-src 必须含 `'unsafe-inline'`（已配置，勿删）
-- **主题**：深色模式为 class 策略——`document.documentElement` 挂 `.dark`（styles/app.css `@custom-variant dark`）；主题偏好经 `$libs/stores` 的 `settings.colorScheme`（`system | light | dark`，localStorage 持久化），经 `storeDef` 的 `subscribe` 声明式应用（创建时应用 + 变更跟随）
+- **主题**：深色模式为 class 策略——`document.documentElement` 挂 `.dark`（styles/app.css `@custom-variant dark`）；**暗色偏好经 mode-watcher 管理**——根布局挂 `<ModeWatcher />`（应用/移除 `.dark` + `color-scheme`），偏好经 `userPrefersMode`（`system | light | dark`，持久化于 `mode-watcher-mode` key，system 走 prefers-color-scheme），切换用 `setMode`；消费组件直接 import mode-watcher（如 sonner 的 `theme={mode.current}`）
 - **prettier**：prettier-plugin-tailwindcss 自动排序 Tailwind 类（`tailwindStylesheet` 指向 src/styles/app.css，插件顺序 svelte 在前）
 - **eslint 配置**：`.svelte.ts` runes 模块纳入 svelte 解析器块（extraFileExtensions）；`scripts/**/*.mjs` 配置 Node globals；`src/components/ui/**` 关闭 `svelte/no-navigation-without-resolve`（按钮类组件 href 为动态绑定，规则误报）
 - **质量门槛**：提交前通过 `bun run validate`（见「校验约定」）

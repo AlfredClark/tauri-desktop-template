@@ -2,10 +2,10 @@
   import { getCurrentWindow } from "@tauri-apps/api/window";
   import { Minus, Pin, PinOff, Square, X, Maximize } from "@lucide/svelte";
   import { onDestroy, onMount } from "svelte";
-  import { Button } from "$components/ui/button";
-  import { Tooltip, TooltipContent, TooltipTrigger } from "$components/ui/tooltip";
   import { invokeCommand } from "$libs/ipc";
   import { m } from "$libs/i18n/paraglide/messages";
+  import ConfirmDialog from "$components/widgets/overlay/ConfirmDialog.svelte";
+  import TooltipButton from "$components/widgets/overlay/TooltipButton.svelte";
 
   const appWindow = getCurrentWindow();
 
@@ -44,77 +44,44 @@
 
 <div class="flex h-8 items-center">
   {#if alwaysOnTopSupported}
-    <Tooltip>
-      <TooltipTrigger>
-        {#snippet child({ props })}
-          <Button
-            {...props}
-            variant="ghost"
-            class="h-8 w-11 rounded-none"
-            aria-label={m.window_control_pin()}
-            onclick={toggleAlwaysOnTop}
-          >
-            {#if alwaysOnTop}
-              <PinOff class="size-4" />
-            {:else}
-              <Pin class="size-4" />
-            {/if}
-          </Button>
-        {/snippet}
-      </TooltipTrigger>
-      <TooltipContent>{m.window_control_pin()}</TooltipContent>
-    </Tooltip>
+    <TooltipButton label={m.window_control_pin()} onclick={toggleAlwaysOnTop} class="h-8 w-11 rounded-none">
+      {#if alwaysOnTop}
+        <PinOff class="size-4" />
+      {:else}
+        <Pin class="size-4" />
+      {/if}
+    </TooltipButton>
   {/if}
-  <Tooltip>
-    <TooltipTrigger>
-      {#snippet child({ props })}
-        <Button
-          {...props}
-          variant="ghost"
-          class="h-8 w-11 rounded-none"
-          aria-label={m.window_control_minimize()}
-          onclick={() => void appWindow.minimize()}
-        >
-          <Minus class="size-4" />
-        </Button>
-      {/snippet}
-    </TooltipTrigger>
-    <TooltipContent>{m.window_control_minimize()}</TooltipContent>
-  </Tooltip>
-  <Tooltip>
-    <TooltipTrigger>
-      {#snippet child({ props })}
-        <Button
-          {...props}
-          variant="ghost"
-          class="h-8 w-11 rounded-none"
-          aria-label={m.window_control_maximize()}
-          onclick={() => void appWindow.toggleMaximize()}
-        >
-          {#if maximized}
-            <Square class="size-4" />
-          {:else}
-            <Maximize class="size-4" />
-          {/if}
-        </Button>
-      {/snippet}
-    </TooltipTrigger>
-    <TooltipContent>{m.window_control_maximize()}</TooltipContent>
-  </Tooltip>
-  <Tooltip>
-    <TooltipTrigger>
-      {#snippet child({ props })}
-        <Button
-          {...props}
-          variant="ghost"
-          class="h-8 w-11 rounded-none hover:bg-destructive hover:text-white dark:hover:bg-destructive dark:hover:text-white"
-          aria-label={m.window_control_close()}
-          onclick={() => void appWindow.close()}
-        >
-          <X class="size-4" />
-        </Button>
-      {/snippet}
-    </TooltipTrigger>
-    <TooltipContent>{m.window_control_close()}</TooltipContent>
-  </Tooltip>
+  <TooltipButton label={m.window_control_minimize()} onclick={() => void appWindow.minimize()} class="h-8 w-11 rounded-none">
+    <Minus class="size-4" />
+  </TooltipButton>
+  <TooltipButton
+    label={m.window_control_maximize()}
+    onclick={() => void appWindow.toggleMaximize()}
+    class="h-8 w-11 rounded-none"
+  >
+    {#if maximized}
+      <Square class="size-4" />
+    {:else}
+      <Maximize class="size-4" />
+    {/if}
+  </TooltipButton>
+  <!-- 关闭确认（复合组件式用法示例）：关闭按钮即 AlertDialog 触发器，确认后关闭窗口；
+       双委托（Tooltip + AlertDialog）经 TooltipButton 的 extraProps 内部合并，调用方无感知 -->
+  <ConfirmDialog
+    title={m.window_control_close_confirm_title()}
+    message={m.window_control_close_confirm_message()}
+    variant="destructive"
+    onConfirm={() => void appWindow.close()}
+  >
+    {#snippet trigger({ props })}
+      <TooltipButton
+        label={m.window_control_close()}
+        extraProps={props}
+        class="h-8 w-11 rounded-none hover:bg-destructive hover:text-white dark:hover:bg-destructive dark:hover:text-white"
+      >
+        <X class="size-4" />
+      </TooltipButton>
+    {/snippet}
+  </ConfirmDialog>
 </div>

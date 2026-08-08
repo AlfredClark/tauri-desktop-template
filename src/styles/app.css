@@ -5,7 +5,7 @@
 @import "@fontsource-variable/inter";
 
 /* 深色模式 class 策略：dark: 工具类跟随 document.documentElement 的 .dark 类
-   （而非 prefers-color-scheme 媒体查询），与 settings.colorScheme 的 class 切换一致 */
+   （而非 prefers-color-scheme 媒体查询），与 mode-watcher 的 class 切换一致 */
 @custom-variant dark (&:where(.dark, .dark *));
 
 /* Tailwind 变量映射：--color-* / --radius-* 桥接 themes/*.css 的语义 token。

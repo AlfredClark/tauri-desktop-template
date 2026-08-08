@@ -11,6 +11,11 @@ const config: Config = {
     adapter: adapter({
       fallback: "index.html",
     }),
+    // 单入口打包：消除 modulepreload + 动态 import 瀑布的串行协议请求链，
+    // 缩短 Tauri 首帧白屏（JS 仍外链，不影响 CSP；模板应用路由量级小，无拆包收益）
+    output: {
+      bundleStrategy: "single",
+    },
     // 自定义别名：$libs 指向 src/libs
     alias: {
       $libs: "./src/libs",

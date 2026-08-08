@@ -36,9 +36,6 @@ export interface StoreDefinition<T> {
   subscribe?: (value: T) => void; // 值变更回调：创建时执行一次，此后每次值变更触发，与持久化相互独立
 }
 
-/** 配色方案偏好：system 跟随操作系统，light/dark 手动指定 */
-export type ColorScheme = "system" | "light" | "dark";
-
 /** 布局偏好：default 默认布局，baseline 基线布局 */
 export type LayoutName = "default" | "baseline";
 

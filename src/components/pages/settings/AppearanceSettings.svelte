@@ -3,10 +3,11 @@
   import { Select, SelectContent, SelectItem, SelectTrigger } from "$components/ui/select";
   import { changeLocale, getLocale, type Locale } from "$libs/i18n";
   import { m } from "$libs/i18n/paraglide/messages";
-  import { settings, type ColorScheme, type LayoutName, type ThemeName } from "$libs/stores";
+  import { settings, type LayoutName, type ThemeName } from "$libs/stores";
   import { themeNames } from "$styles/themes";
+  import { setMode, userPrefersMode } from "mode-watcher";
 
-  const { colorScheme, layout, theme } = settings;
+  const { layout, theme } = settings;
 
   /** 语言选项：value 即后端 locale 标签（Locale 校验域） */
   const localeOptions = [
@@ -14,7 +15,7 @@
     { value: "zh-CN", label: m.language_zh_cn },
   ] as const;
 
-  /** 颜色模式选项：value 即 ColorScheme 值域 */
+  /** 颜色模式选项：value 即 mode-watcher Mode 值域 */
   const colorOptions = [
     { value: "system", label: m.theme_system },
     { value: "light", label: m.theme_light },
@@ -46,7 +47,9 @@
 
   // 选中项文本（Select.Trigger 需调用方渲染；未知值回退首个选项）
   const localeLabel = $derived(localeOptions.find((opt) => opt.value === locale)?.label() ?? localeOptions[0].label());
-  const colorLabel = $derived(colorOptions.find((opt) => opt.value === $colorScheme)?.label() ?? colorOptions[0].label());
+  const colorLabel = $derived(
+    colorOptions.find((opt) => opt.value === userPrefersMode.current)?.label() ?? colorOptions[0].label(),
+  );
   const layoutLabel = $derived(layoutOptions.find((opt) => opt.value === $layout)?.label() ?? layoutOptions[0].label());
   const themeLabel = $derived(themeOptions.find((opt) => opt.value === $theme)?.label() ?? themeOptions[0].label());
 
@@ -59,9 +62,11 @@
     if (!ok) locale = previous;
   }
 
-  /** 颜色模式切换：直接写前端偏好 store，主题应用已由 storeDef subscribe 声明式注入 */
+  /** 颜色模式切换：写 mode-watcher 偏好（userPrefersMode 自动持久化，.dark class 由 ModeWatcher 应用） */
   function handleColorChange(value: string | undefined) {
-    if (value && value !== $colorScheme) colorScheme.set(value as ColorScheme);
+    if (value && value !== userPrefersMode.current) {
+      setMode(value as "light" | "dark" | "system");
+    }
   }
 
   /** 布局切换：直接写前端偏好 store，布局容器订阅自动切换 */
@@ -97,7 +102,7 @@
     <Label>{m.settings_color_scheme()}</Label>
     <p class="text-sm text-muted-foreground">{m.settings_color_scheme_description()}</p>
   </div>
-  <Select type="single" value={$colorScheme} onValueChange={handleColorChange}>
+  <Select type="single" value={userPrefersMode.current} onValueChange={handleColorChange}>
     <SelectTrigger class="w-40">
       {colorLabel}
     </SelectTrigger>

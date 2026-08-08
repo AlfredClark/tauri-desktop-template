@@ -8,8 +8,9 @@
   /** 导航项：默认使用 $libs/navigation 的 defaultNavItems，布局可传入自定义导航 */
   let { items = defaultNavItems }: { items?: NavItem[] } = $props();
 
-  // 选中态与路由绑定：value 即 href，后退/刷新/直接访问均自动同步
-  let activeTab = $derived(page.url.pathname);
+  // 选中态与路由绑定：value 即 href，后退/刷新/直接访问均自动同步；
+  // 路径与导航项不匹配时（如 tauri://localhost 无路径段、pathname 为空）回退默认项（首页）
+  let activeTab = $derived(items.find((item) => item.href === page.url.pathname)?.href ?? items[0]?.href);
 
   async function handleValueChange(value: string | undefined) {
     const target = items.find((item) => item.href === value);
