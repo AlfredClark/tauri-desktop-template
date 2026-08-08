@@ -1,6 +1,6 @@
 [package]
 name = "tauri-desktop-template"
-version = "0.1.0"
+version = "0.2.0"
 description = "Tauri based desktop application development template"
 authors = ["Alfred Clark"]
 license = "GPL-3.0-only"
