@@ -4,6 +4,9 @@ pub mod env;
 pub mod instance;
 pub mod locale;
 pub mod logger;
+
+#[cfg(target_os = "macos")]
+pub mod menu;
 pub mod panic;
 pub mod response;
 pub mod shortcut;
@@ -18,6 +21,8 @@ pub fn setup_cores(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error
     autostart::setup(app)?;
     tray::setup(app)?;
     shortcut::setup(app)?;
+    #[cfg(target_os = "macos")]
+    menu::setup(app)?;
     window_state::setup(app)?;
     Ok(())
 }

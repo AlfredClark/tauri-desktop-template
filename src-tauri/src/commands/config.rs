@@ -47,6 +47,8 @@ pub fn set_locale(app: tauri::AppHandle, state: State<'_, ConfigState>, locale: 
     }
     rust_i18n::set_locale(locale.as_str());
     crate::cores::tray::rebuild_menu(&app);
+    #[cfg(target_os = "macos")]
+    crate::cores::menu::rebuild_menu(&app);
     Response::ok(locale.as_str().to_string())
 }
 

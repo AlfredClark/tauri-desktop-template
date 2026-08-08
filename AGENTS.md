@@ -9,7 +9,7 @@
 - **前端**：SvelteKit 5 / Svelte 5 / TypeScript / Vite / Tailwind CSS v4 / shadcn-svelte，包管理器 bun
 - **后端**：Tauri 2 / Rust（edition 2024），Cargo workspace（成员为 `src-tauri`）
 - **国际化**：前端 Paraglide（inlang），后端 rust-i18n
-- **集成能力**：系统托盘、全局快捷键、开机自启、单实例、自动更新、对话框、文件系统、系统信息、剪贴板、通知、日志
+- **集成能力**：系统托盘、全局快捷键、开机自启、单实例、自动更新、对话框、文件系统、系统信息、剪贴板、应用菜单（macOS）、通知、日志
 - **质量工具**：ESLint / Stylelint / Prettier / Clippy / rustfmt / Husky + lint-staged
 - **授权**：GPL-3.0-only
 
@@ -56,9 +56,10 @@
 │   │   │   ├── config.rs           # 配置管理
 │   │   │   ├── env.rs              # 环境信息
 │   │   │   ├── instance.rs         # 单实例
-│   │   │   ├── locale.rs           # 系统语言
-│   │   │   ├── logger.rs           # 日志
-│   │   │   ├── panic.rs            # panic 处理
+│   │   │   ├── locale.rs             # 系统语言
+│   │   │   ├── logger.rs             # 日志
+│   │   │   ├── menu.rs               # 应用菜单（macOS 专属，#[cfg(target_os = "macos")]）
+│   │   │   ├── panic.rs              # panic 处理
 │   │   │   ├── response.rs         # 统一响应
 │   │   │   ├── shortcut.rs         # 全局快捷键
 │   │   │   ├── tray.rs             # 系统托盘

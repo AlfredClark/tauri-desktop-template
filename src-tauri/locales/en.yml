@@ -3,3 +3,8 @@ greet: "Hello, %{name}! You've been greeted from Rust!"
 tray:
   toggle_window: "Show / Hide"
   quit: "Quit"
+menu:
+  navigate: "Navigate"
+  home: "Home"
+  settings: "Settings"
+  about: "About"
