@@ -110,3 +110,21 @@ pub fn toggle_notification(config: State<'_, ConfigState>) -> Response<bool> {
     }
     Response::ok(enabled)
 }
+
+/// 切换窗口状态记忆开关：`invokeCommand("toggle_window_state")`。
+/// 纯配置切换（无 OS 副作用）：读 config 当前值取反 → 写回 config；
+/// 生效时机在下次启动的 `cores::window_state::setup` 门控（关闭则不恢复窗口状态），
+/// 退出时的状态记录为插件内置行为，不受开关影响（详见 window_state 模块文档）。
+/// @param config 系统配置状态（经 setup 初始化）
+/// @returns 切换后的 window_state 值
+#[tauri::command]
+pub fn toggle_window_state(config: State<'_, ConfigState>) -> Response<bool> {
+    let enabled = config.read_bool(ConfigKey::WindowState, false);
+    let enabled = !enabled;
+
+    let value = serde_json::Value::Bool(enabled);
+    if let Err(error) = config.set(ConfigKey::WindowState, value) {
+        return Response::err(error.code, error.message);
+    }
+    Response::ok(enabled)
+}

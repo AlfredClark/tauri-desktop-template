@@ -20,6 +20,7 @@ const FILE_NAME: &str = "config.json";
 
 /// 系统级配置完整快照（get_config 返回值；字段与 config.json 的 key 一一对应）
 #[derive(Debug, Clone, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct SystemConfig {
     /// 界面语言标签
     pub locale: String,
@@ -29,6 +30,8 @@ pub struct SystemConfig {
     pub tray: bool,
     /// 系统通知开关
     pub notification: bool,
+    /// 窗口状态记忆开关
+    pub window_state: bool,
 }
 
 /// config.json 配置项 key（变体与 `SystemConfig` 字段一一对应，跨层引用经枚举保证拼写正确）
@@ -42,6 +45,8 @@ pub(crate) enum ConfigKey {
     Tray,
     /// 系统通知（对应 SystemConfig::notification）
     Notification,
+    /// 窗口状态记忆（对应 SystemConfig::window_state）
+    WindowState,
 }
 
 impl ConfigKey {
@@ -52,6 +57,7 @@ impl ConfigKey {
             Self::Autostart => "autostart",
             Self::Tray => "tray",
             Self::Notification => "notification",
+            Self::WindowState => "window_state",
         }
     }
 }
@@ -96,6 +102,7 @@ pub fn load(store: &Store<tauri::Wry>) -> AppResult<Locale> {
     load_bool(store, ConfigKey::Autostart, false, &mut repaired);
     load_bool(store, ConfigKey::Tray, true, &mut repaired);
     load_bool(store, ConfigKey::Notification, false, &mut repaired);
+    load_bool(store, ConfigKey::WindowState, false, &mut repaired);
 
     // 仅当存在修复时落盘，健康文件不写盘
     if repaired {
@@ -123,13 +130,14 @@ pub struct ConfigState {
 
 impl ConfigState {
     /// 读取全部系统配置（类型化快照；缺失/损坏条目回退默认值）。
-    /// @returns 配置快照（locale/autostart/tray/notification）
+    /// @returns 配置快照（locale/autostart/tray/notification/window_state）
     pub fn get_all(&self) -> SystemConfig {
         SystemConfig {
             locale: self.read_locale().as_str().to_string(),
             autostart: self.read_bool(ConfigKey::Autostart, false),
             tray: self.read_bool(ConfigKey::Tray, true),
             notification: self.read_bool(ConfigKey::Notification, false),
+            window_state: self.read_bool(ConfigKey::WindowState, false),
         }
     }
 

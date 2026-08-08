@@ -10,7 +10,13 @@
   const { closeBehavior } = settings;
 
   // 系统配置初始兜底值（与后端默认一致）；onMount 加载真实快照覆盖
-  let config = $state<SystemConfig>({ locale: "en", autostart: false, tray: true, notification: false });
+  let config = $state<SystemConfig>({
+    locale: "en",
+    autostart: false,
+    tray: true,
+    notification: false,
+    windowState: false,
+  });
 
   /** 关闭行为选项：value 即 CloseBehaviorName 值域 */
   const closeBehaviorOptions = [
@@ -48,6 +54,11 @@
   async function toggleNotification() {
     const next = await invokeCommand<boolean>("toggle_notification");
     if (next !== null) config.notification = next;
+  }
+
+  async function toggleWindowState() {
+    const next = await invokeCommand<boolean>("toggle_window_state");
+    if (next !== null) config.windowState = next;
   }
 
   /** 关闭行为切换：minimize 仅托盘开启时可选（SelectItem disabled 已在 UI 层约束） */
@@ -99,4 +110,12 @@
     <p class="text-sm text-muted-foreground">{m.settings_notification_description()}</p>
   </div>
   <Switch checked={config.notification} onCheckedChange={toggleNotification} />
+</div>
+
+<div class="flex items-center justify-between gap-4 px-4 py-4">
+  <div class="space-y-1">
+    <Label>{m.settings_window_state()}</Label>
+    <p class="text-sm text-muted-foreground">{m.settings_window_state_description()}</p>
+  </div>
+  <Switch checked={config.windowState} onCheckedChange={toggleWindowState} />
 </div>

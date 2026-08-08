@@ -14,4 +14,5 @@ export interface SystemConfig {
   autostart: boolean; // 开机自启开关
   tray: boolean; // 系统托盘开关
   notification: boolean; // 系统通知开关
+  windowState: boolean; // 窗口状态记忆开关
 }

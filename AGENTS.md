@@ -61,7 +61,8 @@
 │   │   │   ├── panic.rs            # panic 处理
 │   │   │   ├── response.rs         # 统一响应
 │   │   │   ├── shortcut.rs         # 全局快捷键
-│   │   │   └── tray.rs             # 系统托盘
+│   │   │   ├── tray.rs             # 系统托盘
+│   │   │   └── window_state.rs     # 窗口状态记忆
 │   │   ├── features/               # 业务功能模块（新增功能放此处）
 │   │   ├── lib.rs                  # 应用初始化
 │   │   └── main.rs                 # 程序入口
@@ -163,6 +164,7 @@
 - **文案**：一律经 `t!("key")` 取，不硬编码中英文；消息源加在 `locales/*.yml`（缺失回退 `en`）
 - **语言校验**：语言标签经 `Locale` 新类型校验，非法值拒绝写入
 - **首启跟随系统语言**：locale 缺失时经 `Locale::from_system`（tauri-plugin-os 取系统标签，完整标签/主语言子标签精确匹配）跟随系统语言，不匹配回退默认；已有配置不覆盖
+- **窗口状态记忆**：经 tauri-plugin-window-state 记录/恢复尺寸、位置与最大化状态（`.window-state.json` 于应用配置目录）；开关为 config.json 的 `window_state` key（默认关）；`cores/window_state.rs` 以 `skip_initial_state("main")` 关闭插件自动恢复，恢复改由 setup 按配置门控——跟踪与退出保存（RunEvent::Exit）为插件内置行为不受开关影响（关闭期间仍记录，重开恢复最近一次，即"暂停记忆"语义）；已知边界：Wayland 下位置恢复无效（合成器决定摆放），尺寸/最大化正常；强杀进程（无 Exit 事件）不落盘
 
 ### 质量门槛
 

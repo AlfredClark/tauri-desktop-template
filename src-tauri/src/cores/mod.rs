@@ -8,6 +8,7 @@ pub mod panic;
 pub mod response;
 pub mod shortcut;
 pub mod tray;
+pub mod window_state;
 
 /// 整合 cores 下所有模块的初始化 setup，供 lib.rs 统一调用。
 /// @param app Tauri 应用实例
@@ -17,5 +18,6 @@ pub fn setup_cores(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error
     autostart::setup(app)?;
     tray::setup(app)?;
     shortcut::setup(app)?;
+    window_state::setup(app)?;
     Ok(())
 }

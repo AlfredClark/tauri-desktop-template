@@ -38,6 +38,8 @@
   "settings_close_behavior_minimize": "Minimize to tray",
   "settings_notification": "Notifications",
   "settings_notification_description": "Allow the app to send system notifications",
+  "settings_window_state": "Remember Window State",
+  "settings_window_state_description": "Restore window size and position on launch",
   "about_section_app": "About App",
   "about_section_system": "About System",
   "about_app_name": "App Name",

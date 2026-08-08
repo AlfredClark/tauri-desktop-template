@@ -38,6 +38,8 @@
   "settings_close_behavior_minimize": "最小化到托盘",
   "settings_notification": "系统通知",
   "settings_notification_description": "允许应用发送系统通知",
+  "settings_window_state": "记住窗口",
+  "settings_window_state_description": "启动时恢复窗口的尺寸与位置",
   "about_section_app": "关于应用",
   "about_section_system": "关于系统",
   "about_app_name": "应用名称",

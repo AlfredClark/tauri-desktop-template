@@ -13,6 +13,7 @@ macro_rules! invoke_handlers {
             $crate::commands::config::toggle_autostart,
             $crate::commands::config::toggle_tray,
             $crate::commands::config::toggle_notification,
+            $crate::commands::config::toggle_window_state,
             $crate::commands::env::is_always_on_top_supported,
         ]
     };
