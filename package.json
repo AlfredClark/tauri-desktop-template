@@ -4,7 +4,7 @@
   "description": "Tauri based desktop application development template",
   "license": "GPL-3.0-only",
   "author": "Alfred Clark",
-  "homepage": "https://github.com/alfredclark",
+  "homepage": "https://github.com/alfredclark/tauri-desktop-template",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/alfredclark/tauri-desktop-template.git"
@@ -23,12 +23,16 @@
     "node": ">=24.0.0"
   },
   "scripts": {
-    "validate": "bun run lint:all && bun run format:all:check && bun run check:rust && bun run check",
-    "validate:js": "eslint . && stylelint \"src/**/*.{css,svelte}\" && prettier --check . && svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
     "tauri:dev": "tauri dev",
     "tauri:build": "tauri build",
     "tauri:icon": "tauri icon ./static/icon.png",
+    "format:all": "prettier --write . && cargo fmt",
+    "validate": "bun run lint:all && bun run format:all:check && bun run check:rust && bun run check",
+    "validate:js": "eslint . && stylelint \"src/**/*.{css,svelte}\" && prettier --check . && svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
     "i18n:compile": "paraglide-js compile --project ./src/libs/i18n/project.inlang --outdir ./src/libs/i18n/paraglide --strategy localStorage baseLocale --emit-ts-declarations",
+    "version:patch": "node scripts/bump-version.mjs patch",
+    "version:minor": "node scripts/bump-version.mjs minor",
+    "version:major": "node scripts/bump-version.mjs major",
     "dev": "vite dev",
     "build": "vite build",
     "preview": "vite preview",
@@ -47,7 +51,6 @@
     "format:check": "prettier --check .",
     "format:rust": "cargo fmt",
     "format:rust:check": "cargo fmt --check",
-    "format:all": "prettier --write . && cargo fmt",
     "format:all:check": "prettier --check . && cargo fmt --check"
   },
   "lint-staged": {

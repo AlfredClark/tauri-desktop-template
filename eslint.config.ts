@@ -42,13 +42,13 @@ export default defineConfig([
     },
   },
   {
-    // Svelte 组件：使用 TS 解析器 + 浏览器 globals
-    files: ["src/**/*.svelte"],
+    // Svelte 组件与 runes 模块（.svelte.ts）：使用 svelte 解析器 + TS + 浏览器 globals
+    files: ["src/**/*.svelte", "src/**/*.svelte.ts"],
     languageOptions: {
       globals: { ...globals.browser, ...viteDefineGlobals },
       parserOptions: {
         parser: tseslint.parser,
-        extraFileExtensions: [".svelte"],
+        extraFileExtensions: [".svelte", ".svelte.ts"],
         svelteConfig,
       },
     },
@@ -62,8 +62,8 @@ export default defineConfig([
     },
   },
   {
-    // Node 环境下的构建配置文件
-    files: ["*.config.ts", "eslint.config.ts"],
+    // Node 环境下的构建配置文件与脚本
+    files: ["*.config.ts", "eslint.config.ts", "scripts/**/*.mjs"],
     languageOptions: { globals: globals.node },
   },
   // 置于最后，关闭与 prettier 冲突的规则

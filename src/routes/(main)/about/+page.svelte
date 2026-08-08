@@ -1,7 +1,21 @@
 <script lang="ts">
+  import AppAbout from "$components/about/AppAbout.svelte";
+  import SystemAbout from "$components/about/SystemAbout.svelte";
   import { m } from "$libs/i18n/paraglide/messages";
 </script>
 
-<div class="flex h-full w-full flex-col items-center p-6">
-  <h1 class="text-lg font-semibold">{m.nav_about()}</h1>
+<div class="mx-auto w-full max-w-2xl space-y-8 p-6">
+  <section class="space-y-3">
+    <h2 class="text-lg font-semibold">{m.about_section_app()}</h2>
+    <div class="divide-y rounded-lg border">
+      <AppAbout />
+    </div>
+  </section>
+
+  <section class="space-y-3">
+    <h2 class="text-lg font-semibold">{m.about_section_system()}</h2>
+    <div class="divide-y rounded-lg border">
+      <SystemAbout />
+    </div>
+  </section>
 </div>

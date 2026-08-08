@@ -59,6 +59,17 @@ impl ConfigKey {
 /// 默认语言标签（与前端 paraglide baseLocale 一致）
 const DEFAULT_LOCALE: &str = "en";
 
+/// 解析初始 locale：首次运行/配置缺失时优先跟随系统语言
+/// （完整标签或主语言子标签精确匹配，经 `tauri_plugin_os::locale()` 获取），
+/// 系统语言不可得或不匹配时回退默认语言。
+/// 为什么放这里：系统语言检测为启动期初始化行为，locale 校验归 Locale 类型（from_system）。
+/// @returns 校验通过的 locale（回退后恒为合法值）
+fn initial_locale() -> Locale {
+    tauri_plugin_os::locale()
+        .and_then(|value| Locale::from_system(&value))
+        .unwrap_or_else(|| Locale::new(DEFAULT_LOCALE).expect("default locale must be available"))
+}
+
 /// 从 store 加载配置：locale 缺失/非法时回退默认并写回修复；
 /// 布尔配置项（autostart/tray/notification）逐键校验，损坏值同样修复落盘。
 /// @param store plugin-store 的 store 引用
@@ -71,8 +82,8 @@ pub fn load(store: &Store<tauri::Wry>) -> AppResult<Locale> {
         _ => None,
     };
     let locale = locale.unwrap_or_else(|| {
-        // DEFAULT_LOCALE 恒在可用 locale 列表中（en.yml 消息源存在）
-        let locale = Locale::new(DEFAULT_LOCALE).expect("default locale must be available");
+        // 初次运行/配置缺失：跟随系统语言（匹配失败回退默认），开箱即用
+        let locale = initial_locale();
         store.set(
             ConfigKey::Locale.as_str().to_string(),
             serde_json::Value::String(locale.as_str().to_string()),
@@ -122,14 +133,14 @@ impl ConfigState {
         }
     }
 
-    /// 读取 locale：非法/缺失时回退默认语言。
+    /// 读取 locale：非法/缺失时回退默认语言（缺失时跟随系统语言，与 load 语义一致）。
     /// @returns 校验通过的 locale（回退后恒为合法值）
     fn read_locale(&self) -> Locale {
         let locale = match self.store.get(ConfigKey::Locale.as_str()) {
             Some(serde_json::Value::String(value)) => Locale::new(&value),
             _ => None,
         };
-        locale.unwrap_or_else(|| Locale::new(DEFAULT_LOCALE).expect("default locale must be available"))
+        locale.unwrap_or_else(initial_locale)
     }
 
     /// 读取布尔配置项：缺失/非布尔时回退默认值。
