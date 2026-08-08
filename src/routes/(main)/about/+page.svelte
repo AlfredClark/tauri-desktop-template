@@ -1,6 +1,6 @@
 <script lang="ts">
-  import AppAbout from "$components/about/AppAbout.svelte";
-  import SystemAbout from "$components/about/SystemAbout.svelte";
+  import AppAbout from "$components/pages/about/AppAbout.svelte";
+  import SystemAbout from "$components/pages/about/SystemAbout.svelte";
   import { m } from "$libs/i18n/paraglide/messages";
 </script>
 

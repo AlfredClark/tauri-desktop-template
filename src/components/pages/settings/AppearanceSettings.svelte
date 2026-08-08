@@ -4,6 +4,7 @@
   import { changeLocale, getLocale, type Locale } from "$libs/i18n";
   import { m } from "$libs/i18n/paraglide/messages";
   import { settings, type ColorScheme, type LayoutName, type ThemeName } from "$libs/stores";
+  import { themeNames } from "$styles/themes";
 
   const { colorScheme, layout, theme } = settings;
 
@@ -26,33 +27,19 @@
     { value: "baseline", label: m.layout_baseline },
   ] as const;
 
-  /** 主题选项：value 即 ThemeName 值域，与官方主题一一对应 */
-  const themeOptions = [
-    { value: "neutral", label: m.theme_neutral },
-    { value: "stone", label: m.theme_stone },
-    { value: "zinc", label: m.theme_zinc },
-    { value: "mauve", label: m.theme_mauve },
-    { value: "olive", label: m.theme_olive },
-    { value: "mist", label: m.theme_mist },
-    { value: "taupe", label: m.theme_taupe },
-    { value: "amber", label: m.theme_amber },
-    { value: "blue", label: m.theme_blue },
-    { value: "cyan", label: m.theme_cyan },
-    { value: "emerald", label: m.theme_emerald },
-    { value: "fuchsia", label: m.theme_fuchsia },
-    { value: "green", label: m.theme_green },
-    { value: "indigo", label: m.theme_indigo },
-    { value: "lime", label: m.theme_lime },
-    { value: "orange", label: m.theme_orange },
-    { value: "pink", label: m.theme_pink },
-    { value: "purple", label: m.theme_purple },
-    { value: "red", label: m.theme_red },
-    { value: "rose", label: m.theme_rose },
-    { value: "sky", label: m.theme_sky },
-    { value: "teal", label: m.theme_teal },
-    { value: "violet", label: m.theme_violet },
-    { value: "yellow", label: m.theme_yellow },
-  ] as const;
+  /** 主题文案映射：paraglide 消息为具体函数对象无法动态索引，保留显式映射（与 themeNames 一一对应） */
+  const themeLabels = {
+    neutral: m.theme_neutral,
+    stone: m.theme_stone,
+    zinc: m.theme_zinc,
+    mauve: m.theme_mauve,
+    olive: m.theme_olive,
+    mist: m.theme_mist,
+    taupe: m.theme_taupe,
+  } as const;
+
+  /** 主题选项：value 由 themeNames 驱动（单一真相源），label 取显式映射 */
+  const themeOptions = themeNames.map((name) => ({ value: name, label: themeLabels[name] }));
 
   // 语言真相源为 config.json：启动时经 initLocale 与 paraglide 同步，此处以 getLocale 为初始值
   let locale = $state<Locale>(getLocale());

@@ -1,6 +1,6 @@
 <script lang="ts">
-  import AppearanceSettings from "$components/settings/AppearanceSettings.svelte";
-  import SystemSettings from "$components/settings/SystemSettings.svelte";
+  import AppearanceSettings from "$components/pages/settings/AppearanceSettings.svelte";
+  import SystemSettings from "$components/pages/settings/SystemSettings.svelte";
   import { m } from "$libs/i18n/paraglide/messages";
 </script>
 

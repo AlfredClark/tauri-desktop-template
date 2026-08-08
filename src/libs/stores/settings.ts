@@ -1,5 +1,6 @@
 import { createStoreGroup, storeDef } from "./core";
 import type { ColorScheme, LayoutName, ThemeName } from "./types";
+import { themeNames } from "$styles/themes";
 
 /**
  * UI 偏好统一出口：createStoreGroup 组合三个偏好子 store（colorScheme/layout/theme），各自独立
@@ -12,6 +13,12 @@ export const settings = createStoreGroup({
   layout: storeDef<LayoutName>("default", "layout"),
   theme: storeDef<ThemeName>("neutral", "theme", createThemeListener()),
 });
+
+// 主题兜底：localStorage 残留已删除主题（如 red）时回退 neutral——
+// 经 set 触发监听器（data-theme）与持久化同步修正，仅启动时执行一次
+if (!themeNames.includes(settings.theme.get())) {
+  settings.theme.set("neutral");
+}
 
 /**
  * 配色方案监听器工厂：matchMedia 监听创建时注册一次（无需逐次清理）；system 模式下
