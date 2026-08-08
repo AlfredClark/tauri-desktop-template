@@ -2,14 +2,14 @@
 
 ## 项目说明
 
-本项目是基于 Tauri 2 的桌面应用开发模板，前端使用 SvelteKit 5 + TypeScript，后端使用 Rust。项目已集成托盘、全局快捷键、开机自启、单实例、自动更新、对话框、文件系统、系统信息、多语言、日志等桌面应用常见能力，可作为新桌面应用项目的起点。
+本项目是基于 Tauri 2 的桌面应用开发模板，前端使用 SvelteKit 5 + TypeScript，后端使用 Rust。项目已集成托盘、全局快捷键、开机自启、单实例、自动更新、对话框、文件系统、系统信息、剪贴板、多语言、日志等桌面应用常见能力，可作为新桌面应用项目的起点。
 
 ## 技术栈
 
 - **前端**：SvelteKit 5 / Svelte 5 / TypeScript / Vite / Tailwind CSS v4 / shadcn-svelte，包管理器 bun
 - **后端**：Tauri 2 / Rust（edition 2024），Cargo workspace（成员为 `src-tauri`）
 - **国际化**：前端 Paraglide（inlang），后端 rust-i18n
-- **集成能力**：系统托盘、全局快捷键、开机自启、单实例、自动更新、对话框、文件系统、系统信息、通知、日志
+- **集成能力**：系统托盘、全局快捷键、开机自启、单实例、自动更新、对话框、文件系统、系统信息、剪贴板、通知、日志
 - **质量工具**：ESLint / Stylelint / Prettier / Clippy / rustfmt / Husky + lint-staged
 - **授权**：GPL-3.0-only
 
@@ -131,7 +131,7 @@
 - **错误分级**：可恢复错误不阻断启动（`log::warn!` 后继续，如自启/快捷键同步失败）；关键错误返回 `Err` 阻断
 - **损坏恢复**：配置损坏备份为 `*.corrupt` 后重建，不阻断启动
 - **插件装配**：需业务配置/事件的插件经 cores 的 `plugin()` 统一封装（如 `config::plugin()` 装配 store、`logger::plugin()` 配置日志目标、`shortcut::plugin()` 注册快捷键 handler），lib.rs 仅链式调用，不写插件细节
-- **官方插件**：无需定制的插件（opener/process/notification/system-fonts/dialog/fs/os/updater）直接在 lib.rs 以 `tauri_plugin_xxx::init()` 注册
+- **官方插件**：无需定制的插件（opener/clipboard-manager/process/notification/system-fonts/dialog/fs/os/updater）直接在 lib.rs 以 `tauri_plugin_xxx::init()` 注册
 - **注册顺序**：单实例插件置于链首——尽早注册单例锁，避免窗口建好后回调竞态
 - **职责分离**：事件/回调逻辑放 plugin()（如快捷键 handler、单实例聚焦回调），setup() 只做初始化与状态同步，不混写
 - **权限同步**：新增插件且前端需调用其 API 时，同步在 `capabilities/plugins.json` 追加权限（如 `global-shortcut:default`）
@@ -258,6 +258,13 @@
 - **注意事项**：`type()` 与 TS 关键字冲突，import 须重命名（`type as osType`）
 - **调用示例**：`platform()` / `await hostname()`
 
+### 剪贴板（clipboard）
+
+- **能力来源**：经 `@tauri-apps/plugin-clipboard-manager` 提供的 API 调用——`writeText` / `readText` / `writeHtml` / `clear` / `writeImage` / `readImage`，**不经 `invokeCommand`**——官方插件自带 IPC 封装，与 notification/dialog/fs 同模式
+- **权限**：`clipboard-manager:default` 为**空权限集**（官方刻意设计，读写须显式开启）；模板默认**不开启任何剪贴板权限**（能力已接线、零权限锁定，业务需要时在 `capabilities/plugins.json` 显式追加 `clipboard-manager:allow-*`：read/write-text、write-html、read/write-image、clear，按需裁剪）
+- **已知边界**：Linux Wayland 下图片剪贴板能力取决于 arboard 后端支持，文本不受影响；`readImage` 返回原始 RGBA 字节（无编码格式），预览须经 canvas 转换
+- **调用示例**：`await writeText("text")` / `const text = await readText()` / `await clear()`
+
 ### 错误处理
 
 - **三层拦截**：window error（capture 阶段，含资源加载失败）+ unhandledrejection + svelte:boundary（渲染边界 + 手动重试按钮）；SvelteKit `handleError` 经 hooks.client.ts 接入
@@ -281,7 +288,7 @@
 
 ### 注意事项
 
-- **成对依赖**：前端用到的 Tauri 能力需 npm 包 + Rust 侧 tauri-plugin 依赖 + `capabilities/plugins.json` 权限三者齐备（如 notification/updater/system-fonts）
+- **成对依赖**：前端用到的 Tauri 能力需 npm 包 + Rust 侧 tauri-plugin 依赖 + `capabilities/plugins.json` 权限三者齐备（如 notification/updater/system-fonts/clipboard-manager）
 - **构建配置**：vite dev 端口固定 1420（strictPort），与 tauri.conf.json 的 devUrl/CSP 一致；watch 忽略 `src-tauri` 与根 `target/`（Windows 上 watch 被 cargo 锁定的构建脚本 exe 会 EBUSY 崩溃）；改端口需同步改 tauri.conf.json
 - **首帧性能**：SPA 白屏经「单入口打包」缓解——`svelte.config.ts` 配 `kit.output.bundleStrategy: "single"` 收敛 JS 单入口（消除 modulepreload/动态 import 请求链，JS 仍外链不受 CSP 约束）
 - **全局常量注入**：经 vite `define` 整体注入配置对象（`__APP_TAURI_CONF__` 为整份 tauri.conf.json、`__APP_PKG__` 为整份 package.json），消费方按需取属性；类型在 `src/vite-env.d.ts` 经 `import type ... from "*.json"` 引用 JSON 字面量推导（天然同步）；新增配置须同步 eslint.config.ts 的 `viteDefineGlobals`；watch 忽略 src-tauri，改配置需重启 dev 生效

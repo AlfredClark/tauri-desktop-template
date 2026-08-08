@@ -27,6 +27,7 @@ pub fn run() {
         .plugin(cores::logger::plugin())
         .plugin(cores::shortcut::plugin())
         .plugin(cores::window_state::plugin())
+        .plugin(tauri_plugin_clipboard_manager::init())
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_os::init())
         .plugin(tauri_plugin_process::init())
