@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## [v0.1.0] - 2026-09-03
 
+### 🐛 Bug Fixes
+
+- Fix release workflow verify bug
+
 ### 🚜 Refactor
 
 - Refactor project
