@@ -127,3 +127,23 @@ jobs:
 
       - name: Check
         run: cargo check --manifest-path Cargo.toml --workspace
+
+  ci-passed:
+    name: Passed
+    runs-on: ubuntu-latest
+    needs: [changes, frontend, backend]
+    if: always()
+
+    steps:
+      - name: Evaluate Results
+        run: |
+          echo "Frontend: ${{ needs.frontend.result }}"
+          echo "Backend:  ${{ needs.backend.result }}"
+
+          if [[ "${{ needs.frontend.result }}" =~ ^(failure|cancelled)$ ]] || \
+             [[ "${{ needs.backend.result }}" =~ ^(failure|cancelled)$ ]]; then
+            echo "::error::One or more essential checks failed."
+            exit 1
+          fi
+          echo "All checks passed or were safely skipped!"
+          exit 0

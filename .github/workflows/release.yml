@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: "Version tag to release (e.g. v1.2.3). The tag must already exist and match the app version in tauri.conf.json / Cargo.toml."
+        description: "Version tag to release (e.g. v1.2.3)."
         required: true
 
 permissions:
@@ -17,8 +17,42 @@ permissions:
   artifact-metadata: write
 
 jobs:
+  prepare:
+    name: Prepare
+    runs-on: ubuntu-latest
+    outputs:
+      release_tag: ${{ steps.resolve_tag.outputs.tag }}
+      app_version: ${{ steps.resolve_tag.outputs.version }}
+    steps:
+      - name: Resolve
+        id: resolve_tag
+        run: |
+          if [ "${{ github.event_name }}" = "push" ]; then
+            TAG="${GITHUB_REF_NAME}"
+          else
+            TAG="${{ inputs.version }}"
+          fi
+          echo "tag=${TAG}" >> $GITHUB_OUTPUT
+          echo "version=${TAG#v}" >> $GITHUB_OUTPUT
+
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ steps.resolve_tag.outputs.tag }}
+
+      - name: Verify
+        shell: bash
+        run: |
+          APP_VERSION=$(node -p "require('./src-tauri/tauri.conf.json').version")
+          EXPECTED_VERSION="${{ steps.resolve_tag.outputs.app_version }}"
+          if [ "$APP_VERSION" != "$EXPECTED_VERSION" ]; then
+            echo "::error::tauri.conf.json version ($APP_VERSION) does not match tag ($EXPECTED_VERSION)!"
+            exit 1
+          fi
+
   build:
     name: Build (${{ matrix.target }})
+    needs: prepare
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -51,6 +85,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
         with:
+          ref: ${{ needs.prepare.outputs.release_tag }}
           fetch-depth: 0
 
       - name: Setup
@@ -86,32 +121,15 @@ jobs:
       - name: Frontend
         run: pnpm install --frozen-lockfile
 
-      - name: Verify
-        shell: bash
-        run: |
-          APP_VERSION=$(node -p "require('./src-tauri/tauri.conf.json').version")
-          if [ "${{ github.event_name }}" = "push" ]; then
-            TAG_VERSION="${GITHUB_REF_NAME#v}"
-            if [ "$APP_VERSION" != "$TAG_VERSION" ]; then
-              echo "::error::App version ($APP_VERSION) does not match tag version ($TAG_VERSION). Run 'pnpm release' first."
-              exit 1
-            fi
-          else
-            if ! git rev-parse "${{ inputs.version }}" >/dev/null 2>&1; then
-              echo "::error::Tag ${{ inputs.version }} does not exist. Create and push it first (e.g. 'pnpm release')."
-              exit 1
-            fi
-          fi
-          echo "App version: $APP_VERSION"
-
       - name: Build
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
         with:
-          tagName: ${{ github.event_name == 'push' && github.ref_name || inputs.version }}
-          releaseName: ${{ github.event_name == 'push' && github.ref_name || inputs.version }}
+          tagName: ${{ needs.prepare.outputs.release_tag }}
+          releaseName: ${{ needs.prepare.outputs.release_tag }}
+          releaseDraft: true
 
       - name: Attest
         uses: actions/attest@v4
@@ -119,33 +137,27 @@ jobs:
           subject-path: ${{ matrix.bundle-glob }}
 
   release:
-    name: Release
-    needs: build
+    name: Publish Release Notes
+    needs: [prepare, build]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v5
         with:
+          ref: ${{ needs.prepare.outputs.release_tag }}
           fetch-depth: 0
-
-      - name: Tag
-        id: get_tag
-        run: |
-          if [ "${{ github.event_name }}" = "push" ]; then
-            echo "tag=${{ github.ref_name }}" >> $GITHUB_OUTPUT
-          else
-            echo "tag=${{ inputs.version }}" >> $GITHUB_OUTPUT
-          fi
 
       - name: Changelog
         uses: orhun/git-cliff-action@v4
         with:
           config: cliff.toml
-          args: --latest --strip all --tag ${{ steps.get_tag.outputs.tag }}
+          args: --latest --strip all --tag ${{ needs.prepare.outputs.release_tag }}
         env:
           OUTPUT: CHANGELOG.md
 
-      - name: Update
-        run: gh release edit ${{ steps.get_tag.outputs.tag }} --notes-file CHANGELOG.md
+      - name: Update GitHub Release
+        run: |
+          TAG="${{ needs.prepare.outputs.release_tag }}"
+          gh release edit "$TAG" --draft=false --notes-file CHANGELOG.md
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
