@@ -128,15 +128,24 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Tag
+        id: get_tag
+        run: |
+          if [ "${{ github.event_name }}" = "push" ]; then
+            echo "tag=${{ github.ref_name }}" >> $GITHUB_OUTPUT
+          else
+            echo "tag=${{ inputs.version }}" >> $GITHUB_OUTPUT
+          fi
+
       - name: Changelog
         uses: orhun/git-cliff-action@v4
         with:
           config: cliff.toml
-          args: --latest --strip header
+          args: --latest --strip all --tag ${{ steps.get_tag.outputs.tag }}
         env:
           OUTPUT: CHANGELOG.md
 
       - name: Update
-        run: gh release edit ${{ github.ref_name }} --notes-file CHANGELOG.md
+        run: gh release edit ${{ steps.get_tag.outputs.tag }} --notes-file CHANGELOG.md
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
