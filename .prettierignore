@@ -1,0 +1,31 @@
+# Common ignore
+node_modules
+.svelte-kit
+build
+package
+src-tauri
+target
+Cargo.lock
+.pnpm-store/
+pnpm-lock.yaml
+
+# 生成物与缓存
+coverage
+.git
+
+# AI Agents local state
+.claude
+.cursor
+.commandcode
+.windsurf
+.codeium
+.aider*
+.continue
+.cline
+.roo
+.copilot
+.devin
+.gemini
+
+# Rust
+**/*.rs
