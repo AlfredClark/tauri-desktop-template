@@ -26,14 +26,30 @@ jobs:
     steps:
       - name: Resolve
         id: resolve_tag
+        shell: bash
         run: |
           if [ "${{ github.event_name }}" = "push" ]; then
-            TAG="${GITHUB_REF_NAME}"
+            RAW_TAG="${GITHUB_REF_NAME}"
+            if [ -z "$RAW_TAG" ]; then
+              RAW_TAG="${GITHUB_REF#refs/tags/}"
+            fi
           else
-            TAG="${{ inputs.version }}"
+            RAW_TAG="${{ inputs.version }}"
           fi
-          echo "tag=${TAG}" >> $GITHUB_OUTPUT
-          echo "version=${TAG#v}" >> $GITHUB_OUTPUT
+
+          TAG=$(echo "$RAW_TAG" | xargs)
+          VERSION="${TAG#v}"
+
+          echo "Detected Tag: '$TAG'"
+          echo "Parsed Version: '$VERSION'"
+
+          if [ -z "$TAG" ] || [ -z "$VERSION" ]; then
+            echo "::error::Failed to extract a valid tag or version. (RAW_TAG: '$RAW_TAG')"
+            exit 1
+          fi
+
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
       - name: Checkout
         uses: actions/checkout@v5
@@ -44,9 +60,13 @@ jobs:
         shell: bash
         run: |
           APP_VERSION=$(node -p "require('./src-tauri/tauri.conf.json').version")
-          EXPECTED_VERSION="${{ steps.resolve_tag.outputs.app_version }}"
+          EXPECTED_VERSION="${{ steps.resolve_tag.outputs.version }}"
+
+          echo "App Version in tauri.conf.json: $APP_VERSION"
+          echo "Expected Version from Tag: $EXPECTED_VERSION"
+
           if [ "$APP_VERSION" != "$EXPECTED_VERSION" ]; then
-            echo "::error::tauri.conf.json version ($APP_VERSION) does not match tag ($EXPECTED_VERSION)!"
+            echo "::error::tauri.conf.json version ($APP_VERSION) does not match tag version ($EXPECTED_VERSION)!"
             exit 1
           fi
 
