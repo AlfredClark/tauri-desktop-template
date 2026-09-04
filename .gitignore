@@ -57,6 +57,13 @@ dist/
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 
+# tsc -b 项目引用（composite）产生的类型声明与编译产物
+tsconfig.node.*.tsbuildinfo
+*.config.d.ts
+*.config.js
+*.config.d.ts.map
+*.config.js.map
+
 # ==========================================
 # 环境变量与敏感凭据
 # ==========================================

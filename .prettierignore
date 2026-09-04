@@ -29,3 +29,6 @@ coverage
 
 # Rust
 **/*.rs
+
+# shadcn-svelte 自动生成组件（如需将 CLI 输出交付原样，可取消注释）
+# src/components/shadcn-svelte

@@ -11,7 +11,7 @@
     "moduleResolution": "bundler",
     // 开启全套严格类型检查
     "strict": true,
-    // 显式注入全局类型声明库
+    // 显式注入全局类型声明库，与浏览器端项目隔离
     "types": ["node"]
   },
   // 划定该配置文件负责管理的目标文件范围
@@ -20,6 +20,10 @@
     "eslint.config.ts",
     "lint-staged.config.ts",
     "svelte.config.ts",
-    "vite.config.ts"
+    "vite.config.ts",
+    "scripts/**/*.ts",
+    "scripts/**/*.mjs",
+    "src/scripts/**/*.ts",
+    "src/scripts/**/*.mjs"
   ]
 }

@@ -1,12 +1,12 @@
-import js from "@eslint/js";
-import globals from "globals";
-import ts from "typescript-eslint";
-import svelte from "eslint-plugin-svelte";
-import prettier from "eslint-config-prettier";
-import svelteParser from "svelte-eslint-parser";
-import svelteConfig from "./svelte.config.js";
 import { fileURLToPath } from "node:url";
+import js from "@eslint/js";
+import prettier from "eslint-config-prettier";
+import svelte from "eslint-plugin-svelte";
 import { defineConfig, globalIgnores, includeIgnoreFile } from "eslint/config";
+import globals from "globals";
+import svelteParser from "svelte-eslint-parser";
+import ts from "typescript-eslint";
+import svelteConfig from "./svelte.config.js";
 
 const gitignorePath = fileURLToPath(new URL("./.gitignore", import.meta.url));
 
@@ -54,6 +54,15 @@ export default defineConfig(
         svelteConfig,
       },
       globals: { ...globals.browser },
+    },
+  },
+
+  // shadcn-svelte 生成组件：原生 <a href> / 外部链接属性等非 SvelteKit 导航，
+  // 关闭仅适用于 SvelteKit 内部导航的误报规则
+  {
+    files: ["src/components/shadcn-svelte/**/*.svelte"],
+    rules: {
+      "svelte/no-navigation-without-resolve": "off",
     },
   },
 

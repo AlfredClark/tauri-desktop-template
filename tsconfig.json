@@ -22,7 +22,7 @@
     // 指定模块解析策略为现代打包器模式
     "moduleResolution": "bundler"
   },
-  // 参考声明
+  // 参考声明：Node 侧工具链配置文件
   "references": [
     {
       "path": "./tsconfig.node.json"
