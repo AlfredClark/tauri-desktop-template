@@ -1,7 +1,6 @@
-// Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
 #[tauri::command]
 fn greet(name: &str) -> String {
-    format!("Hello, {}! You've been greeted from Rust!", name)
+    format!("Hello, {name}! You've been greeted from Rust!")
 }
 
 #[cfg(target_os = "linux")]
@@ -16,6 +15,11 @@ fn is_appimage() -> bool {
     std::env::var_os("APPDIR").is_some()
 }
 
+/// 运行Tauri应用程序
+///
+/// # Panics
+///
+/// 如果应用程序无法初始化或运行，则会出现 panics
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     #[cfg(target_os = "linux")]

@@ -8,10 +8,11 @@ resolver = "3"
 warnings = "warn"
 
 [workspace.lints.clippy]
-pedantic = "warn"
-nursery = "warn"
-cargo = "warn"
-all = "warn"
+all = { level = "warn", priority = -1 }
+pedantic = { level = "warn", priority = -1 }
+nursery = { level = "warn", priority = -1 }
+cargo = { level = "warn", priority = -1 }
+multiple-crate-versions = "allow"
 
 # 配置全局 profile
 [profile.dev]
