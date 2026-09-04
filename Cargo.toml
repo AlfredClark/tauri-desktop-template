@@ -8,6 +8,9 @@ resolver = "3"
 warnings = "warn"
 
 [workspace.lints.clippy]
+pedantic = "warn"
+nursery = "warn"
+cargo = "warn"
 all = "warn"
 
 # 配置全局 profile

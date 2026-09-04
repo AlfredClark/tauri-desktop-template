@@ -73,6 +73,11 @@ jobs:
         uses: pnpm/setup@v2
         with:
           runtime: node@24
+          cache: true
+          install: false
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
 
       - name: Lint
         run: pnpm run lint:frontend
