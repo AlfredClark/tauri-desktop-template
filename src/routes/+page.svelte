@@ -22,6 +22,14 @@
     let new_locale = await invoke("set_locale", { locale });
     setLocale(new_locale as "en" | "zh-CN", { reload: true });
   }
+
+  let shouldCrash = $state(false);
+
+  $effect.pre(() => {
+    if (shouldCrash) {
+      throw new Error("这是通过按钮主动触发的组件渲染崩溃！");
+    }
+  });
 </script>
 
 <main class="flex h-screen w-screen flex-col items-center justify-center gap-4">
@@ -60,6 +68,12 @@
   <div class="flex gap-4">
     <Button type="button" onclick={() => switchLocale("en")}>English</Button>
     <Button type="button" onclick={() => switchLocale("zh-CN")}>简体中文</Button>
+    <Button
+      type="button"
+      onclick={() => {
+        shouldCrash = true;
+      }}>触发异常</Button
+    >
   </div>
 
   {#key name}

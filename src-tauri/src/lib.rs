@@ -1,4 +1,8 @@
 use rust_i18n::{i18n, t};
+use std::fs::OpenOptions;
+use std::io::Write;
+use std::panic;
+use tauri_plugin_log::{Target, TargetKind};
 
 i18n!("locales");
 
@@ -25,6 +29,42 @@ fn is_appimage() -> bool {
     std::env::var_os("APPDIR").is_some()
 }
 
+fn setup_panic_hook() {
+    panic::set_hook(Box::new(|info| {
+        let location = info.location().map_or_else(
+            || "unknown location".into(),
+            |l| format!("{}:{}:{}", l.file(), l.line(), l.column()),
+        );
+
+        let payload = info
+            .payload()
+            .downcast_ref::<&str>()
+            .map(ToString::to_string)
+            .or_else(|| info.payload().downcast_ref::<String>().cloned())
+            .unwrap_or_else(|| "Unknown panic payload".into());
+
+        // 1. 强制抓取 Backtrace，不受 RUST_BACKTRACE 环境变量缺失的影响
+        let backtrace = std::backtrace::Backtrace::force_capture();
+
+        let error_log = format!(
+            "=== [CRASH PANIC] ===\nTime: {}\nLocation: {}\nReason: {}\nBacktrace:\n{}\n=====================\n",
+            chrono::Local::now().to_rfc3339(),
+            location,
+            payload,
+            backtrace
+        );
+
+        eprintln!("{error_log}");
+
+        // 2. 写入临时目录并显式 flush 落盘
+        let log_path = std::env::temp_dir().join("my_app_crash.log");
+        if let Ok(mut file) = OpenOptions::new().create(true).append(true).open(&log_path) {
+            let _ = file.write_all(error_log.as_bytes());
+            let _ = file.flush();
+        }
+    }));
+}
+
 /// 运行Tauri应用程序
 ///
 /// # Panics
@@ -32,6 +72,8 @@ fn is_appimage() -> bool {
 /// 如果应用程序无法初始化或运行，则会出现 panics
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    setup_panic_hook();
+
     #[cfg(target_os = "linux")]
     {
         if is_wayland_session() {
@@ -47,6 +89,11 @@ pub fn run() {
     }
 
     tauri::Builder::default()
+        .plugin(
+            tauri_plugin_log::Builder::new()
+                .targets([Target::new(TargetKind::Stdout)])
+                .build(),
+        )
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_opener::init())
         .invoke_handler(tauri::generate_handler![greet, set_locale])
