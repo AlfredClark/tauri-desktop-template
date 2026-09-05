@@ -35,5 +35,5 @@ coverage
 
 # Paraglide
 src/libs/i18n/paraglide
-src/libs/i18n/project.inlang/cache
+src/libs/i18n/project.inlang/**
 !src/libs/i18n/project.inlang/settings.json
