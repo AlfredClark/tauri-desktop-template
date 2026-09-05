@@ -141,6 +141,9 @@ jobs:
       - name: Frontend
         run: pnpm install --frozen-lockfile
 
+      - name: I18n
+        run: bun run i18n:compile
+
       - name: Build
         uses: tauri-apps/tauri-action@v0
         env:
