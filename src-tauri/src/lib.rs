@@ -29,6 +29,9 @@ fn is_appimage() -> bool {
     std::env::var_os("APPDIR").is_some()
 }
 
+/// 设置 panic 挂钩
+///
+/// 处理全局 panic 的挂钩 （后续需要单独拆分出去）
 fn setup_panic_hook() {
     panic::set_hook(Box::new(|info| {
         let location = info.location().map_or_else(

@@ -34,7 +34,7 @@
     "clean:backend": "rimraf target/",
     "lint": "pnpm lint:frontend && pnpm lint:backend",
     "lint:frontend": "prettier --check . && eslint .",
-    "lint:backend": "cargo clippy --manifest-path Cargo.toml --workspace --all-targets -- -D warnings",
+    "lint:backend": "cargo fmt --manifest-path Cargo.toml --all -- --check && cargo clippy --manifest-path Cargo.toml --workspace --all-targets -- -D warnings && cargo check --manifest-path Cargo.toml --workspace",
     "format": "pnpm format:frontend && pnpm format:backend",
     "format:frontend": "prettier --write . && eslint --fix .",
     "format:backend": "cargo fmt --manifest-path Cargo.toml --all",
