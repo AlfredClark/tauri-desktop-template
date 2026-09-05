@@ -80,7 +80,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: I18n
-        run: bun run i18n:compile
+        run: pnpm run i18n:compile
 
       - name: Lint
         run: pnpm run lint:frontend
