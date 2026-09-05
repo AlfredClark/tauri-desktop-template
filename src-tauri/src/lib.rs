@@ -1,6 +1,16 @@
+use rust_i18n::{i18n, t};
+
+i18n!("locales");
+
 #[tauri::command]
 fn greet(name: &str) -> String {
-    format!("Hello, {name}! You've been greeted from Rust!")
+    t!("greet", name = name).to_string()
+}
+
+#[tauri::command]
+fn set_locale(locale: &str) -> String {
+    rust_i18n::set_locale(locale);
+    rust_i18n::locale().to_string()
 }
 
 #[cfg(target_os = "linux")]
@@ -39,7 +49,7 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_opener::init())
-        .invoke_handler(tauri::generate_handler![greet])
+        .invoke_handler(tauri::generate_handler![greet, set_locale])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

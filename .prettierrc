@@ -9,10 +9,10 @@
   "endOfLine": "lf",
   "plugins": [
     "prettier-plugin-svelte",
-    "@ianvs/prettier-plugin-sort-imports",
     "prettier-plugin-css-order",
     "prettier-plugin-tailwindcss",
-    "prettier-plugin-jsdoc"
+    "prettier-plugin-jsdoc",
+    "@ianvs/prettier-plugin-sort-imports"
   ],
   "svelteSortOrder": "options-scripts-markup-styles",
   "svelteIndentScriptAndStyle": true,

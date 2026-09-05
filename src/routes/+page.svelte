@@ -1,8 +1,10 @@
 <script lang="ts">
   import { invoke } from "@tauri-apps/api/core";
+  import { setMode } from "mode-watcher";
   import { Button } from "$components/shadcn-svelte/button";
   import { Input } from "$components/shadcn-svelte/input";
-  import { setMode } from "mode-watcher";
+  import { m } from "$libs/i18n/paraglide/messages";
+  import { setLocale } from "$libs/i18n/paraglide/runtime";
 
   let name = $state("");
   let greetMsg = $state("");
@@ -14,6 +16,11 @@
 
   async function switchMode(mode: "system" | "light" | "dark") {
     setMode(mode);
+  }
+
+  async function switchLocale(locale: "en" | "zh-CN") {
+    let new_locale = await invoke("set_locale", { locale });
+    setLocale(new_locale as "en" | "zh-CN", { reload: true });
   }
 </script>
 
@@ -49,6 +56,15 @@
     />
     <Button type="submit" class="min-w-24">Greet</Button>
   </form>
+
+  <div class="flex gap-4">
+    <Button type="button" onclick={() => switchLocale("en")}>English</Button>
+    <Button type="button" onclick={() => switchLocale("zh-CN")}>简体中文</Button>
+  </div>
+
+  {#key name}
+    <p>{m.hello_world({ name })}</p>
+  {/key}
 
   <p>{greetMsg}</p>
 </main>

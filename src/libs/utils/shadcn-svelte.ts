@@ -1,5 +1,6 @@
-import { clsx, type ClassValue } from "clsx";
+import { clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
+import type { ClassValue } from "clsx";
 
 /**
  * 用于合并class的函数，通过tailwind的twMerge与clsx合并
