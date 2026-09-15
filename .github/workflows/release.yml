@@ -113,8 +113,6 @@ jobs:
         with:
           runtime: node@24
           cache: true
-          # 该 action 默认会执行 pnpm install；require-lockfile 会改为 --frozen-lockfile
-          require-lockfile: true
 
       - name: Toolchain
         # toolchain 版本必须与 rust-toolchain.toml 保持一致
