@@ -1,0 +1,17 @@
+{
+  "identifier": "plugin",
+  "description": "Capability for the plugins",
+  "platforms": [
+    "linux",
+    "macOS",
+    "windows"
+  ],
+  "windows": [
+    "main"
+  ],
+  "permissions": [
+    "log:default",
+    "opener:default",
+    "updater:default"
+  ]
+}
