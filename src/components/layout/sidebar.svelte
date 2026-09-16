@@ -9,9 +9,9 @@
     SidebarProvider,
     SidebarTrigger,
   } from "$components/shadcn-svelte/sidebar";
-  import Copyright from "$components/widget/layout/copyright.svelte";
-  import SideNavBar from "$components/widget/layout/side-nav-bar.svelte";
-  import TitleBar from "$components/widget/layout/title-bar.svelte";
+  import Copyright from "$components/layout/parts/copyright.svelte";
+  import SideNavBar from "$components/layout/parts/side-nav-bar.svelte";
+  import TitleBar from "$components/layout/parts/title-bar.svelte";
   import { cn } from "$libs/utils/shadcn-svelte";
 
   let { children }: { children: Snippet } = $props();

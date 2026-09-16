@@ -30,13 +30,13 @@ function installLocalStorageMock() {
 
 beforeEach(() => {
   installLocalStorageMock();
-  layoutState.name = "default";
+  layoutState.name = "tabs";
   vi.restoreAllMocks();
 });
 
 describe("isLayoutName", () => {
   it("接受合法取值", () => {
-    expect(isLayoutName("default")).toBe(true);
+    expect(isLayoutName("tabs")).toBe(true);
     expect(isLayoutName("sidebar")).toBe(true);
   });
 
@@ -49,7 +49,7 @@ describe("isLayoutName", () => {
 
 describe("loadLayoutName", () => {
   it("缺失时回落默认值", () => {
-    expect(loadLayoutName()).toBe("default");
+    expect(loadLayoutName()).toBe("tabs");
   });
 
   it("读取已持久化的合法值", () => {
@@ -59,7 +59,7 @@ describe("loadLayoutName", () => {
 
   it("脏数据回落默认值", () => {
     localStorage.setItem(LAYOUT_STORAGE_KEY, "unknown");
-    expect(loadLayoutName()).toBe("default");
+    expect(loadLayoutName()).toBe("tabs");
   });
 
   it("读取异常回落默认值", () => {
@@ -67,7 +67,7 @@ describe("loadLayoutName", () => {
     vi.spyOn(mock, "getItem").mockImplementation(() => {
       throw new Error("denied");
     });
-    expect(loadLayoutName()).toBe("default");
+    expect(loadLayoutName()).toBe("tabs");
   });
 });
 
@@ -90,7 +90,7 @@ describe("setLayoutName", () => {
   it("拒绝非法取值且不改状态", () => {
     // @ts-expect-error 故意传入非法值以覆盖运行时分支
     setLayoutName("unknown");
-    expect(layoutState.name).toBe("default");
+    expect(layoutState.name).toBe("tabs");
     expect(localStorage.getItem(LAYOUT_STORAGE_KEY)).toBeNull();
   });
 });
@@ -105,7 +105,7 @@ describe("initLayout", () => {
 
 describe("LAYOUTS", () => {
   it("合法取值均有对应组件", () => {
-    for (const name of ["default", "sidebar"] as const) {
+    for (const name of ["tabs", "sidebar"] as const) {
       expect(isLayoutName(name)).toBe(true);
       expect(LAYOUTS[name]).toBeDefined();
     }

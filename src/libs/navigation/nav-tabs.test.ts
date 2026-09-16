@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { NAV_TABS, isNavTabPath, resolveNavTab } from "$libs/utils/nav-tabs";
+import { NAV_TABS, isNavTabPath, resolveNavTab } from "$libs/navigation/nav-tabs";
 
 describe("导航标签注册表", () => {
   it("首页固定在最前且路径不重复", () => {

@@ -1,15 +1,15 @@
 <script lang="ts">
-  // 默认布局
+  // 顶部标签布局
   import type { Snippet } from "svelte";
-  import NavTabsBar from "$components/widget/layout/nav-tabs-bar.svelte";
-  import TitleBar from "$components/widget/layout/title-bar.svelte";
-  import Copyright from "$components/widget/layout/copyright.svelte";
+  import NavTabsBar from "$components/layout/parts/nav-tabs-bar.svelte";
+  import TitleBar from "$components/layout/parts/title-bar.svelte";
+  import Copyright from "$components/layout/parts/copyright.svelte";
   import { cn } from "$libs/utils/shadcn-svelte";
 
   let { children }: { children: Snippet } = $props();
 </script>
 
-<div data-layout="default" class={cn("flex h-screen w-full flex-col overflow-hidden")}>
+<div data-layout="tabs" class={cn("flex h-screen w-full flex-col overflow-hidden")}>
   <header class={cn("w-full shrink-0 border-b")}>
     <TitleBar />
   </header>

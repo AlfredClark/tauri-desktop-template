@@ -1,5 +1,5 @@
 <script lang="ts">
-  // 侧边栏导航标签列表：标签清单复用 $libs/utils/nav-tabs.ts，与顶部标签栏同源，此处只负责渲染与路由跳转。
+  // 侧边栏导航标签列表：标签清单复用 $libs/navigation/nav-tabs.ts，与顶部标签栏同源，此处只负责渲染与路由跳转。
   import { goto } from "$app/navigation";
   import { resolve } from "$app/paths";
   import { page } from "$app/state";
@@ -8,7 +8,7 @@
     SidebarMenuButton,
     SidebarMenuItem,
   } from "$components/shadcn-svelte/sidebar";
-  import { NAV_TABS, isNavTabPath, resolveNavTab } from "$libs/utils/nav-tabs";
+  import { NAV_TABS, isNavTabPath, resolveNavTab } from "$libs/navigation/nav-tabs";
   import { cn } from "$libs/utils/shadcn-svelte";
 
   // 当前路径命中注册表才高亮，未命中的路径（如子页面）不选中任何标签

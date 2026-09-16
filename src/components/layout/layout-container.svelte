@@ -7,7 +7,7 @@
   let { children }: { children: Snippet } = $props();
 
   // 脏数据已在 hooks 回落默认值，此处兜底仅防注册表缺 key 时白屏。
-  let Layout = $derived(LAYOUTS[layoutState.name] ?? LAYOUTS.default);
+  let Layout = $derived(LAYOUTS[layoutState.name] ?? LAYOUTS.tabs);
 
   $effect.pre(() => {
     initLayout();

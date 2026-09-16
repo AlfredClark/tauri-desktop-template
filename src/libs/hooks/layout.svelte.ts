@@ -2,26 +2,27 @@
 // 后端无布局业务，故不经 commands 链，避免跨层跳跃。
 // 布局注册表集中在此，新增布局只需加文件并扩展映射，容器无需改动。
 // 布局组件禁止反向导入本模块，否则形成容器到布局的循环依赖。
+// 布局名用语义名（如 tabs / sidebar），禁用 default 之类只表达"被选中"的占位名——该值会落盘。
 import type { Component, Snippet } from "svelte";
-import Default from "$components/layout/default.svelte";
+import Tabs from "$components/layout/tabs.svelte";
 import Sidebar from "$components/layout/sidebar.svelte";
 
 /** 可选布局取值，新增布局时同步扩展该联合类型与下方映射 */
-export type LayoutName = "default" | "sidebar";
+export type LayoutName = "tabs" | "sidebar";
 
 /** 布局组件形态：仅接收子内容片段 */
 export type LayoutComponent = Component<{ children: Snippet }>;
 
 /** 布局名到组件的映射，容器据此动态渲染 */
 export const LAYOUTS: Record<LayoutName, LayoutComponent> = {
-  default: Default,
+  tabs: Tabs,
   sidebar: Sidebar,
 };
 
 /** 持久化键名，改名即视为放弃老用户存量 */
 export const LAYOUT_STORAGE_KEY = "layout-name";
 
-const DEFAULT_LAYOUT: LayoutName = "default";
+const DEFAULT_LAYOUT: LayoutName = "tabs";
 
 const LAYOUT_NAMES: readonly LayoutName[] = Object.keys(LAYOUTS) as LayoutName[];
 
