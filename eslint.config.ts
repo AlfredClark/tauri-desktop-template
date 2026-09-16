@@ -43,9 +43,9 @@ export default defineConfig(
     },
   },
 
-  // Svelte 模板组件专有配置
+  // Svelte 模板组件与 rune 模块专有配置（.svelte.ts 内可用 $state 等 runes，需同走 svelte 解析器）
   {
-    files: ["src/**/*.svelte"],
+    files: ["src/**/*.svelte", "src/**/*.svelte.ts", "src/**/*.svelte.js"],
     languageOptions: {
       parser: svelteParser,
       parserOptions: {

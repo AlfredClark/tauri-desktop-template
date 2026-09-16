@@ -61,7 +61,8 @@ tauri-desktop-template/
 │   │   ├── +page.svelte            # 演示页：主题切换 / 命令调用 / 语言切换 / 崩溃演练
 │   │   └── layout.css              # Tailwind v4 入口与 shadcn-svelte 主题令牌（含 .dark 暗色变体）
 │   ├── components/
-│   │   ├── common/                 # 手写共享组件（ErrorBoundary.svelte）
+│   │   ├── common/                 # 手写共享组件（error-boundary.svelte）
+│   │   ├── layout/                 # 布局组件，新增布局需要在 libs/hooks/layout.svelte.ts 中映射
 │   │   └── shadcn-svelte/          # CLI 生成的 UI 组件（nova / neutral / lucide），勿手动重组
 │   └── libs/
 │       ├── commands/               # tauri-specta 契约链（bindings.ts 生成物 + 链式 API 封装）
