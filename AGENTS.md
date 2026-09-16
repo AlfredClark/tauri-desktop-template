@@ -131,7 +131,7 @@ pnpm clean                         # 清理构建产物；clean:frontend / clean
 
 # ---- 测试 ----
 pnpm test                          # vitest 单次运行；test:watch 为监听模式
-cargo test --manifest-path Cargo.toml  # 后端测试，同时重新生成 src/libs/commands/bindings.ts
+pnpm test:cargo                    # 后端测试，同时重新生成 src/libs/commands/bindings.ts
 
 # ---- 国际化 / 图标 / 发布 ----
 pnpm i18n:compile                  # 编译前端国际化文案，改完 messages/ 后必须执行
@@ -256,14 +256,14 @@ CI（`.github/workflows/ci.yml`）在 `main` 分支上按变更路径触发：
 > 每次修改完成后必须执行，未通过禁止声称"完成"。
 > 硬性规则：任何文件改动完成后，都必须先 `pnpm format`，再 `pnpm validate`；两者全绿前不得宣称完成、不得提交。钩子只覆盖暂存文件，是最后防线而非替代。
 
-| 修改范围                                               | 最低验证要求                                                                                         |
-| ------------------------------------------------------ | ---------------------------------------------------------------------------------------------------- |
-| 仅前端 UI / 文案 / 配置                                | `pnpm format` + `pnpm validate`（含 `prettier --check`、`eslint`、`svelte-check`、`vitest`）通过     |
-| 前端逻辑 / commands 封装                               | 上述 + `pnpm test <相关用例>` 通过                                                                   |
-| 后端 features / cores / commands                       | `cargo test --manifest-path Cargo.toml`（重写绑定 + 后端测试）+ `pnpm format` + `pnpm validate` 通过 |
-| 命令契约变更（新增 / 改签名 / 改 `collect_commands!`） | 上述 + 确认 `git diff src/libs/commands/bindings.ts` 有同步更新 + 前后端联调                         |
-| 前端文案变更（`messages/`）                            | `pnpm i18n:compile` + `pnpm format` + `pnpm validate` 通过（跳过 compile 会导致 `build` / CI 失败）  |
-| 发布相关（版本号 / CI / 打包）                         | `pnpm build` + `pnpm tauri:build:local --no-bundle`（按需）+ CI 全绿                                 |
+| 修改范围                                               | 最低验证要求                                                                                        |
+| ------------------------------------------------------ | --------------------------------------------------------------------------------------------------- |
+| 仅前端 UI / 文案 / 配置                                | `pnpm format` + `pnpm validate`（含 `prettier --check`、`eslint`、`svelte-check`、`vitest`）通过    |
+| 前端逻辑 / commands 封装                               | 上述 + `pnpm test <相关用例>` 通过                                                                  |
+| 后端 features / cores / commands                       | `pnpm test:cargo`（重写绑定 + 后端测试）+ `pnpm format` + `pnpm validate` 通过                      |
+| 命令契约变更（新增 / 改签名 / 改 `collect_commands!`） | 上述 + 确认 `git diff src/libs/commands/bindings.ts` 有同步更新 + 前后端联调                        |
+| 前端文案变更（`messages/`）                            | `pnpm i18n:compile` + `pnpm format` + `pnpm validate` 通过（跳过 compile 会导致 `build` / CI 失败） |
+| 发布相关（版本号 / CI / 打包）                         | `pnpm build` + `pnpm tauri:build:local --no-bundle`（按需）+ CI 全绿                                |
 
 **回归 checklist（提交前逐项确认）：**
 
