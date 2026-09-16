@@ -12,9 +12,10 @@ pub mod demo;
 macro_rules! collect_commands {
     () => {
         tauri_specta::collect_commands![
-            $crate::commands::demo::greet,
+            $crate::commands::config::get_config,
             $crate::commands::config::get_locale,
             $crate::commands::config::set_locale,
+            $crate::commands::demo::greet,
         ]
     };
 }

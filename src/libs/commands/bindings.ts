@@ -10,6 +10,8 @@ export const commands = {
 	 *  `name` 为 `"123"` 时故意返回错误，用于演示前端 `.failed()` 分支与自动失败上报。
 	 */
 	greet: (name: string) => typedError<string, CommandError>(__TAURI_INVOKE("greet", { name })),
+	/**  读取完整应用配置；各字段缺失或无法识别时逐项回落默认值 */
+	getConfig: () => typedError<Config_Serialize, CommandError>(__TAURI_INVOKE("get_config")),
 	/**  读取当前界面语言；持久化值缺失或无法识别时回落 `Locale` 的默认值 */
 	getLocale: () => typedError<Locale, CommandError>(__TAURI_INVOKE("get_locale")),
 	/**  切换界面语言：先落盘再改内存，写盘失败时运行时语言与磁盘保持一致 */
@@ -25,6 +27,33 @@ export const commands = {
 export type CommandError = 
 /**  内部错误（`anyhow` 的链式上下文会展开成可读文本） */
 { kind: "Internal"; message: string };
+
+/**
+ *  应用完整配置：各持久化项聚合于此，`store` 内仍按扁平键（`KEY_*`）逐项存储。
+ *  新增字段必须能 `Default`（否则旧文件缺键会解析失败）；写路径保持逐键写入，
+ *  后续整包写必须先读再改再存，禁止用陈旧的 `Config` 直接覆盖。
+ */
+export type Config = Config_Serialize | Config_Deserialize;
+
+/**
+ *  应用完整配置：各持久化项聚合于此，`store` 内仍按扁平键（`KEY_*`）逐项存储。
+ *  新增字段必须能 `Default`（否则旧文件缺键会解析失败）；写路径保持逐键写入，
+ *  后续整包写必须先读再改再存，禁止用陈旧的 `Config` 直接覆盖。
+ */
+export type Config_Deserialize = {
+	/**  界面语言：缺失、类型不符或无法识别时回落默认值，绝不让整包解析失败 */
+	locale?: Locale,
+};
+
+/**
+ *  应用完整配置：各持久化项聚合于此，`store` 内仍按扁平键（`KEY_*`）逐项存储。
+ *  新增字段必须能 `Default`（否则旧文件缺键会解析失败）；写路径保持逐键写入，
+ *  后续整包写必须先读再改再存，禁止用陈旧的 `Config` 直接覆盖。
+ */
+export type Config_Serialize = {
+	/**  界面语言：缺失、类型不符或无法识别时回落默认值，绝不让整包解析失败 */
+	locale: Locale,
+};
 
 /**  应用支持的语言 */
 export type Locale = "en" | "zh-CN";

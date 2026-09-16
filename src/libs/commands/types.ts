@@ -1,4 +1,9 @@
-import type { CommandError, Locale, commands as rawCommands } from "$libs/commands/bindings";
+import type {
+  CommandError,
+  Config,
+  Locale,
+  commands as rawCommands,
+} from "$libs/commands/bindings";
 import type { EnhancedCommand } from "$libs/commands/cores";
 
 /** 命令的结算结果：`ok` 分支携带数据，`error` 分支携带失败信息 */
@@ -21,4 +26,4 @@ export type CommandsMap = typeof rawCommands;
 /** 增强后的命令表类型：与 bindings 同名同参，但返回值是 `EnhancedCommand` */
 export type EnhancedCommands = { [K in keyof CommandsMap]: WrappedFn<CommandsMap[K]> };
 
-export type { CommandError, Locale };
+export type { CommandError, Config, Locale };
