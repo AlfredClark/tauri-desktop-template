@@ -1,4 +1,5 @@
 import commands from "$libs/commands";
+import { reportCommandFailure } from "$libs/commands/cores";
 import { getLocale, setLocale } from "$libs/i18n/paraglide/runtime";
 
 // Tauri没有Node.js服务器来进行SSR，使用适配器静态并回退到index.html，将网站置于SPA模式
@@ -14,6 +15,6 @@ export const load = async () => {
       }
     })
     .failed((failure) => {
-      console.error("[i18n] failed to read locale from backend:", failure);
+      reportCommandFailure("[i18n] failed to read locale from backend", failure);
     });
 };

@@ -4,6 +4,7 @@
   import { Button } from "$components/shadcn-svelte/button";
   import { Input } from "$components/shadcn-svelte/input";
   import commands from "$libs/commands";
+  import { reportCommandFailure } from "$libs/commands/cores";
   import { m } from "$libs/i18n/paraglide/messages";
   import { getLocale, setLocale } from "$libs/i18n/paraglide/runtime";
 
@@ -30,7 +31,7 @@
         }
       })
       .failed((failure) => {
-        console.error("[i18n] failed to switch locale:", failure);
+        reportCommandFailure("[i18n] failed to switch locale", failure);
       });
   }
 

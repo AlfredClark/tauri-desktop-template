@@ -4,13 +4,27 @@ import { invoke as __TAURI_INVOKE } from "@tauri-apps/api/core";
 
 /** Commands */
 export const commands = {
+	/**
+	 *  演示命令：把入参转交给 `features::demo::greet` 处理。
+	 * 
+	 *  `name` 为 `"123"` 时故意返回错误，用于演示前端 `.failed()` 分支与自动失败上报。
+	 */
 	greet: (name: string) => typedError<string, CommandError>(__TAURI_INVOKE("greet", { name })),
+	/**  读取当前界面语言；持久化值缺失或无法识别时回落 `Locale` 的默认值 */
 	getLocale: () => typedError<Locale, CommandError>(__TAURI_INVOKE("get_locale")),
+	/**  切换界面语言：先落盘再改内存，写盘失败时运行时语言与磁盘保持一致 */
 	setLocale: (locale: Locale) => typedError<Locale, CommandError>(__TAURI_INVOKE("set_locale", { locale })),
 };
 
 /* Types */
-export type CommandError = { kind: "Internal"; message: string };
+/**
+ *  命令统一返回的错误类型。
+ * 
+ *  `serde` 表示即前端契约：序列化为 `{ kind, message }`，前端 `.failed()` 回调按此形状收参。
+ */
+export type CommandError = 
+/**  内部错误（`anyhow` 的链式上下文会展开成可读文本） */
+{ kind: "Internal"; message: string };
 
 /**  应用支持的语言 */
 export type Locale = "en" | "zh-CN";

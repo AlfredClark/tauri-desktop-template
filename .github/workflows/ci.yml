@@ -48,6 +48,7 @@ jobs:
               - 'tsconfig.json'
               - 'tsconfig.node.json'
               - 'eslint.config.ts'
+              - 'components.json'
               - '.prettierrc'
               - '.prettierignore'
               - '.github/workflows/ci.yml'
@@ -140,6 +141,9 @@ jobs:
       # 导出测试会重写 bindings.ts，若与提交内容不一致说明忘记重新生成绑定
       - name: Test
         run: cargo test --manifest-path Cargo.toml --workspace
+
+      - name: Bindings
+        run: git diff --exit-code src/libs/commands/bindings.ts
 
   ci-passed:
     name: Passed

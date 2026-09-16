@@ -28,6 +28,7 @@ pub fn run() {
         .plugin(plugins::log::init())
         .plugin(plugins::store::init())
         .plugin(plugins::opener::init())
+        .plugin(plugins::os::init())
         .plugin(plugins::updater::init())
         .invoke_handler(builder.invoke_handler())
         .setup(move |app| {

@@ -12,6 +12,7 @@
   "permissions": [
     "log:default",
     "opener:default",
+    "os:allow-locale",
     "updater:default"
   ]
 }

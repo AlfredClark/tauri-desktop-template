@@ -25,13 +25,13 @@ export class EnhancedCommand<R extends AnyResult> implements PromiseLike<R> {
       .then(async (result) => {
         const handlers = result.status === "ok" ? this.onSuccess : this.onFailure;
         if (result.status === "error" && handlers.length === 0) {
-          reportFailure("unhandled command failure", result.error);
+          reportCommandFailure("unhandled command failure", result.error);
         }
         for (const handler of handlers) {
           try {
             await handler(result.status === "ok" ? result.data : result.error);
           } catch (reason) {
-            reportFailure("command handler failed", reason);
+            reportCommandFailure("command handler failed", reason);
           }
         }
         return result;
@@ -77,7 +77,7 @@ export function wrapFn<F extends AnyFn>(fn: F): WrappedFn<F> {
 }
 
 /** 统一的失败上报：Tauri 内写入日志文件，其它环境（如单元测试）退回控制台，且永不抛错 */
-function reportFailure(message: string, detail: unknown): void {
+export function reportCommandFailure(message: string, detail: unknown): void {
   const text = `[commands] ${message}: ${describe(detail)}`;
   console.error(text);
   try {

@@ -2,5 +2,6 @@
 
 pub mod log;
 pub mod opener;
+pub mod os;
 pub mod store;
 pub mod updater;
