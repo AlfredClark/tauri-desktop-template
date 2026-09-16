@@ -7,6 +7,7 @@
   import PinOffIcon from "@lucide/svelte/icons/pin-off";
   import SquareIcon from "@lucide/svelte/icons/square";
   import XIcon from "@lucide/svelte/icons/x";
+  import type { Snippet } from "svelte";
   import { Button } from "$components/shadcn-svelte/button";
   import { m } from "$libs/i18n/paraglide/messages";
   import { cn } from "$libs/utils/shadcn-svelte";
@@ -20,7 +21,11 @@
     toggleMaximizeWindow,
   } from "$libs/utils/window-controls";
 
-  let { title = __APP_TAURI_CONF__.app.windows[0].title }: { title?: string } = $props();
+  // 左区默认渲染应用图标与标题，传入 left 片段时由调用方接管（如侧边栏布局的折叠按钮）。
+  let {
+    title = __APP_TAURI_CONF__.app.windows[0].title,
+    left,
+  }: { title?: string; left?: Snippet } = $props();
 
   let alwaysOnTop = $state(false);
   let maximized = $state(false);
@@ -72,8 +77,12 @@
 
 <div class={cn("flex h-10 w-full items-center justify-between bg-background select-none")}>
   <div class={cn("flex h-full items-center justify-center pt-1 pl-1")}>
-    <img src="icon.png" alt="icon" class={cn("ml-2 size-5")} />
-    <span class={cn("ml-2 truncate text-sm font-medium")} data-tauri-drag-region>{title}</span>
+    {#if left}
+      {@render left()}
+    {:else}
+      <img src="icon.png" alt="icon" class={cn("ml-2 size-5")} />
+      <span class={cn("ml-2 truncate text-sm font-medium")} data-tauri-drag-region>{title}</span>
+    {/if}
   </div>
   <div class={cn("h-full w-full flex-1 pt-1")}>
     <div class={cn("h-full w-full flex-1")} data-tauri-drag-region></div>

@@ -37,7 +37,7 @@ beforeEach(() => {
 describe("isLayoutName", () => {
   it("接受合法取值", () => {
     expect(isLayoutName("default")).toBe(true);
-    expect(isLayoutName("demo")).toBe(true);
+    expect(isLayoutName("sidebar")).toBe(true);
   });
 
   it("拒绝非法取值", () => {
@@ -53,8 +53,8 @@ describe("loadLayoutName", () => {
   });
 
   it("读取已持久化的合法值", () => {
-    localStorage.setItem(LAYOUT_STORAGE_KEY, "demo");
-    expect(loadLayoutName()).toBe("demo");
+    localStorage.setItem(LAYOUT_STORAGE_KEY, "sidebar");
+    expect(loadLayoutName()).toBe("sidebar");
   });
 
   it("脏数据回落默认值", () => {
@@ -73,9 +73,9 @@ describe("loadLayoutName", () => {
 
 describe("setLayoutName", () => {
   it("先落盘再切换内存状态", () => {
-    setLayoutName("demo");
-    expect(localStorage.getItem(LAYOUT_STORAGE_KEY)).toBe("demo");
-    expect(layoutState.name).toBe("demo");
+    setLayoutName("sidebar");
+    expect(localStorage.getItem(LAYOUT_STORAGE_KEY)).toBe("sidebar");
+    expect(layoutState.name).toBe("sidebar");
   });
 
   it("落盘失败仍切换内存状态", () => {
@@ -83,8 +83,8 @@ describe("setLayoutName", () => {
     vi.spyOn(mock, "setItem").mockImplementation(() => {
       throw new Error("denied");
     });
-    setLayoutName("demo");
-    expect(layoutState.name).toBe("demo");
+    setLayoutName("sidebar");
+    expect(layoutState.name).toBe("sidebar");
   });
 
   it("拒绝非法取值且不改状态", () => {
@@ -97,15 +97,15 @@ describe("setLayoutName", () => {
 
 describe("initLayout", () => {
   it("按持久化值初始化", () => {
-    localStorage.setItem(LAYOUT_STORAGE_KEY, "demo");
+    localStorage.setItem(LAYOUT_STORAGE_KEY, "sidebar");
     initLayout();
-    expect(layoutState.name).toBe("demo");
+    expect(layoutState.name).toBe("sidebar");
   });
 });
 
 describe("LAYOUTS", () => {
   it("合法取值均有对应组件", () => {
-    for (const name of ["default", "demo"] as const) {
+    for (const name of ["default", "sidebar"] as const) {
       expect(isLayoutName(name)).toBe(true);
       expect(LAYOUTS[name]).toBeDefined();
     }

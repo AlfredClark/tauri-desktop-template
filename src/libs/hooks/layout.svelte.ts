@@ -4,10 +4,10 @@
 // 布局组件禁止反向导入本模块，否则形成容器到布局的循环依赖。
 import type { Component, Snippet } from "svelte";
 import Default from "$components/layout/default.svelte";
-import Demo from "$components/layout/demo.svelte";
+import Sidebar from "$components/layout/sidebar.svelte";
 
 /** 可选布局取值，新增布局时同步扩展该联合类型与下方映射 */
-export type LayoutName = "default" | "demo";
+export type LayoutName = "default" | "sidebar";
 
 /** 布局组件形态：仅接收子内容片段 */
 export type LayoutComponent = Component<{ children: Snippet }>;
@@ -15,7 +15,7 @@ export type LayoutComponent = Component<{ children: Snippet }>;
 /** 布局名到组件的映射，容器据此动态渲染 */
 export const LAYOUTS: Record<LayoutName, LayoutComponent> = {
   default: Default,
-  demo: Demo,
+  sidebar: Sidebar,
 };
 
 /** 持久化键名，改名即视为放弃老用户存量 */
