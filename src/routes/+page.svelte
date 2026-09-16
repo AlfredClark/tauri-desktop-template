@@ -8,14 +8,37 @@
   import { reportCommandFailure } from "$libs/commands/cores";
   import { m } from "$libs/i18n/paraglide/messages";
   import { getLocale, setLocale } from "$libs/i18n/paraglide/runtime";
+  import { toast } from "$libs/utils/toast";
+  import {
+    Root as AlertDialogRoot,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger,
+  } from "$components/shadcn-svelte/alert-dialog";
 
   let name = $state("");
   let greetMsg = $state("");
 
-  // 取值用法：失败或数据为 null/undefined 时回落默认值
+  // 分支用法：成功弹成功提示，失败回落默认值并弹失败提示
   async function greet(event: Event) {
     event.preventDefault();
-    greetMsg = await commands.greet(name).value("Default");
+    const result = await commands.greet(name).result();
+    if (result.status === "ok" && result.data != null) {
+      greetMsg = result.data;
+      toast.success(m.greet_success_toast());
+    } else {
+      greetMsg = "Default";
+      reportCommandFailure(
+        "[greet] failed to greet",
+        result.status === "error" ? result.error : "empty data",
+      );
+      toast.error(m.greet_failed_toast());
+    }
   }
 
   async function switchMode(mode: "system" | "light" | "dark") {
@@ -33,10 +56,16 @@
       })
       .failed((failure) => {
         reportCommandFailure("[i18n] failed to switch locale", failure);
+        toast.error(m.locale_switch_failed_toast());
       });
   }
 
   let shouldCrash = $state(false);
+
+  // 先关框再置崩溃标志，避免回调内抛错时对话框残留。
+  function handleCrashConfirm() {
+    shouldCrash = true;
+  }
 
   // 演示 ErrorBoundary：置为 true 后会在渲染期抛错，由错误边界接管
   $effect.pre(() => {
@@ -86,13 +115,21 @@
 <div class="flex gap-4">
   <Button type="button" onclick={() => switchLocale("en")}>English</Button>
   <Button type="button" onclick={() => switchLocale("zh-CN")}>简体中文</Button>
-  <Button
-    type="button"
-    onclick={() => {
-      shouldCrash = true;
-    }}
-    >触发异常
-  </Button>
+  <AlertDialogRoot>
+    <AlertDialogTrigger>
+      <Button type="button">触发异常</Button>
+    </AlertDialogTrigger>
+    <AlertDialogContent>
+      <AlertDialogHeader>
+        <AlertDialogTitle>{m.crash_dialog_title()}</AlertDialogTitle>
+        <AlertDialogDescription>{m.crash_dialog_description()}</AlertDialogDescription>
+      </AlertDialogHeader>
+      <AlertDialogFooter>
+        <AlertDialogCancel>{m.dialog_cancel()}</AlertDialogCancel>
+        <AlertDialogAction onclick={handleCrashConfirm}>{m.dialog_confirm()}</AlertDialogAction>
+      </AlertDialogFooter>
+    </AlertDialogContent>
+  </AlertDialogRoot>
 </div>
 
 <!-- name 变化时重建该片段，让插值后的消息重新求值 -->

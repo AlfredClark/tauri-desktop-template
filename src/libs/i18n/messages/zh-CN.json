@@ -1,4 +1,11 @@
 {
   "$schema": "https://inlang.com/schema/inlang-message-format",
-  "hello_world": "你好, {name}!"
+  "hello_world": "你好, {name}!",
+  "dialog_confirm": "确认",
+  "dialog_cancel": "取消",
+  "crash_dialog_title": "触发渲染崩溃？",
+  "crash_dialog_description": "这将主动抛出渲染错误，用于演示错误边界接管，可用重试恢复。",
+  "greet_success_toast": "问候已发送",
+  "greet_failed_toast": "问候失败，已显示默认内容",
+  "locale_switch_failed_toast": "语言切换失败"
 }

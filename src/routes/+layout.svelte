@@ -4,6 +4,7 @@
   // 布局容器内部已含错误边界，切换失败同样被接管。
   import { ModeWatcher } from "mode-watcher";
   import LayoutContainer from "$components/common/layout-container.svelte";
+  import { Toaster } from "$components/shadcn-svelte/sonner";
   import "./layout.css";
 
   const { children } = $props();
@@ -11,6 +12,9 @@
 
 <!-- 跟随系统主题，并把 .dark 类同步到根元素 -->
 <ModeWatcher defaultMode="system" />
+
+<!-- 全局唯一的 Toast 挂载点：主题由 sonner 内部跟随 mode-watcher -->
+<Toaster position="bottom-right" richColors closeButton />
 
 <LayoutContainer>
   {@render children()}

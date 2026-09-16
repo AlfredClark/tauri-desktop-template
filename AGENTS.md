@@ -170,6 +170,7 @@ pnpm release                       # bumpp 联动升级三处版本号（package
 ### 6.2 前端
 
 - 组件：只用 Svelte 5 runes 写法（`$state` / `$props` / `$effect`），新代码禁用旧式 store；Props 必须显式定义类型，禁止 `any` 透传。
+- shadcn-svelte 组件在引用时尽可能使用全名引用如： `AlertDialogTrigger` 避免使用 `AlertDialog.Trigger`
 - 数据请求：统一经 `src/libs/commands` 链式 API（`.value() / .result() / .success() / .failed()`，回调在 `await / value()` 之前链式注册）；禁止在组件内手写裸 `invoke`。
 - 样式：Tailwind v4 + `cn()` 合并类名，优先主题变量（`src/routes/layout.css`，Geist Variable 字体，`.dark` 暗色变体）；禁止散落硬编码色值。Prettier（`double` 双引号、分号、2 空格缩进、行宽 100、LF）+ ESLint（`js recommended`、`typescript-eslint recommended`、`svelte flat/recommended` + `flat/prettier`）。
 - 导入顺序强制：内建模块 → 第三方 → 类型 → `$assets` / `$hooks` → `$components` → `$libs` → 相对路径。
