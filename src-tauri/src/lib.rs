@@ -10,6 +10,7 @@ mod plugins;
 mod utils;
 
 use crate::cores::{setup_cores, specta};
+use crate::plugins::BuilderExt;
 
 rust_i18n::i18n!("locales", fallback = "en");
 
@@ -22,17 +23,17 @@ rust_i18n::i18n!("locales", fallback = "en");
 pub fn run() {
     cores::system::init_system();
 
-    let builder = specta::init_builder();
+    let specta_builder = specta::init_builder();
 
     tauri::Builder::default()
         .plugin(plugins::log::init())
         .plugin(plugins::store::init())
         .plugin(plugins::opener::init())
         .plugin(plugins::os::init())
-        .plugin(plugins::updater::init())
-        .invoke_handler(builder.invoke_handler())
+        .with_updater()
+        .invoke_handler(specta_builder.invoke_handler())
         .setup(move |app| {
-            setup_cores(app, &builder);
+            setup_cores(app, &specta_builder);
             Ok(())
         })
         .run(tauri::generate_context!())
