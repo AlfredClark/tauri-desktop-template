@@ -1,8 +1,8 @@
-// 防止在版本中的Windows上添加额外的控制台窗口
+// release 构建不在 Windows 弹出多余的控制台窗口
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
-// 允许常规的告警转换为更严格的标准
+// 启用 clippy 全部与 pedantic 组检查（警告级别）
 #![warn(clippy::all, clippy::pedantic)]
-// 忽略部分在 Tauri 模板中常见但过于严苛的规则
+// 豁免 Tauri 模板中常见但过于严苛的模块名重复检查
 #![allow(clippy::module_name_repetitions)]
 
 fn main() {

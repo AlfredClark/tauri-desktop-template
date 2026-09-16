@@ -16,7 +16,7 @@ mod tests {
     use super::*;
     use specta_typescript::Typescript;
 
-    /// 导出 commands 的 ts 绑定。
+    /// 导出 `commands` 的 TS 绑定。
     ///
     /// 相对路径按 crate 根解析（`cargo test` 的工作目录即 `src-tauri/`），
     /// CI 会在测试后校验导出结果与提交内容一致。

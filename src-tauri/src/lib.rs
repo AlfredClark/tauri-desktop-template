@@ -13,7 +13,7 @@ use crate::cores::{setup_cores, specta};
 
 rust_i18n::i18n!("locales", fallback = "en");
 
-/// 运行Tauri应用程序
+/// 运行 Tauri 应用程序
 ///
 /// # Panics
 ///

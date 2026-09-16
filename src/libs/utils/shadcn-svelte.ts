@@ -3,9 +3,9 @@ import { twMerge } from "tailwind-merge";
 import type { ClassValue } from "clsx";
 
 /**
- * 用于合并class的函数，通过tailwind的twMerge与clsx合并
+ * 合并类名（基于 `clsx` 与 `tailwind-merge`）
  *
- * @param inputs Class列表
+ * @param inputs 类名列表
  */
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
