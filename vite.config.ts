@@ -2,6 +2,8 @@ import { paraglideVitePlugin } from "@inlang/paraglide-js";
 import { sveltekit } from "@sveltejs/kit/vite";
 import tailwindcss from "@tailwindcss/vite";
 import { defineConfig } from "vite";
+import tauriConf from "./src-tauri/tauri.conf.json" with { type: "json" };
+import pkg from "./package.json" with { type: "json" };
 
 // 获取 TAURI_DEV_HOST
 const host = process.env.TAURI_DEV_HOST;
@@ -15,6 +17,11 @@ export default defineConfig(async () => ({
       project: "./src/libs/i18n/project.inlang",
     }),
   ],
+
+  define: {
+    __APP_TAURI_CONF__: JSON.stringify(tauriConf),
+    __APP_PKG__: JSON.stringify(pkg),
+  },
 
   // 防止 Vite 清空终端屏幕，保留 Rust 编译输出日志
   clearScreen: false,

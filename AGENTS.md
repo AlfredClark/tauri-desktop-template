@@ -11,8 +11,8 @@
 - **项目名称：** `tauri-desktop-template`
 - **一句话描述：** 基于 Tauri v2 和 Svelte 5 的桌面应用程序开发模板
 - **核心功能（4 条）：**
-  1. Tauri 命令调用演示（含 tauri-specta 类型安全契约链）
-  2. 明暗主题切换（`mode-watcher` + Tailwind v4 `.dark` 变体）
+  1. Tauri 类型安全命令链（tauri-specta 契约 + 前端链式 API，含 `greet` 示例命令）
+  2. 明暗主题跟随（`mode-watcher` system 跟随 + Tailwind v4 `.dark` 变体）
   3. 前后端双轨国际化（前端 Paraglide + 后端 rust-i18n，持久化于后端 `config.json`）
   4. 前后端崩溃兜底（前端 `ErrorBoundary` + 后端 panic 钩子写 `%TEMP%/my_app_crash.log`）
 - **用户角色：** Tauri + Svelte 技术栈的桌面应用开发者
@@ -56,19 +56,23 @@ tauri-desktop-template/
 │   ├── app.html                    # HTML 外壳，SvelteKit 在此注入脚本与样式
 │   ├── assets/                     # 需要经构建处理的资源（预留目录，别名 $assets）
 │   ├── routes/                     # 页面与全局样式
-│   │   ├── +layout.svelte          # 根布局：ModeWatcher（主题）+ ErrorBoundary（渲染异常）包裹全部页面
+│   │   ├── +layout.svelte          # 根布局：ModeWatcher（主题）+ Toaster + ErrorBoundary（渲染异常）包裹全部分组
 │   │   ├── +layout.ts              # ssr = false（SPA 模式）+ 首帧前对齐界面语言的 load()
-│   │   ├── +page.svelte            # 演示页：主题切换 / 命令调用 / 语言切换 / 崩溃演练
+│   │   ├── (main)/                 # 分组路由（括号不进 URL）：常规页面分组，独享布局容器
+│   │   │   ├── +layout.svelte      # 分组布局：LayoutContainer 包裹，特殊页另起分组即可绕开布局
+│   │   │   └── +page.svelte        # 占位首页：布局骨架验证起点，业务在此开发
 │   │   └── layout.css              # Tailwind v4 入口与 shadcn-svelte 主题令牌（含 .dark 暗色变体）
 │   ├── components/
-│   │   ├── common/                 # 手写共享组件（error-boundary.svelte）
-│   │   ├── layout/                 # 布局组件，新增布局需要在 libs/hooks/layout.svelte.ts 中映射
+│   │   ├── common/                 # 手写共享组件（error-boundary.svelte + layout-container.svelte）
+│   │   ├── layout/                 # 布局组件（default 为标题栏/标签栏/内容/底边四层分栏），新增布局需要在 libs/hooks/layout.svelte.ts 中映射
+│   │   ├── widget/                 # 手写业务小组件
+│   │   │   └── layout/             # 布局配套部件
 │   │   └── shadcn-svelte/          # CLI 生成的 UI 组件（nova / neutral / lucide），勿手动重组
 │   └── libs/
 │       ├── commands/               # tauri-specta 契约链（bindings.ts 生成物 + 链式 API 封装）
 │       ├── i18n/                   # Paraglide：messages/ 文案、project.inlang/ 配置、paraglide/ 生成物
 │       ├── utils/                  # shadcn-svelte.ts（cn() 类名合并）等前端工具
-│       └── hooks/                  # 预留目录（别名 $hooks），目前为空
+│       └── hooks/                  # 前端共享状态（别名 $hooks），如 layout.svelte.ts 布局注册表
 ├── src-tauri/                      # 后端：Rust（edition 2024）
 │   ├── src/
 │   │   ├── main.rs                 # 二进制入口，仅转发到 lib::run()
@@ -170,6 +174,7 @@ pnpm release                       # bumpp 联动升级三处版本号（package
 ### 6.2 前端
 
 - 组件：只用 Svelte 5 runes 写法（`$state` / `$props` / `$effect`），新代码禁用旧式 store；Props 必须显式定义类型，禁止 `any` 透传。
+- shadcn-svelte 组件在引用时尽可能使用全名引用如： `AlertDialogTrigger` 避免使用 `AlertDialog.Trigger`
 - 数据请求：统一经 `src/libs/commands` 链式 API（`.value() / .result() / .success() / .failed()`，回调在 `await / value()` 之前链式注册）；禁止在组件内手写裸 `invoke`。
 - 样式：Tailwind v4 + `cn()` 合并类名，优先主题变量（`src/routes/layout.css`，Geist Variable 字体，`.dark` 暗色变体）；禁止散落硬编码色值。Prettier（`double` 双引号、分号、2 空格缩进、行宽 100、LF）+ ESLint（`js recommended`、`typescript-eslint recommended`、`svelte flat/recommended` + `flat/prettier`）。
 - 导入顺序强制：内建模块 → 第三方 → 类型 → `$assets` / `$hooks` → `$components` → `$libs` → 相对路径。
@@ -201,7 +206,7 @@ const msg = await invoke<string>("greet", { name });
 #[tauri::command]
 #[specta::specta]
 pub fn greet(name: String) -> CommandResult<String> {
-    Ok(features::greeting::greet(&name))
+    Ok(features::demo::greet(&name))
 }
 // ❌ 禁止：commands 内写业务逻辑 / features 内依赖 Tauri 运行时
 ```
@@ -282,7 +287,7 @@ CI（`.github/workflows/ci.yml`）在 `main` 分支上按变更路径触发：
 
 > 正常 CRUD 之外的"坑"，做相关任务前必读。
 
-1. **国际化流程：** 前端在 `src/libs/i18n/project.inlang/` 下改文案 → `pnpm i18n:compile` → 用 `m.hello_world({ name })` 取文案、`setLocale(locale)` 切换（启动对齐传 `{ reload: false }`）；后端改 `src-tauri/locales/*.yml` → `rust_i18n::t!(...)` 取文案。`paraglide/` 生成物已忽略提交，禁止编辑。`project.inlang/paraglide.config.ts` 需 `git add -f`（inlang 生成的 `.gitignore` 默认忽略除 settings 外全部文件）。
+1. **国际化流程：** 前端在 `src/libs/i18n/project.inlang/` 下改文案 → `pnpm i18n:compile` → 用 `m.<键>(...)` 按键取值、`setLocale(locale)` 切换（启动对齐传 `{ reload: false }`）；后端改 `src-tauri/locales/*.yml` → `rust_i18n::t!(...)` 取文案。`paraglide/` 生成物已忽略提交，禁止编辑。`project.inlang/paraglide.config.ts` 需 `git add -f`（inlang 生成的 `.gitignore` 默认忽略除 settings 外全部文件）。
 2. **命令契约流程：** `features/<name>.rs` 实现业务（`features/mod.rs` 声明 `pub mod <name>;`）→ `commands/<name>.rs` 薄封装（`CommandResult` + 双注解 + 进 `collect_commands!`）→ `cargo test` 重生成 `bindings.ts` → 前端链式 API 调用 → 联调。禁止跳过文档 / 生成步骤直接改代码。
 3. **发版流程：** 必须由开发者手动发版，`main` 受保护 → 提 PR → CI 全绿 → Code Review → Squash 合并 → `pnpm release` 联动三处版本号 → 打 tag `vX.Y.Z`（须与 `tauri.conf.json` 一致）→ `release.yml` 自动打包 → `pnpm changelog` 生成日志。
 4. **必须成对维护的配置：**
