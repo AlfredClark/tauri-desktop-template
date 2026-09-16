@@ -1,11 +1,11 @@
 <script lang="ts">
-  // 演示布局：侧边栏语义骨架，与默认布局形成结构反差，用于验证切换效果。
+  // 演示布局
   import type { Snippet } from "svelte";
 
   let { children }: { children: Snippet } = $props();
 </script>
 
-<div data-layout="demo">
+<div data-layout="demo" class="contents">
   <aside></aside>
   <div>
     <header></header>

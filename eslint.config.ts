@@ -10,6 +10,12 @@ import svelteConfig from "./svelte.config.js";
 
 const gitignorePath = fileURLToPath(new URL("./.gitignore", import.meta.url));
 
+// vite.config.ts 的 define 注入的全局常量（类型声明见 src/app.d.ts），TS 侧由 app.d.ts 提供，ESLint 需显式登记
+const viteDefineGlobals = {
+  __APP_TAURI_CONF__: "readonly",
+  __APP_PKG__: "readonly",
+};
+
 export default defineConfig(
   // 包含 .gitignore
   includeIgnoreFile(gitignorePath),
@@ -39,7 +45,7 @@ export default defineConfig(
   {
     files: ["src/**/*.ts", "src/**/*.svelte.ts"],
     languageOptions: {
-      globals: { ...globals.browser },
+      globals: { ...globals.browser, ...viteDefineGlobals },
     },
   },
 
@@ -53,7 +59,7 @@ export default defineConfig(
         extraFileExtensions: [".svelte"],
         svelteConfig,
       },
-      globals: { ...globals.browser },
+      globals: { ...globals.browser, ...viteDefineGlobals },
     },
   },
 

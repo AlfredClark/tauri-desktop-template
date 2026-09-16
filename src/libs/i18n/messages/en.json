@@ -1,3 +1,16 @@
 {
-  "$schema": "https://inlang.com/schema/inlang-message-format"
+  "$schema": "https://inlang.com/schema/inlang-message-format",
+  "nav_home": "Home",
+  "nav_settings": "Settings",
+  "nav_about": "About",
+  "page_home_title": "Home",
+  "page_settings_title": "Settings",
+  "page_about_title": "About",
+  "title_bar_pin": "Keep on top",
+  "title_bar_unpin": "Cancel keep on top",
+  "title_bar_minimize": "Minimize",
+  "title_bar_maximize": "Maximize",
+  "title_bar_restore": "Restore",
+  "title_bar_close": "Close",
+  "footer_copyright": "© {year} {author}. All rights reserved."
 }

@@ -1,3 +1,16 @@
 {
-  "$schema": "https://inlang.com/schema/inlang-message-format"
+  "$schema": "https://inlang.com/schema/inlang-message-format",
+  "nav_home": "首页",
+  "nav_settings": "设置",
+  "nav_about": "关于",
+  "page_home_title": "首页",
+  "page_settings_title": "设置",
+  "page_about_title": "关于",
+  "title_bar_pin": "置顶",
+  "title_bar_unpin": "取消置顶",
+  "title_bar_minimize": "最小化",
+  "title_bar_maximize": "最大化",
+  "title_bar_restore": "还原",
+  "title_bar_close": "关闭",
+  "footer_copyright": "© {year} {author} 保留所有权利。"
 }
