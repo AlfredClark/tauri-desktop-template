@@ -1,8 +1,8 @@
 <script lang="ts">
   // 布局容器：按注册表动态渲染，新增布局无需改动本文件。
+  // 错误兜底由根布局的全局错误边界负责，此处不再嵌套，避免双重捕获。
   import type { Snippet } from "svelte";
   import { LAYOUTS, initLayout, layoutState } from "$hooks/layout.svelte";
-  import ErrorBoundary from "$components/common/error-boundary.svelte";
 
   let { children }: { children: Snippet } = $props();
 
@@ -14,10 +14,8 @@
   });
 </script>
 
-<ErrorBoundary>
-  {#key layoutState.name}
-    <Layout>
-      {@render children()}
-    </Layout>
-  {/key}
-</ErrorBoundary>
+{#key layoutState.name}
+  <Layout>
+    {@render children()}
+  </Layout>
+{/key}

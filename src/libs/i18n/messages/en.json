@@ -1,11 +1,3 @@
 {
-  "$schema": "https://inlang.com/schema/inlang-message-format",
-  "hello_world": "Hello, {name}",
-  "dialog_confirm": "Confirm",
-  "dialog_cancel": "Cancel",
-  "crash_dialog_title": "Trigger a render crash?",
-  "crash_dialog_description": "This throws a render error on purpose to demo the error boundary. You can recover with retry.",
-  "greet_success_toast": "Greeting sent",
-  "greet_failed_toast": "Greeting failed, showing default content",
-  "locale_switch_failed_toast": "Failed to switch language"
+  "$schema": "https://inlang.com/schema/inlang-message-format"
 }
