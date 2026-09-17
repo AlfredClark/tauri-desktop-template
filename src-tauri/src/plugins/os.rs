@@ -1,3 +1,5 @@
+//! 系统信息插件初始化：供后端做系统语言探测。
+
 use tauri::{Runtime, plugin::Plugin};
 
 /// 系统信息插件：后端语言探测直接调用 Rust 侧函数（见 `cores::config`），不经过命令层；

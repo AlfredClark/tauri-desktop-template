@@ -4,7 +4,11 @@
 // 能力被误用；后续需要邮箱/本地资源入口时再扩展白名单。
 import { reportCommandFailure } from "$libs/commands/cores";
 
-/** 在系统默认应用中打开外部链接，成功返回真 */
+/**
+ * 在系统默认应用中打开外部链接，成功返回真
+ *
+ * 网关契约：全仓唯一的 `openUrl` 出口，禁止绕过本函数直引 `@tauri-apps/plugin-opener`。
+ */
 export async function openExternal(url: string): Promise<boolean> {
   const normalized = url.startsWith("git+") ? url.slice("git+".length) : url;
   if (!/^https?:\/\//i.test(normalized)) {

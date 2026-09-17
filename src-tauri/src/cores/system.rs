@@ -1,3 +1,5 @@
+//! 系统能力：`panic` 钩子（崩溃兜底）与本机信息采集。
+
 use std::fs::OpenOptions;
 use std::io::Write;
 use std::{env, panic};

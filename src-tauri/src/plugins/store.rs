@@ -1,3 +1,5 @@
+//! 持久化插件初始化：`config.json` 的 `Store` 底座，读写统一经 `cores::config` 三入口。
+
 use tauri::Runtime;
 use tauri::plugin::Plugin;
 

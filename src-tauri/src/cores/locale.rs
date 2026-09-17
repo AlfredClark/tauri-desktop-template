@@ -1,3 +1,5 @@
+//! 语言类型：前后端共用的 `Locale` 枚举与系统语言归一解析。
+
 use serde::{Deserialize, Serialize};
 use specta::Type;
 

@@ -1,3 +1,5 @@
+//! 系统命令：系统信息查询与应用退出的薄封装。
+
 use crate::cores::system::{self, SystemInfo};
 use crate::cores::types::CommandResult;
 

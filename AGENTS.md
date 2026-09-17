@@ -158,7 +158,7 @@ pnpm release                       # bumpp 联动升级三处版本号（package
 3. **状态归属：** Svelte 5 runes（`$state` / `$props` / `$effect`）优先，禁用旧式 store；页面私有状态用局部 state，跨页面共享才考虑提升。主题经 `mode-watcher` 全局管理，语言对齐走第 10 章第 1 条数据流，禁止各页面自建语言状态。
 4. **错误处理分层：** `features/` 返回业务错误 → `commands/` 转为 `CommandResult`（错误统一 `CommandError::Internal(...)`，`anyhow::Error` 经已有 `From` 自动转换）→ 前端经 `.result() / .value() / .success() / .failed()` 处理。前端 `.failed()` 回调形状为 `{ kind, message }`；未注册 `.failed()` 的失败会自动经 plugin-log 上报，不会静默丢失。禁止在 `features/` 内直接耦合 Tauri 运行时。
 5. **配置外置与同步：** Paraglide 编译选项唯一来源是 `src/libs/i18n/project.inlang/paraglide.config.ts`（CLI 与 vite 插件都读它，禁止往 `package.json` / `vite.config.ts` 各写一份）；路径别名唯一来源是 `svelte.config.ts` 的 `kit.alias`。新增外部 URL 必须同步更新 `capabilities/*.json` 与 `tauri.conf.json` 的 CSP（`updater` 下载端点由 Rust 侧发起，不受 WebView CSP 约束，无需同步 CSP，见第 8 章第 2 条）。新增配置必须检查第 10 章第 4 条成对维护表。路径别名共四个（`$assets` / `$components` / `$hooks` / `$libs`），均由该处定义；其中 hooks 一律经 `$hooks` 引用，禁止写 `$libs/hooks`（两者都能解析）——`components.json` 的 `aliases.hooks` 即 `$hooks`，CLI 生成的组件也走 `$hooks`，保持唯一写法才能避免漂移。新增 / 变更配置项必须同步 `cores/config.rs` 的 `CURRENT_SCHEMA_VERSION` 与 `MIGRATIONS` 迁移链（仅改动已有字段语义时才递增版本），否则老用户配置会静默失效。配置写锁三入口（`update` / `save_locale` / `migrate`，内部函数不加锁，新增写入路径必须走其一）；`update` 内幂等 `migrate`，存储不可用直接失败（不基于回落默认值决策），自启落盘失败回滚操作系统状态。
-6. **崩溃边界：** 前端 `ErrorBoundary`（经 `@tauri-apps/plugin-log` 上报，堆栈仅 dev 显示；同步 `console.error` 留底 + 2s 节流防刷屏）+ 后端 `cores/system.rs` panic 钩子（日志 + `%TEMP%/my_app_crash.log` 兜底，超 512KB 轮转为 `.1` 仅保留一份）。两者互不替代，禁止另加并行机制。
+6. **崩溃边界：** 前端 `ErrorBoundary`（经 `@tauri-apps/plugin-log` 上报，堆栈仅 dev 显示；同步 `console.error` 留底 + 2s 节流防刷屏）+ 后端 `cores/system.rs` panic 钩子（先走常规日志，日志不可用时落盘到 `%TEMP%/my_app_crash.log` 兜底，二选一而非双写；超 512KB 轮转为 `.1` 仅保留一份）。两者互不替代，禁止另加并行机制。
 7. **语言数据流：** 唯一持久化点是后端 `config.json` 的 `locale` 键（`cores/config.rs`），类型为 `cores/locale.rs` 的 `Locale` 枚举（经 specta 导出为 `"en" | "zh-CN"` 联合类型，禁止裸 `string` 或类型断言；`Locale::parse` 仅支持这两项，繁体一律归 `zh-CN`，加语言时同步改解析、`locales/*.yml` 与前端文案）。启动时后端先读持久化值、缺失则 `tauri_plugin_os::locale()` 探测并落库，再 `rust_i18n::set_locale`；前端在 `+layout.ts` 的 `load()` 首帧前经 `commands.getConfig` 水合配置（失败重试一次，不阻断首帧），再用 `config.locale` 调 Paraglide 的 `setLocale(locale, { reload: false })` 对齐（否则整页重载 + 语言闪烁）；用户切换时 `commands.updateConfig({ locale })` 先落盘再改内存，运行时 `rust_i18n` 由 `config::apply_runtime_effects` 统一同步，前端随后用 Paraglide 默认 `setLocale` 重载。更新命令 `restart` 桌面端永不结算（勿 `await`）、移动端返回错误走 `.failed()`；检查 120s 超时兜底，待重启态不被新检查覆盖。完整流程见第 10 章第 1 条。
 
 ---
@@ -198,7 +198,7 @@ const msg = await invoke<string>("greet", { name });
 ### 6.3 后端
 
 - 命令层：薄封装 + `#[tauri::command]` + `#[specta::specta]` + `collect_commands!` 注册，返回 `CommandResult`；`features/` 保持纯函数，不依赖 Tauri 运行时。
-- 格式：`cargo fmt`（行宽 100、4 空格、`use_field_init_shorthand`、`use_try_shorthand`）+ Clippy `pedantic` / `nursery` / `cargo` 组记为 `warn`，CI 中 `-D warnings`。`main.rs` 豁免 `clippy::module_name_repetitions`；`commands/mod.rs` 豁免 `unnecessary_wraps`。
+- 格式：`cargo fmt`（行宽 100、4 空格、`use_field_init_shorthand`、`use_try_shorthand`）+ Clippy `pedantic` / `nursery` / `cargo` 组记为 `warn`，CI 中 `-D warnings`。`main.rs` 豁免 `clippy::module_name_repetitions`；`commands/mod.rs` 豁免 `unnecessary_wraps`；`lib.rs:57` 的 `.expect()` 为 Tauri 官方模板惯用法（`run()` 已声明 `# Panics`），予以豁免。
 - 日志：关键分支打 `info`，异常打 `error`；崩溃走 `cores/system.rs` panic 钩子。禁止打印密钥 / Token / 完整 PII。
 - 注释：`//!` 写模块职责、`///` 写导出项契约与"为什么"、`//` 只解释非直观取舍；文档注释标识符必须加反引号（Clippy `doc_markdown` 会拦截 `WebKitGTK`、`AppImage` 类驼峰词）。
 - 示例：
@@ -254,7 +254,7 @@ CI（`.github/workflows/ci.yml`）在 `main` 分支上按变更路径触发：
    - `.github/workflows/release.yml` 发布流水线
    - `bindings.ts` 生成物（只允许 `cargo test` 重生成，禁止手改）
 3. **输入安全：** 所有外部输入必须校验 + 转义；Svelte 渲染默认转义，禁止 `{@html ...}` 直渲用户输入；Rust 侧字符串拼接 shell / SQL 时必须参数化。
-4. **越权与能力最小化：** Tauri capability 按需最小授权，禁止全开 `*`；前端隐藏按钮不算权限控制，涉及本地文件 / 系统能力时后端必须二次校验。前端 `openExternal` 仅放行 `http(s)`（先剥 `git+` 前缀再校验），其它 scheme 直接拒绝并上报。
+4. **越权与能力最小化：** Tauri capability 按需最小授权，禁止全开 `*`；前端隐藏按钮不算权限控制，涉及本地文件 / 系统能力时后端必须二次校验。前端 `openExternal` 仅放行 `http(s)`（先剥 `git+` 前缀再校验），其它 scheme 直接拒绝并上报。`store` / `autostart` / `window-state` / `single-instance` 仅 Rust 侧注册使用（见 `lib.rs`），无前端 JS 直调，故不在 `plugins.json` 声明，属刻意最小授权；新增前端直调时再按需补声明。
 5. **依赖安全：** 禁止引入未知来源依赖；新增依赖必须说明理由；前端经 `pnpm audit`、后端经 `cargo audit / cargo deny`（如已配置）检查无高危漏洞；依赖升级走手动 `chore(deps:update)` 提交。
 
 ---
@@ -289,7 +289,7 @@ CI（`.github/workflows/ci.yml`）在 `main` 分支上按变更路径触发：
 
 > 正常 CRUD 之外的"坑"，做相关任务前必读。
 
-1. **国际化流程：** 前端在 `src/libs/i18n/project.inlang/` 下改文案 → `pnpm i18n:compile` → 用 `m.<键>(...)` 按键取值、`setLocale(locale)` 切换（启动对齐传 `{ reload: false }`）；后端改 `src-tauri/locales/*.yml` → `rust_i18n::t!(...)` 取文案。`paraglide/` 生成物已忽略提交，禁止编辑。`project.inlang/paraglide.config.ts` 需 `git add -f`（inlang 生成的 `.gitignore` 默认忽略除 settings 外全部文件）。
+1. **国际化流程：** 前端在 `src/libs/i18n/project.inlang/` 下改文案 → `pnpm i18n:compile` → 用 `m.<键>(...)` 按键取值、`setLocale(locale)` 切换（启动对齐传 `{ reload: false }`）；后端改 `src-tauri/locales/*.yml` → `rust_i18n::t!(...)` 取文案。`paraglide/` 生成物已忽略提交，禁止编辑。`project.inlang/paraglide.config.ts` 与 `settings.json` 已被该目录 `.gitignore` 放行，直接 `git add` 即可，无需 `git add -f`。
 2. **命令契约流程：** `features/<name>.rs` 实现业务（`features/mod.rs` 声明 `pub mod <name>;`）→ `commands/<name>.rs` 薄封装（`CommandResult` + 双注解 + 进 `collect_commands!`）→ `cargo test` 重生成 `bindings.ts` → 前端链式 API 调用 → 联调。禁止跳过文档 / 生成步骤直接改代码。
 3. **发版流程：** 必须由开发者手动发版，`main` 受保护 → 提 PR → CI 全绿 → Code Review → Squash 合并 → `pnpm release` 联动三处版本号 → 打 tag `vX.Y.Z`（须与 `tauri.conf.json` 一致）→ `release.yml` 自动打包 → `pnpm changelog` 生成日志。
 4. **必须成对维护的配置：**

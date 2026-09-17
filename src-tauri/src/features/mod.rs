@@ -3,4 +3,4 @@
 
 pub mod demo;
 
-pub mod deeplink;
+pub mod deep_link;

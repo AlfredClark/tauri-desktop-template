@@ -1,3 +1,5 @@
+//! 示例命令：问候语薄封装，业务逻辑在 `features::demo`。
+
 use crate::cores::types::CommandResult;
 use crate::features::demo;
 

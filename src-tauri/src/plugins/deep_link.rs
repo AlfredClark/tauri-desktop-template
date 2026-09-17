@@ -1,3 +1,5 @@
+//! 深链协议插件初始化（仅桌面端）。
+
 use tauri::{Runtime, plugin::Plugin};
 
 /// 深链插件（仅桌面端）：协议在 `tauri.conf.json` 的 `plugins.deep-link` 注册；

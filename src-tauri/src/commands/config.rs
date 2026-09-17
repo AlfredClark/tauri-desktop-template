@@ -1,3 +1,5 @@
+//! 配置命令：`get` / `update` / `reset` 薄封装，写锁与迁移逻辑在 `cores::config`。
+
 use crate::cores::config::{self, Config, ConfigPatch};
 use crate::cores::types::CommandResult;
 

@@ -1,3 +1,5 @@
+//! 开机自启插件初始化（仅桌面端）：落盘失败时由配置中心回滚操作系统状态。
+
 use tauri::{Runtime, plugin::Plugin};
 use tauri_plugin_autostart::MacosLauncher;
 

@@ -1,3 +1,5 @@
+//! 单实例插件初始化（仅桌面端）：二次启动聚焦已有窗口并转发深链参数。
+
 use tauri::{AppHandle, Emitter, Manager, plugin::TauriPlugin};
 
 /// 单实例插件（仅桌面端）：二次启动时聚焦已有主窗口，并把深链参数转发给前端。
@@ -13,7 +15,7 @@ pub fn init() -> TauriPlugin<tauri::Wry> {
             let _ = window.show();
             let _ = window.set_focus();
         }
-        let urls = crate::features::deeplink::extract_deep_link_urls(&args);
+        let urls = crate::features::deep_link::extract_deep_link_urls(&args);
         if !urls.is_empty() {
             log::info!(
                 "forwarding {} deep link url(s) from second instance",

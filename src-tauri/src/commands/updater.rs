@@ -1,3 +1,5 @@
+//! 更新命令：检查 / 下载安装 / 重启的薄封装，业务在 `cores::updater`。
+
 use crate::cores::types::CommandResult;
 use crate::cores::updater::{self, UpdateInfo};
 

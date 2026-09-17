@@ -1,3 +1,5 @@
+//! 契约导出：`tauri-specta` 构建器初始化与 `bindings.ts` 生成入口。
+
 use crate::commands::collect_commands;
 use tauri_specta::Builder;
 

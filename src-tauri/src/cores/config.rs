@@ -1,3 +1,5 @@
+//! 配置中心：后端 `config.json` 的读写、迁移与运行时副作用（语言/自启/托盘/窗口恢复）。
+
 use anyhow::Context;
 use serde::{Deserialize, Deserializer, Serialize};
 use serde_json::{Map, Value};

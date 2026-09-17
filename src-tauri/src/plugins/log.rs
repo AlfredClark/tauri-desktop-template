@@ -1,3 +1,5 @@
+//! 日志插件初始化：`stdout` / 日志文件 / `Webview` 控制台三路输出。
+
 use tauri::{Runtime, plugin::Plugin};
 
 /// 日志插件：同时输出到 `stdout`、日志文件（单文件 1MB、保留 10 份轮转）与 `Webview` 控制台；

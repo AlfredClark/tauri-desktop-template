@@ -1,3 +1,5 @@
+//! 跨层共享类型：统一命令错误与结果别名，前端契约由此经 `specta` 导出。
+
 use serde::{Deserialize, Serialize};
 use specta::Type;
 use thiserror::Error;
