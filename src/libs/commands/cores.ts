@@ -83,7 +83,7 @@ export function wrapFn<F extends AnyFn>(fn: F): WrappedFn<F> {
 }
 
 /** 统一的失败上报：Tauri 内写入日志文件，其它环境（如单元测试）退回控制台，且永不抛错 */
-// 全仓唯一允许的控制台直写点：调用方一律经此函数上报，禁止各处散写 `console.*`
+// 控制台直写的白名单之一（另一处是 `error-boundary` 的同步留底）：调用方一律经此函数上报，禁止各处散写 `console.*`
 export function reportCommandFailure(message: string, detail: unknown): void {
   const text = `[commands] ${message}: ${describe(detail)}`;
   console.error(text);

@@ -8,7 +8,9 @@ package
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 *.log
-src-tauri
+# Rust 构建与 Tauri 生成物（只忽略生成目录，tauri.conf.json 与 capabilities 仍接受排版检查）
+src-tauri/gen
+src-tauri/target
 target
 Cargo.lock
 .pnpm-store/

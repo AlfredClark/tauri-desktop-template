@@ -4,22 +4,22 @@
   // 布局容器下沉到 (main) 分组，特殊页面另起分组即可绕开布局。
   // 窗口关闭拦截也在此统一处理：按后端关闭行为分流（弹窗确认 / 藏窗口 / 真退出）。
   import { ModeWatcher } from "mode-watcher";
-  import type { Snippet } from "svelte";
   import { getCurrentWindow } from "@tauri-apps/api/window";
+  import type { Snippet } from "svelte";
   import { initAppearance } from "$hooks/appearance.svelte";
   import { configState } from "$hooks/config.svelte";
   import { initDeepLinks } from "$hooks/deep-link.svelte";
   import { maybeAutoCheckForUpdate } from "$hooks/updater.svelte";
   import ErrorBoundary from "$components/common/error-boundary.svelte";
   import {
-    Action as AlertDialogAction,
-    Cancel as AlertDialogCancel,
-    Content as AlertDialogContent,
-    Description as AlertDialogDescription,
-    Footer as AlertDialogFooter,
-    Header as AlertDialogHeader,
-    Root as AlertDialogRoot,
-    Title as AlertDialogTitle,
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
   } from "$components/shadcn-svelte/alert-dialog";
   import { Toaster } from "$components/shadcn-svelte/sonner";
   import commands from "$libs/commands";
@@ -121,7 +121,7 @@
 <Toaster position="bottom-right" richColors closeButton />
 
 <!-- 关闭行为为弹窗提示时的确认框：平时不挂载，由关闭拦截按需打开 -->
-<AlertDialogRoot bind:open={confirmCloseOpen}>
+<AlertDialog bind:open={confirmCloseOpen}>
   <AlertDialogContent>
     <AlertDialogHeader>
       <AlertDialogTitle>{m.settings_close_confirm_title()}</AlertDialogTitle>
@@ -134,7 +134,7 @@
       </AlertDialogAction>
     </AlertDialogFooter>
   </AlertDialogContent>
-</AlertDialogRoot>
+</AlertDialog>
 
 <ErrorBoundary>
   {@render children()}

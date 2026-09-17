@@ -3,11 +3,12 @@
 // 协议 `scheme` 的三处 touch 点（模板二次开发自定义时同步改）：
 // `tauri.conf.json` 的 `plugins.deep-link.desktop.schemes`、
 // 后端 `features/deeplink.rs` 的 `SCHEME_PREFIX`、此处的 `DEEP_LINK_SCHEME`。
-import { listen, type UnlistenFn } from "@tauri-apps/api/event";
-import { getCurrent, onOpenUrl } from "@tauri-apps/plugin-deep-link";
 import { goto } from "$app/navigation";
 import { resolve } from "$app/paths";
+import { listen, type UnlistenFn } from "@tauri-apps/api/event";
+import { getCurrent, onOpenUrl } from "@tauri-apps/plugin-deep-link";
 import { SvelteMap } from "svelte/reactivity";
+import { reportCommandFailure } from "$libs/commands/cores";
 import { m } from "$libs/i18n/paraglide/messages";
 import { toast } from "$libs/utils/toast";
 
@@ -58,6 +59,8 @@ export function handleDeepLinkUrl(url: string): void {
   handledAt.set(url, now);
   const route = routeForUrl(url);
   if (route === null) {
+    // 非法深链 toast 提醒用户，同时上报便于排障（不跳转、不抛错）
+    reportCommandFailure("[deep-link] 未知链接已忽略", url);
     toast.warning(m.deep_link_unknown());
     return;
   }

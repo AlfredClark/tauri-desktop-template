@@ -1,0 +1,12 @@
+# `cargo deny` 配置：后端依赖安全审计基线（见 AGENTS.md §8.5）。
+# 只启用误报率低的检查：RUSTSEC 公告 + crate 来源 + bans（多版本仅警告，不红灯）。
+# 许可证收紧待依赖清单稳定后再做，避免模板初始化即红灯。
+[advisories]
+db-urls = ["https://github.com/rustsec/advisory-db"]
+
+[bans]
+multiple-versions = "warn"
+
+[sources]
+unknown-registry = "deny"
+unknown-git = "deny"

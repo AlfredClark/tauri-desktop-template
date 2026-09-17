@@ -7,8 +7,11 @@ import type { Component, Snippet } from "svelte";
 import Tabs from "$components/layout/tabs.svelte";
 import Sidebar from "$components/layout/sidebar.svelte";
 
+/** 可选布局取值：新增布局时同步扩展该元组与下方映射（元组即真值来源，避免 `Object.keys` 断言） */
+const LAYOUT_NAME_TUPLE = ["tabs", "sidebar"] as const;
+
 /** 可选布局取值，新增布局时同步扩展该联合类型与下方映射 */
-export type LayoutName = "tabs" | "sidebar";
+export type LayoutName = (typeof LAYOUT_NAME_TUPLE)[number];
 
 /** 布局组件形态：仅接收子内容片段 */
 export type LayoutComponent = Component<{ children: Snippet }>;
@@ -24,7 +27,7 @@ export const LAYOUT_STORAGE_KEY = "layout-name";
 
 const DEFAULT_LAYOUT: LayoutName = "tabs";
 
-const LAYOUT_NAMES: readonly LayoutName[] = Object.keys(LAYOUTS) as LayoutName[];
+const LAYOUT_NAMES: readonly LayoutName[] = LAYOUT_NAME_TUPLE;
 
 // 跨页面共享的布局状态，页面私有状态仍用局部 $state
 export const layoutState = $state<{ name: LayoutName }>({ name: DEFAULT_LAYOUT });

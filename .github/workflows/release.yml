@@ -125,6 +125,8 @@ jobs:
       - name: Setup
         uses: pnpm/setup@v2
         with:
+          # pnpm 版本必须与 package.json 的 packageManager 保持一致
+          version: 11.25.0
           runtime: node@24
           cache: true
 

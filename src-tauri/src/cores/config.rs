@@ -246,19 +246,22 @@ pub fn setup(app: &tauri::App) {
     show_windows(handle);
 }
 
-/// 显示全部窗口；恢复流程依赖此调用，失败只记日志（窗口已存在，仅可见性受影响）
+/// 仅显示主窗口；其余窗口由各自流程管理，此处不碰（恢复也只针对 `main`，见 `restore_windows`）
 #[cfg(not(any(target_os = "android", target_os = "ios")))]
 fn show_windows(app: &tauri::AppHandle) {
     use tauri::Manager;
 
     for (label, window) in app.webview_windows() {
+        if label != "main" {
+            continue;
+        }
         if let Err(err) = window.show() {
             log::warn!("failed to show window {label}: {err:#}");
         }
     }
 }
 
-/// 显示全部窗口；恢复流程依赖此调用，失败只记日志（窗口已存在，仅可见性受影响）
+/// 仅显示主窗口；恢复流程依赖此调用，失败只记日志（窗口已存在，仅可见性受影响）
 #[cfg(any(target_os = "android", target_os = "ios"))]
 fn show_windows(_app: &tauri::AppHandle) {}
 
