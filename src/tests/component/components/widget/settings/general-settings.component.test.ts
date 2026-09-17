@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { cleanup, render, screen, waitFor } from "@testing-library/svelte";
 import userEvent from "@testing-library/user-event";
-import type { Locale } from "$libs/commands/types";
+import type { CloseBehavior, Locale } from "$libs/commands/types";
 import Component from "$components/widget/settings/general-settings.svelte";
 
 // jsdom 缺少指针捕获与滚动 API，bits-ui 下拉用得到，仅在本文件内就地补齐。
@@ -37,6 +37,8 @@ const configStateMock = vi.hoisted(() => ({
     auto_start: false,
     remember_window: false,
     auto_check_update: false,
+    tray_enabled: true,
+    close_behavior: "prompt",
     schema_version: 1,
   },
 }));
@@ -71,6 +73,8 @@ beforeEach(() => {
     auto_start: false,
     remember_window: false,
     auto_check_update: false,
+    tray_enabled: true,
+    close_behavior: "prompt",
     schema_version: 1,
   };
   // 成功路径：写后回填配置状态，与真实 `updateConfig` 的回写行为一致。
@@ -80,12 +84,16 @@ beforeEach(() => {
       auto_start?: boolean;
       remember_window?: boolean;
       auto_check_update?: boolean;
+      tray_enabled?: boolean;
+      close_behavior?: CloseBehavior;
     }) => {
       configStateMock.value = {
         locale: patch.locale ?? configStateMock.value.locale,
         auto_start: patch.auto_start ?? configStateMock.value.auto_start,
         remember_window: patch.remember_window ?? configStateMock.value.remember_window,
         auto_check_update: patch.auto_check_update ?? configStateMock.value.auto_check_update,
+        tray_enabled: patch.tray_enabled ?? configStateMock.value.tray_enabled,
+        close_behavior: patch.close_behavior ?? configStateMock.value.close_behavior,
         schema_version: 1,
       };
     },
@@ -114,9 +122,13 @@ describe("通用设置分组", () => {
     expect(screen.getByText("Autostart")).not.toBeNull();
     expect(screen.getByText("Remember window")).not.toBeNull();
     expect(screen.getByText("Auto check for updates")).not.toBeNull();
+    expect(screen.getByText("System tray")).not.toBeNull();
+    expect(screen.getByText("Close behavior")).not.toBeNull();
     // 下拉触发器展示当前选中项的文案
     const languageTrigger = screen.getByRole("button", { name: "Language" });
     expect(languageTrigger.textContent).toContain("English");
+    const closeBehaviorTrigger = screen.getByRole("button", { name: "Close behavior" });
+    expect(closeBehaviorTrigger.textContent).toContain("Ask every time");
   });
 
   it("切换语言先落盘后端，成功后重载生效", async () => {
@@ -187,6 +199,8 @@ describe("通用设置分组", () => {
       auto_start: true,
       remember_window: false,
       auto_check_update: false,
+      tray_enabled: true,
+      close_behavior: "prompt",
       schema_version: 1,
     };
     render(Component);
@@ -229,6 +243,8 @@ describe("通用设置分组", () => {
       auto_start: false,
       remember_window: true,
       auto_check_update: false,
+      tray_enabled: true,
+      close_behavior: "prompt",
       schema_version: 1,
     };
     render(Component);
@@ -271,6 +287,8 @@ describe("通用设置分组", () => {
       auto_start: false,
       remember_window: false,
       auto_check_update: true,
+      tray_enabled: true,
+      close_behavior: "prompt",
       schema_version: 1,
     };
     render(Component);
@@ -300,6 +318,90 @@ describe("通用设置分组", () => {
     render(Component);
 
     await user.click(screen.getByRole("switch", { name: "Auto check for updates" }));
+
+    await vi.waitFor(() => {
+      expect(toastMocks.error).toHaveBeenCalled();
+    });
+    expect(setLocaleMock).not.toHaveBeenCalled();
+  });
+
+  it("托盘开关渲染后端配置的当前状态", () => {
+    configStateMock.value = {
+      locale: "en",
+      auto_start: false,
+      remember_window: false,
+      auto_check_update: false,
+      tray_enabled: false,
+      close_behavior: "prompt",
+      schema_version: 1,
+    };
+    render(Component);
+
+    expect(screen.getByRole("switch", { name: "System tray" }).getAttribute("data-state")).toBe(
+      "unchecked",
+    );
+  });
+
+  it("关闭托盘开关经命令落盘，成功后提示", async () => {
+    const user = userEvent.setup();
+    render(Component);
+
+    await user.click(screen.getByRole("switch", { name: "System tray" }));
+
+    expect(updateConfigMock).toHaveBeenCalledWith({ tray_enabled: false });
+    await vi.waitFor(() => {
+      expect(toastMocks.success).toHaveBeenCalled();
+    });
+    expect(toastMocks.error).not.toHaveBeenCalled();
+    expect(setLocaleMock).not.toHaveBeenCalled();
+  });
+
+  it("托盘关闭时最小化到托盘选项不可用", async () => {
+    const user = userEvent.setup();
+    configStateMock.value = {
+      locale: "en",
+      auto_start: false,
+      remember_window: false,
+      auto_check_update: false,
+      tray_enabled: false,
+      close_behavior: "prompt",
+      schema_version: 1,
+    };
+    render(Component);
+
+    await user.click(screen.getByRole("button", { name: "Close behavior" }));
+    await waitFor(() => {
+      expect(document.querySelector('[data-value="minimize_to_tray"]')).not.toBeNull();
+    });
+    // bits-ui 给禁用项打 data-disabled 标记并排除出键盘导航
+    expect(
+      document.querySelector('[data-value="minimize_to_tray"]')?.hasAttribute("data-disabled"),
+    ).toBe(true);
+    expect(document.querySelector('[data-value="exit"]')?.hasAttribute("data-disabled")).toBe(
+      false,
+    );
+  });
+
+  it("切换关闭行为先落盘后端，成功后提示", async () => {
+    const user = userEvent.setup();
+    render(Component);
+
+    await chooseOption(user, "Close behavior", "exit");
+
+    expect(updateConfigMock).toHaveBeenCalledWith({ close_behavior: "exit" });
+    await vi.waitFor(() => {
+      expect(toastMocks.success).toHaveBeenCalled();
+    });
+    expect(toastMocks.error).not.toHaveBeenCalled();
+    expect(setLocaleMock).not.toHaveBeenCalled();
+  });
+
+  it("关闭行为落盘失败时报错且不改语言", async () => {
+    const user = userEvent.setup();
+    updateConfigMock.mockImplementation(async () => {});
+    render(Component);
+
+    await chooseOption(user, "Close behavior", "exit");
 
     await vi.waitFor(() => {
       expect(toastMocks.error).toHaveBeenCalled();

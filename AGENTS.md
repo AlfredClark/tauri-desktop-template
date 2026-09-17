@@ -80,7 +80,7 @@ tauri-desktop-template/
 │   │   ├── main.rs                 # 二进制入口，仅转发到 lib::run()
 │   │   ├── lib.rs                  # 串联插件注册 → 命令处理器 → 核心初始化
 │   │   ├── commands/               # 命令封装层：薄封装 + collect_commands! 注册
-│   │   ├── cores/                  # 通用能力与跨层共享类型（types / locale / config / specta / system）
+│   │   ├── cores/                  # 通用能力与跨层共享类型（types / locale / config / specta / system / tray）
 │   │   ├── features/               # 业务逻辑（纯函数，不依赖 Tauri 运行时）
 │   │   └── plugins/                # 各 Tauri 插件的初始化（log / store / opener / os / updater / autostart / window-state / system-fonts）
 │   ├── locales/                    # rust-i18n 后端文案（*.yml）

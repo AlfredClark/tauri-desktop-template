@@ -114,6 +114,12 @@ pub fn init_system() {
     }
 }
 
+/// 真退出应用进程：关闭行为“直接退出”与关闭确认弹窗走此入口。
+/// `hide` 只藏窗口不断进程，退出必须经此处；调用后进程即结束（不可单测，走真机 QA）。
+pub fn quit_app(app: &tauri::AppHandle) {
+    app.exit(0);
+}
+
 /// 运行平台信息：经 `tauri-plugin-os` 采集，全字段必填，前端逐行展示
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Type)]
 pub struct SystemInfo {

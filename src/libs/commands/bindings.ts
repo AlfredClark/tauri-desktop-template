@@ -21,6 +21,8 @@ export const commands = {
 	greet: (name: string) => typedError<string, CommandError>(__TAURI_INVOKE("greet", { name })),
 	/**  采集运行平台信息；单项缺失时回落 `"unknown"`，绝不抛错 */
 	getSystemInfo: () => typedError<SystemInfo, CommandError>(__TAURI_INVOKE("get_system_info")),
+	/**  真退出应用进程；调用后进程结束，结果体永不可达（按 `CommandResult<()>` 保持命令类型统一） */
+	quitApp: () => typedError<null, CommandError>(__TAURI_INVOKE("quit_app")),
 	/**  检查更新；无新版返回 `None`（仅桌面端有更新能力） */
 	checkUpdate: () => typedError<{
 	/**  远端版本号 */
@@ -43,6 +45,9 @@ export const commands = {
 };
 
 /* Types */
+/**  关闭窗口行为：落盘值为 `snake_case` 字符串，未知一律回落弹窗提示 */
+export type CloseBehavior = "prompt" | "exit" | "minimize_to_tray";
+
 /**
  *  命令统一返回的错误类型。
  * 
@@ -60,10 +65,11 @@ export type CommandError =
  *  新增一个配置项的固定步骤：
  *  `KEY_*` 常量 → 本结构体加字段 → `ConfigPatch` 加同名 `Option` 字段 → `load_config` 回填
  *  → 需要运行时副作用则加进 `apply_runtime_effects` → `reset_patch` 补默认值
- *  → `cargo test` 重生成绑定。
+ *  → 需跨键规整（如托盘关闭时禁最小化）则加进 `coerce_patch` → `cargo test` 重生成绑定。
  * 
  *  只有**改动已有字段的语义或位置**时才需要递增 `CURRENT_SCHEMA_VERSION` 并在 `MIGRATIONS`
  *  末尾补一级迁移，否则老用户配置会静默失效（纯新增字段由 `Default` + 容错读取兜住）。
+ *  布尔开关天然扁平并存（与 `store` 扁平键一一对应），不为 lint 拆结构。
  */
 export type Config = Config_Serialize | Config_Deserialize;
 
@@ -77,6 +83,10 @@ export type ConfigPatch = {
 	remember_window?: boolean | null,
 	/**  自动检查更新 */
 	auto_check_update?: boolean | null,
+	/**  系统托盘开关 */
+	tray_enabled?: boolean | null,
+	/**  关闭窗口行为 */
+	close_behavior?: CloseBehavior | null,
 };
 
 /**
@@ -87,10 +97,11 @@ export type ConfigPatch = {
  *  新增一个配置项的固定步骤：
  *  `KEY_*` 常量 → 本结构体加字段 → `ConfigPatch` 加同名 `Option` 字段 → `load_config` 回填
  *  → 需要运行时副作用则加进 `apply_runtime_effects` → `reset_patch` 补默认值
- *  → `cargo test` 重生成绑定。
+ *  → 需跨键规整（如托盘关闭时禁最小化）则加进 `coerce_patch` → `cargo test` 重生成绑定。
  * 
  *  只有**改动已有字段的语义或位置**时才需要递增 `CURRENT_SCHEMA_VERSION` 并在 `MIGRATIONS`
  *  末尾补一级迁移，否则老用户配置会静默失效（纯新增字段由 `Default` + 容错读取兜住）。
+ *  布尔开关天然扁平并存（与 `store` 扁平键一一对应），不为 lint 拆结构。
  */
 export type Config_Deserialize = {
 	/**  配置结构版本：旧文件缺键时回落 `0`，任何写入都会带上当前版本号 */
@@ -103,6 +114,10 @@ export type Config_Deserialize = {
 	remember_window?: boolean,
 	/**  自动检查更新：缺失或类型不符时回落 `false`，绝不让整包解析失败 */
 	auto_check_update?: boolean,
+	/**  系统托盘开关：缺失或类型不符时回落默认值（`true`），绝不让整包解析失败 */
+	tray_enabled?: boolean,
+	/**  关闭窗口行为：缺失、类型不符或无法识别时回落弹窗提示，绝不让整包解析失败 */
+	close_behavior?: CloseBehavior,
 };
 
 /**
@@ -113,10 +128,11 @@ export type Config_Deserialize = {
  *  新增一个配置项的固定步骤：
  *  `KEY_*` 常量 → 本结构体加字段 → `ConfigPatch` 加同名 `Option` 字段 → `load_config` 回填
  *  → 需要运行时副作用则加进 `apply_runtime_effects` → `reset_patch` 补默认值
- *  → `cargo test` 重生成绑定。
+ *  → 需跨键规整（如托盘关闭时禁最小化）则加进 `coerce_patch` → `cargo test` 重生成绑定。
  * 
  *  只有**改动已有字段的语义或位置**时才需要递增 `CURRENT_SCHEMA_VERSION` 并在 `MIGRATIONS`
  *  末尾补一级迁移，否则老用户配置会静默失效（纯新增字段由 `Default` + 容错读取兜住）。
+ *  布尔开关天然扁平并存（与 `store` 扁平键一一对应），不为 lint 拆结构。
  */
 export type Config_Serialize = {
 	/**  配置结构版本：旧文件缺键时回落 `0`，任何写入都会带上当前版本号 */
@@ -129,6 +145,10 @@ export type Config_Serialize = {
 	remember_window: boolean,
 	/**  自动检查更新：缺失或类型不符时回落 `false`，绝不让整包解析失败 */
 	auto_check_update: boolean,
+	/**  系统托盘开关：缺失或类型不符时回落默认值（`true`），绝不让整包解析失败 */
+	tray_enabled: boolean,
+	/**  关闭窗口行为：缺失、类型不符或无法识别时回落弹窗提示，绝不让整包解析失败 */
+	close_behavior: CloseBehavior,
 };
 
 /**  应用支持的语言 */

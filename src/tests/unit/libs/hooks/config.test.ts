@@ -12,6 +12,8 @@ const saved: Config_Serialize = {
   auto_start: true,
   remember_window: true,
   auto_check_update: true,
+  tray_enabled: true,
+  close_behavior: "prompt",
   schema_version: 1,
 };
 
@@ -107,6 +109,8 @@ describe("updateConfig", () => {
       auto_start: false,
       remember_window: false,
       auto_check_update: false,
+      tray_enabled: true,
+      close_behavior: "prompt",
       schema_version: 1,
     };
     configState.value = previous;
@@ -126,6 +130,8 @@ describe("updateConfig", () => {
       auto_start: false,
       remember_window: false,
       auto_check_update: false,
+      tray_enabled: true,
+      close_behavior: "prompt",
       schema_version: 1,
     };
     configState.value = previous;

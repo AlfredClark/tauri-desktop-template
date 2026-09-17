@@ -2,16 +2,34 @@
   // 根布局只负责全局能力：注入全局样式，并用主题监听器、Toast 挂载点与错误边界包裹全部页面。
   // 界面语言的对齐在 +layout.ts 的 load() 里完成，早于本组件首次渲染。
   // 布局容器下沉到 (main) 分组，特殊页面另起分组即可绕开布局。
+  // 窗口关闭拦截也在此统一处理：按后端关闭行为分流（弹窗确认 / 藏窗口 / 真退出）。
   import { ModeWatcher } from "mode-watcher";
   import type { Snippet } from "svelte";
+  import { getCurrentWindow } from "@tauri-apps/api/window";
   import { initAppearance } from "$hooks/appearance.svelte";
   import { configState } from "$hooks/config.svelte";
   import { maybeAutoCheckForUpdate } from "$hooks/updater.svelte";
   import ErrorBoundary from "$components/common/error-boundary.svelte";
+  import {
+    Action as AlertDialogAction,
+    Cancel as AlertDialogCancel,
+    Content as AlertDialogContent,
+    Description as AlertDialogDescription,
+    Footer as AlertDialogFooter,
+    Header as AlertDialogHeader,
+    Root as AlertDialogRoot,
+    Title as AlertDialogTitle,
+  } from "$components/shadcn-svelte/alert-dialog";
   import { Toaster } from "$components/shadcn-svelte/sonner";
+  import commands from "$libs/commands";
+  import { reportCommandFailure } from "$libs/commands/cores";
+  import { m } from "$libs/i18n/paraglide/messages";
   import "./layout.css";
 
   const { children }: { children: Snippet } = $props();
+
+  // 关闭确认弹窗开关；确认即真退出，取消仅关弹窗（窗口早已被 preventDefault 留住）
+  let confirmCloseOpen = $state(false);
 
   // 外观首帧前对齐：读本地偏好并写入根变量，缺失时样式表默认值兜底，不阻断首帧
   $effect.pre(() => {
@@ -22,6 +40,55 @@
   $effect(() => {
     maybeAutoCheckForUpdate(configState.value?.auto_check_update ?? false);
   });
+
+  // 窗口关闭统一接管：先阻止默认关闭，再按后端关闭行为分流；
+  // 配置未水合时回落弹窗确认，绝不静默退出；浏览器预览无运行时则跳过注册
+  $effect(() => {
+    let cancelled = false;
+    let unlisten: (() => void) | null = null;
+    (async () => {
+      try {
+        const stop = await getCurrentWindow().onCloseRequested(async (event) => {
+          await event.preventDefault();
+          const behavior = configState.value?.close_behavior ?? "prompt";
+          if (behavior === "minimize_to_tray") {
+            await getCurrentWindow()
+              .hide()
+              .catch((error: unknown) =>
+                reportCommandFailure("[window] failed to hide on close", error),
+              );
+            return;
+          }
+          if (behavior === "exit") {
+            await commands
+              .quitApp()
+              .failed((failure) => reportCommandFailure("[window] failed to quit", failure));
+            return;
+          }
+          confirmCloseOpen = true;
+        });
+        if (cancelled) {
+          stop();
+        } else {
+          unlisten = stop;
+        }
+      } catch {
+        // 非 Tauri 环境（浏览器预览）无窗口事件，直接跳过
+      }
+    })();
+    return () => {
+      cancelled = true;
+      unlisten?.();
+    };
+  });
+
+  /** 确认弹窗中真退出；进程结束故无需处理返回值，失败仅上报 */
+  async function handleConfirmQuit(): Promise<void> {
+    confirmCloseOpen = false;
+    await commands
+      .quitApp()
+      .failed((failure) => reportCommandFailure("[window] failed to quit", failure));
+  }
 </script>
 
 <!-- 跟随系统主题，并把 .dark 类同步到根元素 -->
@@ -29,6 +96,22 @@
 
 <!-- 全局唯一的 Toast 挂载点：主题由 sonner 内部跟随 mode-watcher -->
 <Toaster position="bottom-right" richColors closeButton />
+
+<!-- 关闭行为为弹窗提示时的确认框：平时不挂载，由关闭拦截按需打开 -->
+<AlertDialogRoot bind:open={confirmCloseOpen}>
+  <AlertDialogContent>
+    <AlertDialogHeader>
+      <AlertDialogTitle>{m.settings_close_confirm_title()}</AlertDialogTitle>
+      <AlertDialogDescription>{m.settings_close_confirm_description()}</AlertDialogDescription>
+    </AlertDialogHeader>
+    <AlertDialogFooter class="border-t-0 bg-transparent">
+      <AlertDialogCancel>{m.settings_close_confirm_cancel()}</AlertDialogCancel>
+      <AlertDialogAction onclick={() => void handleConfirmQuit()}>
+        {m.settings_close_confirm_ok()}
+      </AlertDialogAction>
+    </AlertDialogFooter>
+  </AlertDialogContent>
+</AlertDialogRoot>
 
 <ErrorBoundary>
   {@render children()}

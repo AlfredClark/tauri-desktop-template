@@ -1,4 +1,5 @@
 import type {
+  CloseBehavior,
   CommandError,
   Config,
   ConfigPatch,
@@ -30,4 +31,13 @@ export type CommandsMap = typeof rawCommands;
 /** 增强后的命令表类型：与 bindings 同名同参，但返回值是 `EnhancedCommand` */
 export type EnhancedCommands = { [K in keyof CommandsMap]: WrappedFn<CommandsMap[K]> };
 
-export type { CommandError, Config, ConfigPatch, Config_Serialize, Locale, SystemInfo, UpdateInfo };
+export type {
+  CloseBehavior,
+  CommandError,
+  Config,
+  ConfigPatch,
+  Config_Serialize,
+  Locale,
+  SystemInfo,
+  UpdateInfo,
+};

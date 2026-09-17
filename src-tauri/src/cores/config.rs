@@ -20,8 +20,42 @@ const KEY_AUTO_START: &str = "auto_start";
 const KEY_REMEMBER_WINDOW: &str = "remember_window";
 /// 自动检查更新在配置文件中的键名
 const KEY_AUTO_CHECK_UPDATE: &str = "auto_check_update";
+/// 系统托盘开关在配置文件中的键名
+const KEY_TRAY_ENABLED: &str = "tray_enabled";
+/// 关闭窗口行为在配置文件中的键名
+const KEY_CLOSE_BEHAVIOR: &str = "close_behavior";
 /// 当前配置结构版本：变更字段语义时递增，并在迁移链中补对应升级步骤
 pub const CURRENT_SCHEMA_VERSION: u32 = 1;
+
+/// 关闭窗口行为：落盘值为 `snake_case` 字符串，未知一律回落弹窗提示
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize, Type)]
+#[serde(rename_all = "snake_case")]
+pub enum CloseBehavior {
+    #[default]
+    Prompt,
+    Exit,
+    MinimizeToTray,
+}
+
+impl CloseBehavior {
+    /// 取对应的落盘标签，与 `serde` 值一致，前后端契约共用
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::Prompt => "prompt",
+            Self::Exit => "exit",
+            Self::MinimizeToTray => "minimize_to_tray",
+        }
+    }
+
+    /// 容错解析关闭行为标签：未知或空标签一律回落弹窗提示
+    pub fn parse(raw: &str) -> Self {
+        match raw.trim() {
+            "exit" => Self::Exit,
+            "minimize_to_tray" => Self::MinimizeToTray,
+            _ => Self::default(),
+        }
+    }
+}
 
 /// 应用完整配置：各持久化项聚合于此，`store` 内仍按扁平键（`KEY_*`）逐项存储。
 /// 新增字段必须能 `Default`（否则旧文件缺键会解析失败）；写路径统一走 `apply_patch` 逐键写入，
@@ -30,11 +64,13 @@ pub const CURRENT_SCHEMA_VERSION: u32 = 1;
 /// 新增一个配置项的固定步骤：
 /// `KEY_*` 常量 → 本结构体加字段 → `ConfigPatch` 加同名 `Option` 字段 → `load_config` 回填
 /// → 需要运行时副作用则加进 `apply_runtime_effects` → `reset_patch` 补默认值
-/// → `cargo test` 重生成绑定。
+/// → 需跨键规整（如托盘关闭时禁最小化）则加进 `coerce_patch` → `cargo test` 重生成绑定。
 ///
 /// 只有**改动已有字段的语义或位置**时才需要递增 `CURRENT_SCHEMA_VERSION` 并在 `MIGRATIONS`
 /// 末尾补一级迁移，否则老用户配置会静默失效（纯新增字段由 `Default` + 容错读取兜住）。
-#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize, Type)]
+/// 布尔开关天然扁平并存（与 `store` 扁平键一一对应），不为 lint 拆结构。
+#[allow(clippy::struct_excessive_bools)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Type)]
 #[serde(default)]
 pub struct Config {
     /// 配置结构版本：旧文件缺键时回落 `0`，任何写入都会带上当前版本号
@@ -57,6 +93,33 @@ pub struct Config {
     #[serde(deserialize_with = "de_auto_check_update")]
     #[specta(type = bool)]
     pub auto_check_update: bool,
+    /// 系统托盘开关：缺失或类型不符时回落默认值（`true`），绝不让整包解析失败
+    #[serde(default = "default_tray_enabled", deserialize_with = "de_tray_enabled")]
+    #[specta(type = bool)]
+    pub tray_enabled: bool,
+    /// 关闭窗口行为：缺失、类型不符或无法识别时回落弹窗提示，绝不让整包解析失败
+    #[serde(deserialize_with = "de_close_behavior")]
+    #[specta(type = CloseBehavior)]
+    pub close_behavior: CloseBehavior,
+}
+
+impl Default for Config {
+    fn default() -> Self {
+        Self {
+            schema_version: 0,
+            locale: Locale::default(),
+            auto_start: false,
+            remember_window: false,
+            auto_check_update: false,
+            tray_enabled: default_tray_enabled(),
+            close_behavior: CloseBehavior::default(),
+        }
+    }
+}
+
+/// 系统托盘开关的默认值：开箱即见托盘
+const fn default_tray_enabled() -> bool {
+    true
 }
 
 /// 局部更新补丁：字段缺省或为 `null` 均表示"不改该键"，非 `null` 表示写入该值
@@ -71,6 +134,10 @@ pub struct ConfigPatch {
     pub remember_window: Option<bool>,
     /// 自动检查更新
     pub auto_check_update: Option<bool>,
+    /// 系统托盘开关
+    pub tray_enabled: Option<bool>,
+    /// 关闭窗口行为
+    pub close_behavior: Option<CloseBehavior>,
 }
 
 /// 容错解析界面语言：经 `serde_json::Value` 中转，非字符串或未知标签一律回落默认值
@@ -107,6 +174,24 @@ where
 {
     let value = Value::deserialize(deserializer)?;
     Ok(value.as_bool().unwrap_or_default())
+}
+
+/// 容错解析系统托盘开关：经 `serde_json::Value` 中转，非布尔值一律回落默认值（`true`）
+fn de_tray_enabled<'de, D>(deserializer: D) -> Result<bool, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let value = Value::deserialize(deserializer)?;
+    Ok(value.as_bool().unwrap_or(default_tray_enabled()))
+}
+
+/// 容错解析关闭窗口行为：经 `serde_json::Value` 中转，非字符串或未知标签一律回落默认值
+fn de_close_behavior<'de, D>(deserializer: D) -> Result<CloseBehavior, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let value = Value::deserialize(deserializer)?;
+    Ok(value.as_str().map(CloseBehavior::parse).unwrap_or_default())
 }
 
 /// 容错解析结构版本：经 `parse_schema_version` 统一处理脏值
@@ -208,6 +293,8 @@ pub fn load_config(app: &tauri::AppHandle) -> Config {
         auto_start: load_auto_start(app),
         remember_window: load_remember_window(app),
         auto_check_update: load_auto_check_update(app),
+        tray_enabled: load_tray_enabled(app),
+        close_behavior: load_close_behavior(app),
         schema_version: load_schema_version(app),
     }
 }
@@ -235,6 +322,20 @@ fn load_remember_window(app: &tauri::AppHandle) -> bool {
 fn load_auto_check_update(app: &tauri::AppHandle) -> bool {
     read_key(app, KEY_AUTO_CHECK_UPDATE)
         .and_then(|value| value.as_bool())
+        .unwrap_or_default()
+}
+
+/// 读取持久化的系统托盘开关；未设置或类型不符时回落默认值（`true`）
+fn load_tray_enabled(app: &tauri::AppHandle) -> bool {
+    read_key(app, KEY_TRAY_ENABLED)
+        .and_then(|value| value.as_bool())
+        .unwrap_or(default_tray_enabled())
+}
+
+/// 读取持久化的关闭窗口行为；未设置、类型不符或无法识别时回落弹窗提示
+fn load_close_behavior(app: &tauri::AppHandle) -> CloseBehavior {
+    read_key(app, KEY_CLOSE_BEHAVIOR)
+        .and_then(|value| value.as_str().map(CloseBehavior::parse))
         .unwrap_or_default()
 }
 
@@ -274,12 +375,14 @@ pub fn update(app: &tauri::AppHandle, patch: &ConfigPatch) -> anyhow::Result<Con
     // 幂等迁移：保证任何写入前磁盘已升到当前版本，不依赖调用方先调 `migrate`
     migrate_inner(app);
     let before = load_config(app);
-    if let Some(target) = wants_autostart_sync(patch, before.auto_start) {
+    // 跨键规整先于一切副作用与落盘：规整后的补丁即生效值，写后值直接返回给前端
+    let patch = coerce_patch(&before, patch);
+    if let Some(target) = wants_autostart_sync(&patch, before.auto_start) {
         sync_autostart(app, target)?;
     }
-    if let Err(err) = apply_patch(app, patch) {
+    if let Err(err) = apply_patch(app, &patch) {
         // 落盘失败时把已翻转的操作系统自启状态回滚，避免 OS≠盘≠内存
-        if wants_autostart_sync(patch, before.auto_start).is_some()
+        if wants_autostart_sync(&patch, before.auto_start).is_some()
             && let Err(rollback_err) = sync_autostart(app, before.auto_start)
         {
             log::error!("failed to roll back autostart state: {rollback_err:#}");
@@ -287,8 +390,20 @@ pub fn update(app: &tauri::AppHandle, patch: &ConfigPatch) -> anyhow::Result<Con
         return Err(err).context("failed to persist config patch");
     }
     let after = load_config(app);
-    apply_runtime_effects(&before, &after);
+    apply_runtime_effects(app, &before, &after);
     Ok(after)
+}
+
+/// 跨键规整补丁：托盘关闭时“最小化到托盘”无处可去，一律回落弹窗提示并写盘，
+/// 前端靠写后返回值自动回滚 UI，无需另写补偿逻辑。纯函数，便于单测回滚分支。
+fn coerce_patch(before: &Config, patch: &ConfigPatch) -> ConfigPatch {
+    let mut coerced = patch.clone();
+    let tray_enabled = patch.tray_enabled.unwrap_or(before.tray_enabled);
+    let behavior = patch.close_behavior.unwrap_or(before.close_behavior);
+    if !tray_enabled && behavior == CloseBehavior::MinimizeToTray {
+        coerced.close_behavior = Some(CloseBehavior::Prompt);
+    }
+    coerced
 }
 
 /// 本次补丁是否要求变更操作系统自启状态；纯函数，便于单测决策分支
@@ -330,6 +445,8 @@ fn reset_patch() -> ConfigPatch {
         auto_start: Some(false),
         remember_window: Some(false),
         auto_check_update: Some(false),
+        tray_enabled: Some(default_tray_enabled()),
+        close_behavior: Some(CloseBehavior::default()),
     }
 }
 
@@ -346,9 +463,14 @@ fn save_locale(app: &tauri::AppHandle, locale: Locale) -> anyhow::Result<()> {
 }
 
 /// 写后副作用：仅对发生变化的字段生效，避免无谓的全局状态切换
-fn apply_runtime_effects(before: &Config, after: &Config) {
+fn apply_runtime_effects(app: &tauri::AppHandle, before: &Config, after: &Config) {
     if needs_locale_apply(before, after) {
         apply_locale(after.locale);
+        // 托盘菜单文案跟随界面语言，运行时重建（托盘不存在时内部跳过）
+        crate::cores::tray::refresh_texts(app);
+    }
+    if before.tray_enabled != after.tray_enabled {
+        crate::cores::tray::set_visible(app, after.tray_enabled);
     }
 }
 
@@ -387,6 +509,12 @@ fn write_entries(patch: &ConfigPatch) -> Vec<(&'static str, Value)> {
     }
     if let Some(auto_check_update) = patch.auto_check_update {
         entries.push((KEY_AUTO_CHECK_UPDATE, Value::from(auto_check_update)));
+    }
+    if let Some(tray_enabled) = patch.tray_enabled {
+        entries.push((KEY_TRAY_ENABLED, Value::from(tray_enabled)));
+    }
+    if let Some(close_behavior) = patch.close_behavior {
+        entries.push((KEY_CLOSE_BEHAVIOR, Value::from(close_behavior.as_str())));
     }
     entries.push((KEY_SCHEMA_VERSION, Value::from(CURRENT_SCHEMA_VERSION)));
     entries
@@ -547,12 +675,14 @@ mod tests {
             auto_start: true,
             remember_window: true,
             auto_check_update: true,
+            tray_enabled: false,
+            close_behavior: CloseBehavior::MinimizeToTray,
             schema_version: CURRENT_SCHEMA_VERSION,
         };
         let raw = serde_json::to_value(&config).expect("config serializes");
         assert_eq!(
             raw,
-            json!({ "locale": "zh-CN", "auto_start": true, "remember_window": true, "auto_check_update": true, "schema_version": 1 })
+            json!({ "locale": "zh-CN", "auto_start": true, "remember_window": true, "auto_check_update": true, "tray_enabled": false, "close_behavior": "minimize_to_tray", "schema_version": 1 })
         );
         let back: Config = serde_json::from_value(raw).expect("config deserializes");
         assert_eq!(back, config);
@@ -614,6 +744,51 @@ mod tests {
     }
 
     #[test]
+    fn tray_enabled_defaults_to_on_and_tolerates_dirt() {
+        for (raw, expected) in [
+            (json!({}), true),
+            (json!({ "tray_enabled": true }), true),
+            (json!({ "tray_enabled": false }), false),
+            (json!({ "tray_enabled": "yes" }), true),
+            (json!({ "tray_enabled": 1 }), true),
+            (json!({ "tray_enabled": null }), true),
+        ] {
+            let config: Config = serde_json::from_value(raw).expect("never fails");
+            assert_eq!(config.tray_enabled, expected);
+        }
+    }
+
+    #[test]
+    fn close_behavior_falls_back_to_prompt() {
+        for (raw, expected) in [
+            (json!({}), CloseBehavior::Prompt),
+            (json!({ "close_behavior": "prompt" }), CloseBehavior::Prompt),
+            (json!({ "close_behavior": "exit" }), CloseBehavior::Exit),
+            (
+                json!({ "close_behavior": "minimize_to_tray" }),
+                CloseBehavior::MinimizeToTray,
+            ),
+            (json!({ "close_behavior": "quit" }), CloseBehavior::Prompt),
+            (json!({ "close_behavior": 5 }), CloseBehavior::Prompt),
+            (json!({ "close_behavior": null }), CloseBehavior::Prompt),
+        ] {
+            let config: Config = serde_json::from_value(raw).expect("never fails");
+            assert_eq!(config.close_behavior, expected);
+        }
+    }
+
+    #[test]
+    fn close_behavior_round_trips_through_as_str() {
+        for behavior in [
+            CloseBehavior::Prompt,
+            CloseBehavior::Exit,
+            CloseBehavior::MinimizeToTray,
+        ] {
+            assert_eq!(CloseBehavior::parse(behavior.as_str()), behavior);
+        }
+    }
+
+    #[test]
     fn tolerates_missing_or_unrecognized_schema_version() {
         for (raw, expected) in [
             (json!({}), 0_u32),
@@ -662,6 +837,14 @@ mod tests {
         let auto_checked: ConfigPatch =
             serde_json::from_value(json!({ "auto_check_update": true })).expect("flag parsed");
         assert_eq!(auto_checked.auto_check_update, Some(true));
+
+        let trayed: ConfigPatch =
+            serde_json::from_value(json!({ "tray_enabled": false })).expect("flag parsed");
+        assert_eq!(trayed.tray_enabled, Some(false));
+
+        let closed: ConfigPatch =
+            serde_json::from_value(json!({ "close_behavior": "exit" })).expect("behavior parsed");
+        assert_eq!(closed.close_behavior, Some(CloseBehavior::Exit));
     }
 
     #[test]
@@ -678,6 +861,8 @@ mod tests {
             auto_start: Some(true),
             remember_window: Some(true),
             auto_check_update: Some(true),
+            tray_enabled: Some(false),
+            close_behavior: Some(CloseBehavior::Exit),
         });
         assert_eq!(
             keys_of(&patched),
@@ -686,6 +871,8 @@ mod tests {
                 KEY_AUTO_START,
                 KEY_REMEMBER_WINDOW,
                 KEY_AUTO_CHECK_UPDATE,
+                KEY_TRAY_ENABLED,
+                KEY_CLOSE_BEHAVIOR,
                 KEY_SCHEMA_VERSION
             ]
         );
@@ -693,6 +880,8 @@ mod tests {
         assert_eq!(patched[1].1, json!(true));
         assert_eq!(patched[2].1, json!(true));
         assert_eq!(patched[3].1, json!(true));
+        assert_eq!(patched[4].1, json!(false));
+        assert_eq!(patched[5].1, json!("exit"));
     }
 
     #[test]
@@ -703,6 +892,8 @@ mod tests {
             auto_start: Some(true),
             remember_window: Some(true),
             auto_check_update: Some(true),
+            tray_enabled: Some(false),
+            close_behavior: Some(CloseBehavior::Exit),
         };
         let entries = write_entries(&reset_patch());
         assert_eq!(
@@ -714,6 +905,8 @@ mod tests {
         assert_eq!(entries[1].1, json!(false));
         assert_eq!(entries[2].1, json!(false));
         assert_eq!(entries[3].1, json!(false));
+        assert_eq!(entries[4].1, json!(true));
+        assert_eq!(entries[5].1, json!(CloseBehavior::default().as_str()));
     }
 
     #[test]
@@ -723,6 +916,8 @@ mod tests {
             auto_start: false,
             remember_window: false,
             auto_check_update: false,
+            tray_enabled: true,
+            close_behavior: CloseBehavior::Prompt,
             schema_version: CURRENT_SCHEMA_VERSION,
         };
         assert!(!needs_locale_apply(&base, &base));
@@ -757,6 +952,64 @@ mod tests {
         assert_eq!(wants_autostart_sync(&off_while_on, true), Some(false));
 
         assert_eq!(wants_autostart_sync(&ConfigPatch::default(), false), None);
+    }
+
+    /// 关托盘时“最小化到托盘”无处可去，补丁与存量任一侧触发都要回落弹窗提示
+    fn minimized(before: &Config) -> Config {
+        Config {
+            close_behavior: CloseBehavior::MinimizeToTray,
+            ..before.clone()
+        }
+    }
+
+    #[test]
+    fn disabling_tray_rolls_back_minimize_to_prompt() {
+        let before = minimized(&Config::default());
+        let patch = ConfigPatch {
+            tray_enabled: Some(false),
+            ..ConfigPatch::default()
+        };
+
+        assert_eq!(
+            coerce_patch(&before, &patch).close_behavior,
+            Some(CloseBehavior::Prompt)
+        );
+    }
+
+    #[test]
+    fn inline_disable_with_minimize_rolls_back_to_prompt() {
+        let patch = ConfigPatch {
+            tray_enabled: Some(false),
+            close_behavior: Some(CloseBehavior::MinimizeToTray),
+            ..ConfigPatch::default()
+        };
+
+        assert_eq!(
+            coerce_patch(&Config::default(), &patch).close_behavior,
+            Some(CloseBehavior::Prompt)
+        );
+    }
+
+    #[test]
+    fn tray_enabled_keeps_minimize_untouched() {
+        let before = minimized(&Config::default());
+        let patch = ConfigPatch {
+            tray_enabled: Some(true),
+            ..ConfigPatch::default()
+        };
+
+        assert_eq!(coerce_patch(&before, &patch).close_behavior, None);
+    }
+
+    #[test]
+    fn unrelated_patch_leaves_close_behavior_alone() {
+        let before = Config::default();
+        let patch = ConfigPatch {
+            auto_start: Some(true),
+            ..ConfigPatch::default()
+        };
+
+        assert_eq!(coerce_patch(&before, &patch), patch);
     }
 
     /// 把 JSON fixture 转成迁移链使用的快照

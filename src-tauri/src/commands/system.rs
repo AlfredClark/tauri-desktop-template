@@ -7,3 +7,12 @@ use crate::cores::types::CommandResult;
 pub fn get_system_info() -> CommandResult<SystemInfo> {
     Ok(system::gather_system_info())
 }
+
+/// 真退出应用进程；调用后进程结束，结果体永不可达（按 `CommandResult<()>` 保持命令类型统一）
+#[tauri::command]
+#[specta::specta]
+#[allow(clippy::needless_pass_by_value)]
+pub fn quit_app(app: tauri::AppHandle) -> CommandResult<()> {
+    system::quit_app(&app);
+    Ok(())
+}

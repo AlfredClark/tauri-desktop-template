@@ -19,6 +19,7 @@ macro_rules! collect_commands {
             $crate::commands::config::update_config,
             $crate::commands::demo::greet,
             $crate::commands::system::get_system_info,
+            $crate::commands::system::quit_app,
             $crate::commands::updater::check_update,
             $crate::commands::updater::download_and_install_update,
             $crate::commands::updater::restart_app,
