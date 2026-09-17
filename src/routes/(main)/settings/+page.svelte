@@ -1,9 +1,11 @@
 <script lang="ts">
-  // 设置页：通用（界面语言，后端持久化）与外观（主题色，mode-watcher 前端持久化）两分组。
+  // 设置页：通用（界面语言，后端持久化）与外观（主题、布局，前端持久化）两分组。
   // 语言切换是“先落盘后端、再重载前端”的两段提交，期间禁用下拉并给出 loading 提示。
   import { setMode, userPrefersMode } from "mode-watcher";
   import type { Locale } from "$libs/commands/types";
+  import type { LayoutName } from "$hooks/layout.svelte";
   import { configState, updateConfig } from "$hooks/config.svelte";
+  import { layoutState, setLayoutName } from "$hooks/layout.svelte";
   import { ScrollArea } from "$components/shadcn-svelte/scroll-area";
   import { Switch } from "$components/shadcn-svelte/switch";
   import SettingRow from "$components/widget/settings/setting-row.svelte";
@@ -30,6 +32,12 @@
     { value: "light", label: m.settings_theme_option_light() },
     { value: "dark", label: m.settings_theme_option_dark() },
     { value: "system", label: m.settings_theme_option_system() },
+  ];
+
+  /** 布局下拉的候选项，同上。 */
+  const layoutItems: { value: LayoutName; label: string }[] = [
+    { value: "tabs", label: m.settings_layout_option_tabs() },
+    { value: "sidebar", label: m.settings_layout_option_sidebar() },
   ];
 
   /** 语言切换进行中时禁用下拉，避免重复提交。 */
@@ -61,6 +69,13 @@
   function handleThemeChange(value: string): void {
     const theme = themeItems.find((item) => item.value === value)?.value;
     if (theme) setMode(theme);
+  }
+
+  /** 布局即时生效，仅前端 `localStorage` 持久化，不经过后端。 */
+  // 同上：`bits-ui` 给 `string`，经 `layoutItems` 收窄为 `LayoutName` 后才提交
+  function handleLayoutChange(value: string): void {
+    const layout = layoutItems.find((item) => item.value === value)?.value;
+    if (layout) setLayoutName(layout);
   }
 
   /** 语言先经命令落盘后端，成功后再用 Paraglide 默认重载生效；失败则回滚并提示。 */
@@ -225,6 +240,24 @@
               <SelectItem value="light">{m.settings_theme_option_light()}</SelectItem>
               <SelectItem value="dark">{m.settings_theme_option_dark()}</SelectItem>
               <SelectItem value="system">{m.settings_theme_option_system()}</SelectItem>
+            </SelectContent>
+          </Select>
+        {/snippet}
+      </SettingRow>
+      <SettingRow label={m.settings_layout_label()} description={m.settings_layout_description()}>
+        {#snippet control()}
+          <Select
+            type="single"
+            value={layoutState.name}
+            items={layoutItems}
+            onValueChange={handleLayoutChange}
+          >
+            <SelectTrigger class="w-44" aria-label={m.settings_layout_label()}>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="tabs">{m.settings_layout_option_tabs()}</SelectItem>
+              <SelectItem value="sidebar">{m.settings_layout_option_sidebar()}</SelectItem>
             </SelectContent>
           </Select>
         {/snippet}

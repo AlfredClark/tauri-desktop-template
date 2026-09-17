@@ -26,6 +26,8 @@ if (typeof ResizeObserver === "undefined") {
 const setModeMock = vi.hoisted(() => vi.fn());
 const updateConfigMock = vi.hoisted(() => vi.fn());
 const setLocaleMock = vi.hoisted(() => vi.fn());
+const setLayoutNameMock = vi.hoisted(() => vi.fn());
+const layoutStateMock = vi.hoisted(() => ({ name: "tabs" }));
 const toastMocks = vi.hoisted(() => ({
   loading: vi.fn(() => 1),
   dismiss: vi.fn(),
@@ -52,6 +54,11 @@ vi.mock("$hooks/config.svelte", () => ({
   updateConfig: updateConfigMock,
 }));
 
+vi.mock("$hooks/layout.svelte", () => ({
+  layoutState: layoutStateMock,
+  setLayoutName: setLayoutNameMock,
+}));
+
 vi.mock("$libs/i18n/paraglide/runtime", async (importOriginal) => {
   const actual = await importOriginal<typeof import("$libs/i18n/paraglide/runtime")>();
   return {
@@ -72,6 +79,7 @@ afterEach(() => {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  layoutStateMock.name = "tabs";
   configStateMock.value = {
     locale: "en",
     auto_start: false,
@@ -122,11 +130,32 @@ describe("设置页", () => {
     expect(screen.getByText("Autostart")).not.toBeNull();
     expect(screen.getByText("Remember window")).not.toBeNull();
     expect(screen.getByText("Auto check for updates")).not.toBeNull();
+    expect(screen.getByText("Layout")).not.toBeNull();
     // 下拉触发器展示当前选中项的文案
     const languageTrigger = screen.getByRole("button", { name: "Language" });
     const themeTrigger = screen.getByRole("button", { name: "Theme" });
+    const layoutTrigger = screen.getByRole("button", { name: "Layout" });
     expect(languageTrigger.textContent).toContain("English");
     expect(themeTrigger.textContent).toContain("System");
+    expect(layoutTrigger.textContent).toContain("Tabs");
+  });
+
+  it("切换布局调用 setLayoutName，不经过后端", async () => {
+    const user = userEvent.setup();
+    render(Page);
+
+    await chooseOption(user, "Layout", "sidebar");
+
+    expect(setLayoutNameMock).toHaveBeenCalledWith("sidebar");
+    expect(updateConfigMock).not.toHaveBeenCalled();
+    expect(setModeMock).not.toHaveBeenCalled();
+  });
+
+  it("布局下拉渲染持久化的当前取值", () => {
+    layoutStateMock.name = "sidebar";
+    render(Page);
+
+    expect(screen.getByRole("button", { name: "Layout" }).textContent).toContain("Sidebar");
   });
 
   it("切换主题即时调用 setMode，不经过后端", async () => {
