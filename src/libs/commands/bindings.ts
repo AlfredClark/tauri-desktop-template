@@ -49,6 +49,12 @@ export const commands = {
 	getSystemInfo: () => typedError<SystemInfo, CommandError>(__TAURI_INVOKE("get_system_info")),
 	/**  真退出应用进程；调用后进程结束，结果体永不可达（按 `CommandResult<()>` 保持命令类型统一） */
 	quitApp: () => typedError<null, CommandError>(__TAURI_INVOKE("quit_app")),
+	/**  在系统文件管理器中打开日志目录 */
+	openLogDir: () => typedError<null, CommandError>(__TAURI_INVOKE("open_log_dir")),
+	/**  在系统文件管理器中打开配置目录（`config.json` 所在目录） */
+	openConfigDir: () => typedError<null, CommandError>(__TAURI_INVOKE("open_config_dir")),
+	/**  复制系统信息到剪贴板；文本由后端组装，前端只调命令 */
+	copySystemInfo: () => typedError<null, CommandError>(__TAURI_INVOKE("copy_system_info")),
 	/**  检查更新；无新版返回 `None`（仅桌面端有更新能力） */
 	checkUpdate: () => typedError<{
 	/**  远端版本号 */

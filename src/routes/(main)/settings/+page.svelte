@@ -1,8 +1,9 @@
 <script lang="ts">
-  // 设置页组装：滚动壳 + 标题 + 通用/外观两分组，无业务逻辑。
+  // 设置页组装：滚动壳 + 标题 + 通用/外观两分组 + 底部恢复默认按钮，无业务逻辑。
   import { ScrollArea } from "$components/shadcn-svelte/scroll-area";
   import AppearanceSettings from "$components/widget/settings/appearance-settings.svelte";
   import GeneralSettings from "$components/widget/settings/general-settings.svelte";
+  import ResetSettings from "$components/widget/settings/reset-settings.svelte";
   import { m } from "$libs/i18n/paraglide/messages";
 </script>
 
@@ -13,5 +14,6 @@
 
     <GeneralSettings />
     <AppearanceSettings />
+    <ResetSettings />
   </div>
 </ScrollArea>

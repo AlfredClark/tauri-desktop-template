@@ -43,6 +43,9 @@ const checkForUpdateMock = vi.hoisted(() => vi.fn());
 const downloadAndInstallMock = vi.hoisted(() => vi.fn());
 const restartAppMock = vi.hoisted(() => vi.fn());
 const getSystemInfoMock = vi.hoisted(() => vi.fn());
+const openLogDirMock = vi.hoisted(() => vi.fn());
+const openConfigDirMock = vi.hoisted(() => vi.fn());
+const copySystemInfoMock = vi.hoisted(() => vi.fn());
 const openExternalMock = vi.hoisted(() => vi.fn());
 const toastMocks = vi.hoisted(() => ({
   message: vi.fn(),
@@ -61,7 +64,12 @@ vi.mock("$hooks/updater.svelte", () => ({
 }));
 
 vi.mock("$libs/commands", () => ({
-  default: { getSystemInfo: getSystemInfoMock },
+  default: {
+    getSystemInfo: getSystemInfoMock,
+    openLogDir: openLogDirMock,
+    openConfigDir: openConfigDirMock,
+    copySystemInfo: copySystemInfoMock,
+  },
 }));
 
 vi.mock("$libs/utils/opener", () => ({
@@ -112,6 +120,10 @@ beforeEach(() => {
   resetUpdaterState();
   openExternalMock.mockResolvedValue(false);
   getSystemInfoMock.mockReturnValue(fakeCommand({ status: "ok", data: sysInfo }) as never);
+  const ok = fakeCommand({ status: "ok", data: null }) as never;
+  openLogDirMock.mockReturnValue(ok);
+  openConfigDirMock.mockReturnValue(ok);
+  copySystemInfoMock.mockReturnValue(ok);
 });
 
 afterEach(() => {
@@ -137,6 +149,10 @@ describe("关于页", () => {
     expect(screen.getByText("Homepage")).not.toBeNull();
     expect(screen.getByText("Repository")).not.toBeNull();
     expect(screen.getByText("Feedback")).not.toBeNull();
+    expect(screen.getByText("Diagnostics")).not.toBeNull();
+    expect(screen.getByText("Log directory")).not.toBeNull();
+    expect(screen.getByText("Config directory")).not.toBeNull();
+    expect(screen.getByText("Copy system info")).not.toBeNull();
 
     // 平台信息异步加载完成后逐行展示
     await vi.waitFor(() => {

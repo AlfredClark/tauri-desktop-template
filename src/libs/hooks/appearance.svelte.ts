@@ -1,4 +1,4 @@
-// 外观状态唯一来源：布局与字体等纯前端 UI 偏好走 localStorage 持久化，与语言走后端 config.json 互不干扰。
+// 外观状态唯一来源：布局、配色与字体等纯前端 UI 偏好走 localStorage 持久化，与语言走后端 config.json 互不干扰。
 // 后端无外观业务，故不经 commands 链，避免跨层跳跃。系统字体列表仅经插件读取做下拉候选，偏好本身仍存前端。
 // 布局注册表集中在此，新增布局只需加文件并扩展映射，容器无需改动。
 // 布局组件禁止反向导入本模块，否则形成容器到布局的循环依赖。
@@ -25,7 +25,8 @@ export const LAYOUTS: Record<LayoutName, LayoutComponent> = {
 /** 持久化键名，改名即视为放弃老用户存量 */
 export const LAYOUT_STORAGE_KEY = "layout-name";
 
-const DEFAULT_LAYOUT: LayoutName = "tabs";
+/** 默认布局：首选项，改名即视为放弃老用户存量 */
+export const DEFAULT_LAYOUT: LayoutName = "tabs";
 
 const LAYOUT_NAMES: readonly LayoutName[] = LAYOUT_NAME_TUPLE;
 
@@ -67,6 +68,73 @@ export function setLayoutName(next: LayoutName): void {
     // 落盘失败仍切换内存状态，保证本次会话可用
   }
   layoutState.name = next;
+}
+
+// ---- 配色主题：与布局同为纯前端 UI 偏好，读写模式与上节保持一致 ----
+// 明暗（light/dark/system）由 mode-watcher 管 `.dark` 类，此处只管配色（`neutral/blue/green/violet/rose`），
+// 经根元素 `data-theme` 属性生效（`themes.css` 的 `[data-theme]` 块），两者正交组合。
+// 新增配色时同步扩展该元组、`themes.css` 的两块令牌（浅色 + `:root.dark` 暗色）与设置页下拉候选。
+
+/** 可选配色取值：新增配色时同步扩展该元组、联合类型与 `themes.css` 对应块（元组即真值来源） */
+const COLOR_THEME_TUPLE = ["neutral", "blue", "green", "violet", "rose"] as const;
+
+/** 可选配色取值，`neutral` 即 `layout.css` 的 `:root/.dark` 默认值，不写覆盖块 */
+export type ColorTheme = (typeof COLOR_THEME_TUPLE)[number];
+
+/** 配色持久化键名，改名即视为放弃老用户存量 */
+export const COLOR_THEME_STORAGE_KEY = "color-theme";
+
+/** 默认配色：样式表默认值，无需覆盖变量 */
+export const DEFAULT_COLOR_THEME: ColorTheme = "neutral";
+
+const COLOR_THEMES: readonly ColorTheme[] = COLOR_THEME_TUPLE;
+
+// 跨页面共享的配色状态，页面私有状态仍用局部 $state
+export const colorThemeState = $state<{ name: ColorTheme }>({ name: DEFAULT_COLOR_THEME });
+
+/** 校验配色取值，脏数据回落时使用 */
+export function isColorTheme(value: unknown): value is ColorTheme {
+  return typeof value === "string" && (COLOR_THEMES as readonly string[]).includes(value);
+}
+
+/** 读取持久化配色，缺失或非法一律回落默认值 */
+export function loadColorTheme(): ColorTheme {
+  try {
+    if (typeof localStorage === "undefined") {
+      return DEFAULT_COLOR_THEME;
+    }
+    const stored = localStorage.getItem(COLOR_THEME_STORAGE_KEY);
+    return isColorTheme(stored) ? stored : DEFAULT_COLOR_THEME;
+  } catch {
+    // 隐私模式等存储不可用时按默认值渲染，不阻塞首帧
+    return DEFAULT_COLOR_THEME;
+  }
+}
+
+/** 把内存态写入根元素属性，无文档环境直接返回；默认配色删属性回落样式表 */
+export function applyColorTheme(): void {
+  if (typeof document === "undefined") {
+    return;
+  }
+  if (colorThemeState.name === DEFAULT_COLOR_THEME) {
+    document.documentElement.removeAttribute("data-theme");
+  } else {
+    document.documentElement.setAttribute("data-theme", colorThemeState.name);
+  }
+}
+
+/** 切换配色，先落盘再改内存并即时应用，刷新不丢失 */
+export function setColorTheme(next: ColorTheme): void {
+  if (!isColorTheme(next)) {
+    return;
+  }
+  try {
+    localStorage.setItem(COLOR_THEME_STORAGE_KEY, next);
+  } catch {
+    // 落盘失败仍切换内存状态，保证本次会话可用
+  }
+  colorThemeState.name = next;
+  applyColorTheme();
 }
 
 // ---- 字体偏好：与布局同为纯前端 UI 偏好，读写模式与上节保持一致 ----
@@ -244,4 +312,15 @@ export function initAppearance(): void {
   fontState.weight = loadFontWeight();
   fontState.size = loadFontSize();
   applyAppearance();
+  colorThemeState.name = loadColorTheme();
+  applyColorTheme();
+}
+
+/** 恢复全部外观偏好为默认值：复用各 `set*` 的落盘+应用路径，不另写旁路 */
+export function resetAppearance(): void {
+  setLayoutName(DEFAULT_LAYOUT);
+  setColorTheme(DEFAULT_COLOR_THEME);
+  setFontFamily(DEFAULT_FONT_FAMILY);
+  setFontWeight(DEFAULT_FONT_WEIGHT);
+  setFontSize(DEFAULT_FONT_SIZE);
 }

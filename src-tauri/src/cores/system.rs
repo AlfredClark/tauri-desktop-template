@@ -151,3 +151,89 @@ pub fn gather_system_info() -> SystemInfo {
         },
     }
 }
+
+/// 组装可复制的诊断文本：应用名 + 版本 + 四行系统信息，纯函数便于单测
+pub fn format_system_info(app_name: &str, app_version: &str, info: &SystemInfo) -> String {
+    format!(
+        "{app_name} {app_version}\nPlatform: {}\nOS version: {}\nArchitecture: {}\nHostname: {}",
+        info.platform, info.os_version, info.arch, info.hostname
+    )
+}
+
+/// 复制系统信息到剪贴板：版本号取打包元信息，前端只调命令不拼字符串
+pub fn copy_system_info(app: &tauri::AppHandle) -> anyhow::Result<()> {
+    use anyhow::Context;
+    use tauri_plugin_clipboard_manager::ClipboardExt;
+
+    let package = app.package_info();
+    let text = format_system_info(
+        &package.name,
+        &package.version.to_string(),
+        &gather_system_info(),
+    );
+    app.clipboard()
+        .write_text(text)
+        .context("failed to write clipboard")?;
+    Ok(())
+}
+
+/// 解析诊断目录并确保存在：日志目录首次可能尚未创建，先建目录再打开
+fn resolve_app_dir(app: &tauri::AppHandle, log: bool) -> anyhow::Result<std::path::PathBuf> {
+    use anyhow::Context;
+    use tauri::Manager;
+
+    let dir = if log {
+        app.path()
+            .app_log_dir()
+            .context("failed to resolve log dir")?
+    } else {
+        app.path()
+            .app_data_dir()
+            .context("failed to resolve config dir")?
+    };
+    std::fs::create_dir_all(&dir).context("failed to create app dir")?;
+    Ok(dir)
+}
+
+/// 在系统文件管理器中打开日志目录
+pub fn open_log_dir(app: &tauri::AppHandle) -> anyhow::Result<()> {
+    use anyhow::Context;
+    use tauri_plugin_opener::OpenerExt;
+
+    let dir = resolve_app_dir(app, true)?;
+    app.opener()
+        .open_path(dir.to_string_lossy().into_owned(), None::<&str>)
+        .context("failed to open log dir")?;
+    Ok(())
+}
+
+/// 在系统文件管理器中打开配置目录（`config.json` 所在目录）
+pub fn open_config_dir(app: &tauri::AppHandle) -> anyhow::Result<()> {
+    use anyhow::Context;
+    use tauri_plugin_opener::OpenerExt;
+
+    let dir = resolve_app_dir(app, false)?;
+    app.opener()
+        .open_path(dir.to_string_lossy().into_owned(), None::<&str>)
+        .context("failed to open config dir")?;
+    Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn formats_system_info_as_plain_lines() {
+        let info = SystemInfo {
+            platform: "linux".into(),
+            os_version: "22.04".into(),
+            arch: "x86_64".into(),
+            hostname: "dev-machine".into(),
+        };
+        assert_eq!(
+            format_system_info("my-app", "0.2.0", &info),
+            "my-app 0.2.0\nPlatform: linux\nOS version: 22.04\nArchitecture: x86_64\nHostname: dev-machine"
+        );
+    }
+}

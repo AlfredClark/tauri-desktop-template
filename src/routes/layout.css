@@ -1,10 +1,11 @@
 /* Tailwind v4 入口与 shadcn-svelte 主题令牌。
    颜色与圆角令牌按 shadcn 约定命名，`.dark` 块在 mode-watcher 切换根元素 .dark 类后生效；
-   调整主题优先改这里的令牌值。
+   调整主题优先改这里的令牌值，换配色改 `themes.css` 的 `[data-theme]` 块（`neutral` 即此处默认值）。
    界面字体、粗细与字号经 `--app-font-*` 由外观设置在运行时覆盖，无值时回退此处默认值。 */
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn-svelte/tailwind.css";
+@import "./themes.css";
 @import "@fontsource-variable/geist";
 
 @custom-variant dark (&:is(.dark *));

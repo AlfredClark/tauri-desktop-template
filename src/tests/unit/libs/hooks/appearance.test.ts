@@ -1,8 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
+  COLOR_THEME_STORAGE_KEY,
+  DEFAULT_COLOR_THEME,
   DEFAULT_FONT_FAMILY,
   DEFAULT_FONT_SIZE,
   DEFAULT_FONT_WEIGHT,
+  DEFAULT_LAYOUT,
   FONT_FAMILY_STORAGE_KEY,
   FONT_SIZE_OPTIONS,
   FONT_SIZE_STORAGE_KEY,
@@ -10,19 +13,25 @@ import {
   LAYOUTS,
   LAYOUT_STORAGE_KEY,
   applyAppearance,
+  applyColorTheme,
   buildFontStack,
+  colorThemeState,
   fontState,
   initAppearance,
   initLayout,
+  isColorTheme,
   isFontSize,
   isFontWeight,
   isLayoutName,
   layoutState,
+  loadColorTheme,
   loadFontFamily,
   loadFontSize,
   loadFontWeight,
   loadLayoutName,
+  resetAppearance,
   sanitizeFontFamily,
+  setColorTheme,
   setFontFamily,
   setFontSize,
   setFontWeight,
@@ -51,6 +60,7 @@ function installLocalStorageMock() {
 beforeEach(() => {
   installLocalStorageMock();
   layoutState.name = "tabs";
+  colorThemeState.name = DEFAULT_COLOR_THEME;
   fontState.family = DEFAULT_FONT_FAMILY;
   fontState.weight = DEFAULT_FONT_WEIGHT;
   fontState.size = DEFAULT_FONT_SIZE;
@@ -322,9 +332,137 @@ describe("initAppearance", () => {
     localStorage.setItem(FONT_FAMILY_STORAGE_KEY, "Serif");
     localStorage.setItem(FONT_WEIGHT_STORAGE_KEY, "700");
     localStorage.setItem(FONT_SIZE_STORAGE_KEY, "110");
+    localStorage.setItem(COLOR_THEME_STORAGE_KEY, "blue");
     initAppearance();
     expect(fontState.family).toBe("Serif");
     expect(fontState.weight).toBe(700);
     expect(fontState.size).toBe(110);
+    expect(colorThemeState.name).toBe("blue");
+  });
+});
+
+describe("isColorTheme", () => {
+  it("只接受取值元组内的语义名", () => {
+    for (const name of ["neutral", "blue", "green", "violet", "rose"]) {
+      expect(isColorTheme(name)).toBe(true);
+    }
+    for (const value of ["default", "dark", "", null, undefined, 0]) {
+      expect(isColorTheme(value)).toBe(false);
+    }
+  });
+});
+
+describe("loadColorTheme", () => {
+  it("缺失时回落默认配色", () => {
+    expect(loadColorTheme()).toBe(DEFAULT_COLOR_THEME);
+  });
+
+  it("合法存量原样返回", () => {
+    localStorage.setItem(COLOR_THEME_STORAGE_KEY, "violet");
+    expect(loadColorTheme()).toBe("violet");
+  });
+
+  it("脏数据回落默认配色", () => {
+    localStorage.setItem(COLOR_THEME_STORAGE_KEY, "neon");
+    expect(loadColorTheme()).toBe(DEFAULT_COLOR_THEME);
+  });
+});
+
+describe("applyColorTheme", () => {
+  it("无文档环境直接返回", () => {
+    expect(() => applyColorTheme()).not.toThrow();
+  });
+
+  it("默认配色删属性回落样式表，非默认写属性", () => {
+    const attrs = new Map<string, string>();
+    const root = {
+      setAttribute: (key: string, value: string): void => {
+        attrs.set(key, value);
+      },
+      removeAttribute: (key: string): void => {
+        attrs.delete(key);
+      },
+      getAttribute: (key: string): string | null => attrs.get(key) ?? null,
+    };
+    vi.stubGlobal("document", { documentElement: root });
+    try {
+      colorThemeState.name = "rose";
+      applyColorTheme();
+      expect(root.getAttribute("data-theme")).toBe("rose");
+      colorThemeState.name = DEFAULT_COLOR_THEME;
+      applyColorTheme();
+      expect(root.getAttribute("data-theme")).toBeNull();
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+});
+
+describe("setColorTheme", () => {
+  it("非法取值直接拒绝", () => {
+    const attrs = new Map<string, string>();
+    vi.stubGlobal("document", {
+      documentElement: {
+        setAttribute: (key: string, value: string): void => {
+          attrs.set(key, value);
+        },
+        removeAttribute: (key: string): void => {
+          attrs.delete(key);
+        },
+      },
+    });
+    try {
+      setColorTheme("neon" as never);
+      expect(colorThemeState.name).toBe(DEFAULT_COLOR_THEME);
+      expect(localStorage.getItem(COLOR_THEME_STORAGE_KEY)).toBeNull();
+      expect(attrs.size).toBe(0);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it("先落盘再改内存并即时应用", () => {
+    const attrs = new Map<string, string>();
+    vi.stubGlobal("document", {
+      documentElement: {
+        setAttribute: (key: string, value: string): void => {
+          attrs.set(key, value);
+        },
+        removeAttribute: (key: string): void => {
+          attrs.delete(key);
+        },
+      },
+    });
+    try {
+      setColorTheme("green");
+      expect(localStorage.getItem(COLOR_THEME_STORAGE_KEY)).toBe("green");
+      expect(colorThemeState.name).toBe("green");
+      expect(attrs.get("data-theme")).toBe("green");
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+});
+
+describe("resetAppearance", () => {
+  it("五项偏好全部回到默认值并落盘", () => {
+    layoutState.name = "sidebar";
+    colorThemeState.name = "rose";
+    fontState.family = "Serif";
+    fontState.weight = 700;
+    fontState.size = 120;
+
+    resetAppearance();
+
+    expect(layoutState.name).toBe(DEFAULT_LAYOUT);
+    expect(colorThemeState.name).toBe(DEFAULT_COLOR_THEME);
+    expect(fontState.family).toBe(DEFAULT_FONT_FAMILY);
+    expect(fontState.weight).toBe(DEFAULT_FONT_WEIGHT);
+    expect(fontState.size).toBe(DEFAULT_FONT_SIZE);
+    expect(localStorage.getItem(LAYOUT_STORAGE_KEY)).toBe(DEFAULT_LAYOUT);
+    expect(localStorage.getItem(COLOR_THEME_STORAGE_KEY)).toBe(DEFAULT_COLOR_THEME);
+    expect(localStorage.getItem(FONT_FAMILY_STORAGE_KEY)).toBe(DEFAULT_FONT_FAMILY);
+    expect(localStorage.getItem(FONT_WEIGHT_STORAGE_KEY)).toBe(String(DEFAULT_FONT_WEIGHT));
+    expect(localStorage.getItem(FONT_SIZE_STORAGE_KEY)).toBe(String(DEFAULT_FONT_SIZE));
   });
 });

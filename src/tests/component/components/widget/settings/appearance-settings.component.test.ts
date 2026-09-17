@@ -25,6 +25,8 @@ if (typeof ResizeObserver === "undefined") {
 const setModeMock = vi.hoisted(() => vi.fn());
 const setLayoutNameMock = vi.hoisted(() => vi.fn());
 const layoutStateMock = vi.hoisted(() => ({ name: "tabs" }));
+const setColorThemeMock = vi.hoisted(() => vi.fn());
+const colorThemeStateMock = vi.hoisted(() => ({ name: "neutral" }));
 const setFontFamilyMock = vi.hoisted(() => vi.fn());
 const setFontWeightMock = vi.hoisted(() => vi.fn());
 const setFontSizeMock = vi.hoisted(() => vi.fn());
@@ -39,6 +41,8 @@ vi.mock("mode-watcher", () => ({
 vi.mock("$hooks/appearance.svelte", () => ({
   layoutState: layoutStateMock,
   setLayoutName: setLayoutNameMock,
+  colorThemeState: colorThemeStateMock,
+  setColorTheme: setColorThemeMock,
   DEFAULT_FONT_FAMILY: "system",
   MIN_FONT_WEIGHT: 100,
   MAX_FONT_WEIGHT: 900,
@@ -67,6 +71,7 @@ afterEach(() => {
 beforeEach(() => {
   vi.clearAllMocks();
   layoutStateMock.name = "tabs";
+  colorThemeStateMock.name = "neutral";
   fontStateMock.family = "system";
   fontStateMock.weight = 400;
   fontStateMock.size = 100;
@@ -93,14 +98,17 @@ describe("外观设置分组", () => {
 
     expect(screen.getByText("Appearance")).not.toBeNull();
     expect(screen.getByText("Theme")).not.toBeNull();
+    expect(screen.getByText("Color theme")).not.toBeNull();
     expect(screen.getByText("Layout")).not.toBeNull();
     expect(screen.getByText("Font weight")).not.toBeNull();
     expect(screen.getByText("Font size")).not.toBeNull();
     // 下拉触发器展示当前选中项的文案
     const themeTrigger = screen.getByRole("button", { name: "Theme" });
+    const colorThemeTrigger = screen.getByRole("button", { name: "Color theme" });
     const layoutTrigger = screen.getByRole("button", { name: "Layout" });
     const fontSizeTrigger = screen.getByRole("button", { name: "Font size" });
     expect(themeTrigger.textContent).toContain("System");
+    expect(colorThemeTrigger.textContent).toContain("Default");
     expect(layoutTrigger.textContent).toContain("Tabs");
     expect(fontSizeTrigger.textContent).toContain("100%");
   });
@@ -120,6 +128,23 @@ describe("外观设置分组", () => {
     render(Component);
 
     expect(screen.getByRole("button", { name: "Layout" }).textContent).toContain("Sidebar");
+  });
+
+  it("切换配色调用 setColorTheme，不经过后端", async () => {
+    const user = userEvent.setup();
+    render(Component);
+
+    await chooseOption(user, "Color theme", "blue");
+
+    expect(setColorThemeMock).toHaveBeenCalledWith("blue");
+    expect(setModeMock).not.toHaveBeenCalled();
+  });
+
+  it("配色下拉渲染持久化的当前取值", () => {
+    colorThemeStateMock.name = "rose";
+    render(Component);
+
+    expect(screen.getByRole("button", { name: "Color theme" }).textContent).toContain("Rose");
   });
 
   it("切换主题即时调用 setMode，不经过后端", async () => {

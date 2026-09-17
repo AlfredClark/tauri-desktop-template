@@ -45,3 +45,18 @@ export async function updateConfig(patch: ConfigPatch): Promise<void> {
       reportCommandFailure("[config] failed to update backend config", failure);
     });
 }
+
+/** 重置全部后端配置为默认值，返回写后配置；失败返回空，由调用方提示 */
+export async function resetConfig(): Promise<AppConfig | null> {
+  let reset: AppConfig | null = null;
+  await commands
+    .resetConfig()
+    .success((config) => {
+      configState.value = config;
+      reset = config;
+    })
+    .failed((failure) => {
+      reportCommandFailure("[config] failed to reset backend config", failure);
+    });
+  return reset;
+}

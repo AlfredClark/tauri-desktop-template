@@ -1,10 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import commands from "$libs/commands";
 import type { AnyResult, Config_Serialize } from "$libs/commands/types";
-import { configState, hydrateConfig, updateConfig } from "$hooks/config.svelte";
+import { configState, hydrateConfig, resetConfig, updateConfig } from "$hooks/config.svelte";
 
 vi.mock("$libs/commands", () => ({
-  default: { getConfig: vi.fn(), updateConfig: vi.fn() },
+  default: { getConfig: vi.fn(), resetConfig: vi.fn(), updateConfig: vi.fn() },
 }));
 
 const saved: Config_Serialize = {
@@ -56,6 +56,10 @@ function stubGetConfig(result: FakeResult): void {
 
 function stubUpdateConfig(result: FakeResult): void {
   vi.mocked(commands.updateConfig).mockReturnValue(fakeCommand(result) as never);
+}
+
+function stubResetConfig(result: FakeResult): void {
+  vi.mocked(commands.resetConfig).mockReturnValue(fakeCommand(result) as never);
 }
 
 beforeEach(() => {
@@ -142,6 +146,41 @@ describe("updateConfig", () => {
     expect(configState.value).toEqual(previous);
     expect(console.error).toHaveBeenCalledWith(
       expect.stringContaining("[config] failed to update backend config"),
+    );
+  });
+});
+
+describe("resetConfig", () => {
+  const defaults: Config_Serialize = {
+    locale: "en",
+    auto_start: false,
+    remember_window: false,
+    auto_check_update: false,
+    tray_enabled: true,
+    close_behavior: "prompt",
+    schema_version: 1,
+  };
+
+  it("成功时回写并返回写后配置", async () => {
+    stubResetConfig({ status: "ok", data: defaults });
+
+    const result = await resetConfig();
+
+    expect(commands.resetConfig).toHaveBeenCalledOnce();
+    expect(configState.value).toEqual(defaults);
+    expect(result).toEqual(defaults);
+  });
+
+  it("失败时保持原状态并返回空", async () => {
+    configState.value = saved;
+    stubResetConfig({ status: "error", error: { kind: "Internal", message: "boom" } });
+
+    const result = await resetConfig();
+
+    expect(result).toBeNull();
+    expect(configState.value).toEqual(saved);
+    expect(console.error).toHaveBeenCalledWith(
+      expect.stringContaining("[config] failed to reset backend config"),
     );
   });
 });

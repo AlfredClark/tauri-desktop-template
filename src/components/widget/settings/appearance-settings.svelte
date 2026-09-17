@@ -1,15 +1,17 @@
 <script lang="ts">
-  // 外观设置分组：主题/布局/字重/字号简单行 + 字体选择器，纯前端持久化，零 props。
-  // 主题经 mode-watcher、布局与字体经外观 hook 即时生效，均不经过后端。
+  // 外观设置分组：主题/配色/布局/字重/字号简单行 + 字体选择器，纯前端持久化，零 props。
+  // 主题经 mode-watcher、配色/布局与字体经外观 hook 即时生效，均不经过后端。
   import { setMode, userPrefersMode } from "mode-watcher";
-  import type { LayoutName } from "$hooks/appearance.svelte";
+  import type { ColorTheme, LayoutName } from "$hooks/appearance.svelte";
   import {
+    colorThemeState,
     FONT_SIZE_OPTIONS,
     FONT_WEIGHT_STEP,
     fontState,
     layoutState,
     MAX_FONT_WEIGHT,
     MIN_FONT_WEIGHT,
+    setColorTheme,
     setFontSize,
     setFontWeight,
     setLayoutName,
@@ -40,6 +42,15 @@
     { value: "sidebar", label: m.settings_layout_option_sidebar() },
   ];
 
+  /** 配色下拉的候选项，同上；顺序与取值元组一致。 */
+  const colorThemeItems: { value: ColorTheme; label: string }[] = [
+    { value: "neutral", label: m.settings_color_theme_option_neutral() },
+    { value: "blue", label: m.settings_color_theme_option_blue() },
+    { value: "green", label: m.settings_color_theme_option_green() },
+    { value: "violet", label: m.settings_color_theme_option_violet() },
+    { value: "rose", label: m.settings_color_theme_option_rose() },
+  ];
+
   /** 字号下拉的候选项，同上；取值存字符串，提交时收窄为数值。 */
   const fontSizeItems: { value: string; label: string }[] = FONT_SIZE_OPTIONS.map((size) => ({
     value: String(size),
@@ -58,6 +69,12 @@
   function handleLayoutChange(value: string): void {
     const layout = layoutItems.find((item) => item.value === value)?.value;
     if (layout) setLayoutName(layout);
+  }
+
+  /** 配色即时生效，同上；经 `colorThemeItems` 收窄为 `ColorTheme` 后提交。 */
+  function handleColorThemeChange(value: string): void {
+    const theme = colorThemeItems.find((item) => item.value === value)?.value;
+    if (theme) setColorTheme(theme);
   }
 
   /** 字重即时生效，同上；单值滑块直接给数值。 */
@@ -91,6 +108,28 @@
           <SelectItem value="light">{m.settings_theme_option_light()}</SelectItem>
           <SelectItem value="dark">{m.settings_theme_option_dark()}</SelectItem>
           <SelectItem value="system">{m.settings_theme_option_system()}</SelectItem>
+        </SelectContent>
+      </Select>
+    {/snippet}
+  </CardRow>
+  <CardRow
+    label={m.settings_color_theme_label()}
+    description={m.settings_color_theme_description()}
+  >
+    {#snippet control()}
+      <Select
+        type="single"
+        value={colorThemeState.name}
+        items={colorThemeItems}
+        onValueChange={handleColorThemeChange}
+      >
+        <SelectTrigger class="w-44" aria-label={m.settings_color_theme_label()}>
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          {#each colorThemeItems as item (item.value)}
+            <SelectItem value={item.value}>{item.label}</SelectItem>
+          {/each}
         </SelectContent>
       </Select>
     {/snippet}
