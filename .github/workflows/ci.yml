@@ -145,11 +145,16 @@ jobs:
       - name: Clippy
         run: cargo clippy --manifest-path Cargo.toml --workspace --all-targets -- -D warnings
 
-      - name: Audit
-        uses: EmbarkStudios/cargo-deny-action@v2
+      # 注意：不用 EmbarkStudios/cargo-deny-action（Docker 容器内 rustup 会读取
+      # 本仓 rust-toolchain.toml，却装不上锁定的工具链而直接报错）；改为在 runner
+      # 原生安装 cargo-deny，复用上面 Toolchain 步骤已装好的 1.98.0。
+      - name: Install cargo-deny
+        uses: taiki-e/install-action@v2
         with:
-          command: check
-          arguments: advisories bans sources
+          tool: cargo-deny
+
+      - name: Audit
+        run: cargo deny --manifest-path Cargo.toml check advisories bans sources
 
       - name: Check
         run: cargo check --manifest-path Cargo.toml --workspace
