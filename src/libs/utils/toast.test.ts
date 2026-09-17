@@ -46,7 +46,10 @@ describe("通用 toast 封装", () => {
   it("调用方显式选项优先于默认值", () => {
     toast.success("成功", { duration: 5000 });
 
-    expect(mocked.success).toHaveBeenCalledWith("成功", { duration: 5000 });
+    expect(mocked.success).toHaveBeenCalledWith("成功", {
+      closeButton: false,
+      duration: 5000,
+    });
   });
 
   it("透出 promise 与 dismiss 能力", () => {

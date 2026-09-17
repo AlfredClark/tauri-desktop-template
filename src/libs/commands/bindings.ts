@@ -50,6 +50,8 @@ export type Config = Config_Serialize | Config_Deserialize;
 export type ConfigPatch = {
 	/**  界面语言 */
 	locale?: Locale | null,
+	/**  开机自启 */
+	auto_start?: boolean | null,
 };
 
 /**
@@ -70,6 +72,8 @@ export type Config_Deserialize = {
 	schema_version?: number,
 	/**  界面语言：缺失、类型不符或无法识别时回落默认值，绝不让整包解析失败 */
 	locale?: Locale,
+	/**  开机自启：缺失或类型不符时回落 `false`，绝不让整包解析失败 */
+	auto_start?: boolean,
 };
 
 /**
@@ -90,6 +94,8 @@ export type Config_Serialize = {
 	schema_version: number,
 	/**  界面语言：缺失、类型不符或无法识别时回落默认值，绝不让整包解析失败 */
 	locale: Locale,
+	/**  开机自启：缺失或类型不符时回落 `false`，绝不让整包解析失败 */
+	auto_start: boolean,
 };
 
 /**  应用支持的语言 */

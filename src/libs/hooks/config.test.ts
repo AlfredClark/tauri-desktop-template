@@ -7,7 +7,7 @@ vi.mock("$libs/commands", () => ({
   default: { getConfig: vi.fn(), updateConfig: vi.fn() },
 }));
 
-const saved: Config_Serialize = { locale: "zh-CN", schema_version: 1 };
+const saved: Config_Serialize = { locale: "zh-CN", auto_start: true, schema_version: 1 };
 
 type FakeResult = AnyResult;
 type FakeChain = {
@@ -83,7 +83,7 @@ describe("hydrateConfig", () => {
 
 describe("updateConfig", () => {
   it("原样提交补丁，并以命令返回的写后值回写", async () => {
-    const previous: Config_Serialize = { locale: "en", schema_version: 1 };
+    const previous: Config_Serialize = { locale: "en", auto_start: false, schema_version: 1 };
     configState.value = previous;
     const patch = { locale: "zh-CN" } as const;
     stubUpdateConfig({ status: "ok", data: saved });
@@ -96,7 +96,7 @@ describe("updateConfig", () => {
   });
 
   it("失败时不乐观更新并上报", async () => {
-    const previous: Config_Serialize = { locale: "en", schema_version: 1 };
+    const previous: Config_Serialize = { locale: "en", auto_start: false, schema_version: 1 };
     configState.value = previous;
     stubUpdateConfig({ status: "error", error: { kind: "Internal", message: "boom" } });
 

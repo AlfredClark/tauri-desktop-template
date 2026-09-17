@@ -5,7 +5,7 @@ const DEFAULT_DURATION = 3000;
 
 /** 补齐默认时长，调用方显式传入的选项优先。 */
 function withDefaults(options?: ExternalToast): ExternalToast {
-  return { duration: DEFAULT_DURATION, ...options };
+  return { closeButton: false, duration: DEFAULT_DURATION, ...options };
 }
 
 /** 全局通用提示：收敛 svelte-sonner 入口，统一默认时长。 */

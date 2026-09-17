@@ -5,6 +5,7 @@
   import type { Locale } from "$libs/commands/types";
   import { configState, updateConfig } from "$hooks/config.svelte";
   import { ScrollArea } from "$components/shadcn-svelte/scroll-area";
+  import { Switch } from "$components/shadcn-svelte/switch";
   import SettingRow from "$components/widget/settings/setting-row.svelte";
   import SettingSection from "$components/widget/settings/setting-section.svelte";
   import {
@@ -34,8 +35,14 @@
   /** 语言切换进行中时禁用下拉，避免重复提交。 */
   let switchingLocale = $state(false);
 
+  /** 自启切换进行中时禁用开关，避免重复提交。 */
+  let switchingAutostart = $state(false);
+
   // 后端配置是语言的唯一真值；水合完成前用 Paraglide 当前语言兜底，避免首帧闪空。
   const currentLocale = $derived<Locale>(configState.value?.locale ?? getLocale());
+
+  // 开机自启同样以后端配置为真值；水合前按默认值关闭渲染。
+  const autoStart = $derived(configState.value?.auto_start ?? false);
 
   /** 主题即时生效，仅前端持久化，不经过后端。 */
   function handleThemeChange(value: string): void {
@@ -58,6 +65,19 @@
       toast.error(m.settings_language_update_failed());
     }
     switchingLocale = false;
+  }
+
+  /** 开机自启经命令落盘后端并同步操作系统；失败不乐观更新，开关自动回滚。 */
+  async function handleAutostartChange(checked: boolean): Promise<void> {
+    if (checked === autoStart || switchingAutostart) return;
+    switchingAutostart = true;
+    await updateConfig({ auto_start: checked });
+    if (configState.value?.auto_start === checked) {
+      toast.success(m.settings_autostart_updated());
+    } else {
+      toast.error(m.settings_autostart_update_failed());
+    }
+    switchingAutostart = false;
   }
 </script>
 
@@ -90,6 +110,19 @@
               <SelectItem value="zh-CN">{m.settings_language_option_zh()}</SelectItem>
             </SelectContent>
           </Select>
+        {/snippet}
+      </SettingRow>
+      <SettingRow
+        label={m.settings_autostart_label()}
+        description={m.settings_autostart_description()}
+      >
+        {#snippet control()}
+          <Switch
+            checked={autoStart}
+            onCheckedChange={handleAutostartChange}
+            disabled={switchingAutostart}
+            aria-label={m.settings_autostart_label()}
+          />
         {/snippet}
       </SettingRow>
     </SettingSection>
