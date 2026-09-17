@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { EnhancedCommand } from "./cores";
-import type { AnyResult } from "./types";
+import { EnhancedCommand } from "$libs/commands/cores";
+import type { AnyResult } from "$libs/commands/types";
 
 type TestError = { kind: "Internal"; message: string };
 type TestResult = AnyResult<string | null, TestError>;

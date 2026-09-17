@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { openExternal } from "./opener";
+import { openExternal } from "$libs/utils/opener";
 
 describe("openExternal", () => {
   afterEach(() => {

@@ -1,5 +1,5 @@
 <script lang="ts">
-  // 通用设置行：左侧文案、右侧可选控件插槽；控件状态一律由调用方持有，本组件只做布局。
+  // 通用卡片行：左侧文案、右侧可选控件插槽；控件状态一律由调用方持有，本组件只做布局。
   import type { Snippet } from "svelte";
 
   let { label, description, control }: { label: string; description?: string; control?: Snippet } =

@@ -4,6 +4,7 @@
   // 布局容器下沉到 (main) 分组，特殊页面另起分组即可绕开布局。
   import { ModeWatcher } from "mode-watcher";
   import type { Snippet } from "svelte";
+  import { initAppearance } from "$hooks/appearance.svelte";
   import { configState } from "$hooks/config.svelte";
   import { maybeAutoCheckForUpdate } from "$hooks/updater.svelte";
   import ErrorBoundary from "$components/common/error-boundary.svelte";
@@ -11,6 +12,11 @@
   import "./layout.css";
 
   const { children }: { children: Snippet } = $props();
+
+  // 外观首帧前对齐：读本地偏好并写入根变量，缺失时样式表默认值兜底，不阻断首帧
+  $effect.pre(() => {
+    initAppearance();
+  });
 
   // 启动静默检查更新：开着开关才执行，单会话一次，非 Tauri 环境跳过
   $effect(() => {

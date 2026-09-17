@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { cn } from "./shadcn-svelte";
+import { cn } from "$libs/utils/shadcn-svelte";
 
 describe("cn", () => {
   it("合并字符串、数组与对象形式的类名", () => {

@@ -1,8 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { cleanup, render, screen } from "@testing-library/svelte";
 import userEvent from "@testing-library/user-event";
-import Page from "./+page.svelte";
-import tauriConf from "../../../../src-tauri/tauri.conf.json";
+import Page from "../../../../../routes/(main)/about/+page.svelte";
 
 // bits-ui 组件在 jsdom 下缺失的浏览器 API，就地补齐（同设置页测试）。
 if (!Element.prototype.hasPointerCapture) {
@@ -130,8 +129,8 @@ describe("关于页", () => {
     expect(screen.getByText("Platform info")).not.toBeNull();
     expect(screen.getByText("tauri-desktop-template")).not.toBeNull();
     expect(screen.getByText("Current version")).not.toBeNull();
-    // 版本号以 tauri.conf.json 为准，写死会随 bump 脚本失效
-    expect(screen.getByText(tauriConf.version)).not.toBeNull();
+    // 版本号以 tauri.conf.json 构建常量为准，写死会随 bump 脚本失效
+    expect(screen.getByText(__APP_TAURI_CONF__.version)).not.toBeNull();
     expect(screen.getByText("Description")).not.toBeNull();
     expect(screen.getByText("License")).not.toBeNull();
     expect(screen.getByText("Author")).not.toBeNull();

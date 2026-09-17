@@ -1,5 +1,5 @@
 <script lang="ts">
-  // 设置分组容器：标题 + 说明 + 若干设置行，只负责布局，不持有任何业务状态。
+  // 通用卡片分组容器：标题 + 说明 + 若干信息行，只负责布局，不持有任何业务状态。
   import type { Snippet } from "svelte";
   import {
     Card,

@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { toast as sonnerToast } from "svelte-sonner";
-import { toast } from "./toast";
+import { toast } from "$libs/utils/toast";
 
 vi.mock("svelte-sonner", () => ({
   toast: {

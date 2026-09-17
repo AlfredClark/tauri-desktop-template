@@ -8,6 +8,7 @@ pub mod log;
 pub mod opener;
 pub mod os;
 pub mod store;
+pub mod system_fonts;
 #[cfg(not(any(target_os = "android", target_os = "ios")))]
 pub mod updater;
 #[cfg(not(any(target_os = "android", target_os = "ios")))]

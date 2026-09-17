@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { cleanup, render, screen, waitFor } from "@testing-library/svelte";
 import userEvent from "@testing-library/user-event";
 import type { Locale } from "$libs/commands/types";
-import Page from "./+page.svelte";
+import Component from "$components/widget/settings/general-settings.svelte";
 
 // jsdom 缺少指针捕获与滚动 API，bits-ui 下拉用得到，仅在本文件内就地补齐。
 if (!Element.prototype.hasPointerCapture) {
@@ -21,13 +21,10 @@ if (typeof ResizeObserver === "undefined") {
   } as unknown as typeof ResizeObserver;
 }
 
-// 纯替身：页面依赖的外部状态（主题、后端配置、运行时语言、提示）全部 mock，
-// 只验证页面的接线逻辑——选项渲染、切换调用与成功/失败分支。
-const setModeMock = vi.hoisted(() => vi.fn());
+// 纯替身：分组依赖的外部状态（后端配置、运行时语言、提示）全部 mock，
+// 只验证分组的接线逻辑——选项渲染、切换调用与成功/失败分支。
 const updateConfigMock = vi.hoisted(() => vi.fn());
 const setLocaleMock = vi.hoisted(() => vi.fn());
-const setLayoutNameMock = vi.hoisted(() => vi.fn());
-const layoutStateMock = vi.hoisted(() => ({ name: "tabs" }));
 const toastMocks = vi.hoisted(() => ({
   loading: vi.fn(() => 1),
   dismiss: vi.fn(),
@@ -44,19 +41,9 @@ const configStateMock = vi.hoisted(() => ({
   },
 }));
 
-vi.mock("mode-watcher", () => ({
-  userPrefersMode: { current: "system" },
-  setMode: setModeMock,
-}));
-
 vi.mock("$hooks/config.svelte", () => ({
   configState: configStateMock,
   updateConfig: updateConfigMock,
-}));
-
-vi.mock("$hooks/layout.svelte", () => ({
-  layoutState: layoutStateMock,
-  setLayoutName: setLayoutNameMock,
 }));
 
 vi.mock("$libs/i18n/paraglide/runtime", async (importOriginal) => {
@@ -79,7 +66,6 @@ afterEach(() => {
 
 beforeEach(() => {
   vi.clearAllMocks();
-  layoutStateMock.name = "tabs";
   configStateMock.value = {
     locale: "en",
     auto_start: false,
@@ -106,7 +92,7 @@ beforeEach(() => {
   );
 });
 
-describe("设置页", () => {
+describe("通用设置分组", () => {
   /** 在下拉中按值点选：jsdom 无布局，选项始终不可见，只能按 `data-value` 定位。 */
   async function chooseOption(
     user: ReturnType<typeof userEvent.setup>,
@@ -120,57 +106,22 @@ describe("设置页", () => {
     await user.click(document.querySelector(`[data-value="${value}"]`) as HTMLElement);
   }
 
-  it("渲染通用与外观分组及当前取值", () => {
-    render(Page);
+  it("渲染通用分组及当前取值", () => {
+    render(Component);
 
     expect(screen.getByText("General")).not.toBeNull();
-    expect(screen.getByText("Appearance")).not.toBeNull();
     expect(screen.getByText("Language")).not.toBeNull();
-    expect(screen.getByText("Theme")).not.toBeNull();
     expect(screen.getByText("Autostart")).not.toBeNull();
     expect(screen.getByText("Remember window")).not.toBeNull();
     expect(screen.getByText("Auto check for updates")).not.toBeNull();
-    expect(screen.getByText("Layout")).not.toBeNull();
     // 下拉触发器展示当前选中项的文案
     const languageTrigger = screen.getByRole("button", { name: "Language" });
-    const themeTrigger = screen.getByRole("button", { name: "Theme" });
-    const layoutTrigger = screen.getByRole("button", { name: "Layout" });
     expect(languageTrigger.textContent).toContain("English");
-    expect(themeTrigger.textContent).toContain("System");
-    expect(layoutTrigger.textContent).toContain("Tabs");
-  });
-
-  it("切换布局调用 setLayoutName，不经过后端", async () => {
-    const user = userEvent.setup();
-    render(Page);
-
-    await chooseOption(user, "Layout", "sidebar");
-
-    expect(setLayoutNameMock).toHaveBeenCalledWith("sidebar");
-    expect(updateConfigMock).not.toHaveBeenCalled();
-    expect(setModeMock).not.toHaveBeenCalled();
-  });
-
-  it("布局下拉渲染持久化的当前取值", () => {
-    layoutStateMock.name = "sidebar";
-    render(Page);
-
-    expect(screen.getByRole("button", { name: "Layout" }).textContent).toContain("Sidebar");
-  });
-
-  it("切换主题即时调用 setMode，不经过后端", async () => {
-    const user = userEvent.setup();
-    render(Page);
-
-    await chooseOption(user, "Theme", "dark");
-
-    expect(setModeMock).toHaveBeenCalledWith("dark");
-    expect(updateConfigMock).not.toHaveBeenCalled();
   });
 
   it("切换语言先落盘后端，成功后重载生效", async () => {
     const user = userEvent.setup();
-    render(Page);
+    render(Component);
 
     await chooseOption(user, "Language", "zh-CN");
 
@@ -185,7 +136,7 @@ describe("设置页", () => {
   it("语言落盘失败时不重载并报错", async () => {
     const user = userEvent.setup();
     updateConfigMock.mockImplementation(async () => {});
-    render(Page);
+    render(Component);
 
     await chooseOption(user, "Language", "zh-CN");
 
@@ -199,7 +150,7 @@ describe("设置页", () => {
     const user = userEvent.setup();
     // 生产真实失败路径：命令结算为失败（ resolve 但不回写状态），而非抛错
     updateConfigMock.mockImplementationOnce(async () => {});
-    render(Page);
+    render(Component);
 
     await chooseOption(user, "Language", "zh-CN");
 
@@ -220,7 +171,7 @@ describe("设置页", () => {
   it("自启落盘失败时开关恢复可用", async () => {
     const user = userEvent.setup();
     updateConfigMock.mockImplementationOnce(async () => {});
-    render(Page);
+    render(Component);
 
     await user.click(screen.getByRole("switch", { name: "Autostart" }));
 
@@ -238,7 +189,7 @@ describe("设置页", () => {
       auto_check_update: false,
       schema_version: 1,
     };
-    render(Page);
+    render(Component);
 
     expect(screen.getByRole("switch", { name: "Autostart" }).getAttribute("data-state")).toBe(
       "checked",
@@ -247,7 +198,7 @@ describe("设置页", () => {
 
   it("打开自启开关经命令落盘，成功后提示", async () => {
     const user = userEvent.setup();
-    render(Page);
+    render(Component);
 
     await user.click(screen.getByRole("switch", { name: "Autostart" }));
 
@@ -262,7 +213,7 @@ describe("设置页", () => {
   it("自启落盘失败时报错且不改语言", async () => {
     const user = userEvent.setup();
     updateConfigMock.mockImplementation(async () => {});
-    render(Page);
+    render(Component);
 
     await user.click(screen.getByRole("switch", { name: "Autostart" }));
 
@@ -280,7 +231,7 @@ describe("设置页", () => {
       auto_check_update: false,
       schema_version: 1,
     };
-    render(Page);
+    render(Component);
 
     expect(screen.getByRole("switch", { name: "Remember window" }).getAttribute("data-state")).toBe(
       "checked",
@@ -289,7 +240,7 @@ describe("设置页", () => {
 
   it("打开窗口开关经命令落盘，成功后提示", async () => {
     const user = userEvent.setup();
-    render(Page);
+    render(Component);
 
     await user.click(screen.getByRole("switch", { name: "Remember window" }));
 
@@ -304,7 +255,7 @@ describe("设置页", () => {
   it("窗口落盘失败时报错且不改语言", async () => {
     const user = userEvent.setup();
     updateConfigMock.mockImplementation(async () => {});
-    render(Page);
+    render(Component);
 
     await user.click(screen.getByRole("switch", { name: "Remember window" }));
 
@@ -322,7 +273,7 @@ describe("设置页", () => {
       auto_check_update: true,
       schema_version: 1,
     };
-    render(Page);
+    render(Component);
 
     expect(
       screen.getByRole("switch", { name: "Auto check for updates" }).getAttribute("data-state"),
@@ -331,7 +282,7 @@ describe("设置页", () => {
 
   it("打开更新检查开关经命令落盘，成功后提示", async () => {
     const user = userEvent.setup();
-    render(Page);
+    render(Component);
 
     await user.click(screen.getByRole("switch", { name: "Auto check for updates" }));
 
@@ -346,7 +297,7 @@ describe("设置页", () => {
   it("更新检查落盘失败时报错且不改语言", async () => {
     const user = userEvent.setup();
     updateConfigMock.mockImplementation(async () => {});
-    render(Page);
+    render(Component);
 
     await user.click(screen.getByRole("switch", { name: "Auto check for updates" }));
 

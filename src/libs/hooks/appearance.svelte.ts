@@ -1,0 +1,244 @@
+// 外观状态唯一来源：布局与字体等纯前端 UI 偏好走 localStorage 持久化，与语言走后端 config.json 互不干扰。
+// 后端无外观业务，故不经 commands 链，避免跨层跳跃。系统字体列表仅经插件读取做下拉候选，偏好本身仍存前端。
+// 布局注册表集中在此，新增布局只需加文件并扩展映射，容器无需改动。
+// 布局组件禁止反向导入本模块，否则形成容器到布局的循环依赖。
+// 布局名用语义名（如 tabs / sidebar），禁用 default 之类只表达"被选中"的占位名——该值会落盘。
+import type { Component, Snippet } from "svelte";
+import Tabs from "$components/layout/tabs.svelte";
+import Sidebar from "$components/layout/sidebar.svelte";
+
+/** 可选布局取值，新增布局时同步扩展该联合类型与下方映射 */
+export type LayoutName = "tabs" | "sidebar";
+
+/** 布局组件形态：仅接收子内容片段 */
+export type LayoutComponent = Component<{ children: Snippet }>;
+
+/** 布局名到组件的映射，容器据此动态渲染 */
+export const LAYOUTS: Record<LayoutName, LayoutComponent> = {
+  tabs: Tabs,
+  sidebar: Sidebar,
+};
+
+/** 持久化键名，改名即视为放弃老用户存量 */
+export const LAYOUT_STORAGE_KEY = "layout-name";
+
+const DEFAULT_LAYOUT: LayoutName = "tabs";
+
+const LAYOUT_NAMES: readonly LayoutName[] = Object.keys(LAYOUTS) as LayoutName[];
+
+// 跨页面共享的布局状态，页面私有状态仍用局部 $state
+export const layoutState = $state<{ name: LayoutName }>({ name: DEFAULT_LAYOUT });
+
+/** 校验布局取值，脏数据回落时使用 */
+export function isLayoutName(value: unknown): value is LayoutName {
+  return typeof value === "string" && (LAYOUT_NAMES as readonly string[]).includes(value);
+}
+
+/** 读取持久化布局，缺失或非法一律回落默认值 */
+export function loadLayoutName(): LayoutName {
+  try {
+    if (typeof localStorage === "undefined") {
+      return DEFAULT_LAYOUT;
+    }
+    const stored = localStorage.getItem(LAYOUT_STORAGE_KEY);
+    return isLayoutName(stored) ? stored : DEFAULT_LAYOUT;
+  } catch {
+    // 隐私模式等存储不可用时按默认值渲染，不阻塞首帧
+    return DEFAULT_LAYOUT;
+  }
+}
+
+/** 容器首帧前调用，重复调用无副作用 */
+export function initLayout(): void {
+  layoutState.name = loadLayoutName();
+}
+
+/** 切换布局，先落盘再改内存，刷新不丢失 */
+export function setLayoutName(next: LayoutName): void {
+  if (!isLayoutName(next)) {
+    return;
+  }
+  try {
+    localStorage.setItem(LAYOUT_STORAGE_KEY, next);
+  } catch {
+    // 落盘失败仍切换内存状态，保证本次会话可用
+  }
+  layoutState.name = next;
+}
+
+// ---- 字体偏好：与布局同为纯前端 UI 偏好，读写模式与上节保持一致 ----
+
+/** 字体持久化键名，改名即视为放弃老用户存量 */
+export const FONT_FAMILY_STORAGE_KEY = "font-family";
+export const FONT_WEIGHT_STORAGE_KEY = "font-weight";
+export const FONT_SIZE_STORAGE_KEY = "font-size";
+
+/** 跟随系统默认字体栈的哨兵取值，语义明确而非占位名 */
+export const DEFAULT_FONT_FAMILY = "system";
+
+export const DEFAULT_FONT_WEIGHT = 400;
+export const MIN_FONT_WEIGHT = 100;
+export const MAX_FONT_WEIGHT = 900;
+export const FONT_WEIGHT_STEP = 100;
+
+/** 字号以相对浏览器默认的百分比存储，默认不缩放 */
+export const DEFAULT_FONT_SIZE = 100;
+export const MIN_FONT_SIZE = 75;
+export const MAX_FONT_SIZE = 125;
+export const FONT_SIZE_STEP = 5;
+
+/** 字号下拉候选项，与校验区间同源，避免两处各写一份 */
+export const FONT_SIZE_OPTIONS: readonly number[] = (() => {
+  const options: number[] = [];
+  for (let size = MIN_FONT_SIZE; size <= MAX_FONT_SIZE; size += FONT_SIZE_STEP) {
+    options.push(size);
+  }
+  return options;
+})();
+
+/** 默认字体栈，与样式表 `:root` 的回退值保持一致 */
+export const DEFAULT_FONT_STACK = `"Geist Variable", sans-serif`;
+
+// 跨页面共享的字体状态，页面私有状态仍用局部 $state
+export const fontState = $state<{ family: string; weight: number; size: number }>({
+  family: DEFAULT_FONT_FAMILY,
+  weight: DEFAULT_FONT_WEIGHT,
+  size: DEFAULT_FONT_SIZE,
+});
+
+/** 清洗字体族名：插件返回的系统字体是外部输入，组装样式前剥离可破坏声明的字符 */
+export function sanitizeFontFamily(value: string): string {
+  return value.replace(/["';\\]/g, "").trim();
+}
+
+/** 校验字重取值，仅接受区间内的整百数 */
+export function isFontWeight(value: unknown): value is number {
+  return (
+    typeof value === "number" &&
+    Number.isInteger(value) &&
+    value >= MIN_FONT_WEIGHT &&
+    value <= MAX_FONT_WEIGHT &&
+    value % FONT_WEIGHT_STEP === 0
+  );
+}
+
+/** 校验字号取值，仅接受区间内步长倍数的百分比 */
+export function isFontSize(value: unknown): value is number {
+  return (
+    typeof value === "number" &&
+    Number.isInteger(value) &&
+    value >= MIN_FONT_SIZE &&
+    value <= MAX_FONT_SIZE &&
+    value % FONT_SIZE_STEP === 0
+  );
+}
+
+/** 读取持久化字体族名，缺失或非法一律回落系统默认 */
+export function loadFontFamily(): string {
+  try {
+    if (typeof localStorage === "undefined") {
+      return DEFAULT_FONT_FAMILY;
+    }
+    const cleaned = sanitizeFontFamily(localStorage.getItem(FONT_FAMILY_STORAGE_KEY) ?? "");
+    return cleaned ? cleaned : DEFAULT_FONT_FAMILY;
+  } catch {
+    // 隐私模式等存储不可用时按默认值渲染，不阻塞首帧
+    return DEFAULT_FONT_FAMILY;
+  }
+}
+
+/** 读取持久化字重，缺失或非法一律回落默认值 */
+export function loadFontWeight(): number {
+  try {
+    if (typeof localStorage === "undefined") {
+      return DEFAULT_FONT_WEIGHT;
+    }
+    const parsed = Number(localStorage.getItem(FONT_WEIGHT_STORAGE_KEY));
+    return isFontWeight(parsed) ? parsed : DEFAULT_FONT_WEIGHT;
+  } catch {
+    return DEFAULT_FONT_WEIGHT;
+  }
+}
+
+/** 读取持久化字号，缺失或非法一律回落默认值 */
+export function loadFontSize(): number {
+  try {
+    if (typeof localStorage === "undefined") {
+      return DEFAULT_FONT_SIZE;
+    }
+    const parsed = Number(localStorage.getItem(FONT_SIZE_STORAGE_KEY));
+    return isFontSize(parsed) ? parsed : DEFAULT_FONT_SIZE;
+  } catch {
+    return DEFAULT_FONT_SIZE;
+  }
+}
+
+/** 组装字体栈：选中族名优先，默认栈兜底已卸载等缺失情形 */
+export function buildFontStack(family: string): string {
+  if (!family || family === DEFAULT_FONT_FAMILY) {
+    return DEFAULT_FONT_STACK;
+  }
+  return `"${family}", ${DEFAULT_FONT_STACK}`;
+}
+
+/** 把内存态写入根元素变量，无文档环境直接返回 */
+export function applyAppearance(): void {
+  if (typeof document === "undefined") {
+    return;
+  }
+  const root = document.documentElement;
+  root.style.setProperty("--app-font-family", buildFontStack(fontState.family));
+  root.style.setProperty("--app-font-weight", String(fontState.weight));
+  root.style.setProperty("--app-font-size", `${fontState.size}%`);
+}
+
+/** 切换字体族，先落盘再改内存并即时应用，刷新不丢失 */
+export function setFontFamily(next: string): void {
+  const cleaned = sanitizeFontFamily(next);
+  if (!cleaned) {
+    return;
+  }
+  try {
+    localStorage.setItem(FONT_FAMILY_STORAGE_KEY, cleaned);
+  } catch {
+    // 落盘失败仍切换内存状态，保证本次会话可用
+  }
+  fontState.family = cleaned;
+  applyAppearance();
+}
+
+/** 切换字重，先落盘再改内存并即时应用，非法取值直接拒绝 */
+export function setFontWeight(next: number): void {
+  if (!isFontWeight(next)) {
+    return;
+  }
+  try {
+    localStorage.setItem(FONT_WEIGHT_STORAGE_KEY, String(next));
+  } catch {
+    // 落盘失败仍切换内存状态，保证本次会话可用
+  }
+  fontState.weight = next;
+  applyAppearance();
+}
+
+/** 切换字号，先落盘再改内存并即时应用，非法取值直接拒绝 */
+export function setFontSize(next: number): void {
+  if (!isFontSize(next)) {
+    return;
+  }
+  try {
+    localStorage.setItem(FONT_SIZE_STORAGE_KEY, String(next));
+  } catch {
+    // 落盘失败仍切换内存状态，保证本次会话可用
+  }
+  fontState.size = next;
+  applyAppearance();
+}
+
+/** 根布局首帧前调用，重复调用无副作用 */
+export function initAppearance(): void {
+  fontState.family = loadFontFamily();
+  fontState.weight = loadFontWeight();
+  fontState.size = loadFontSize();
+  applyAppearance();
+}

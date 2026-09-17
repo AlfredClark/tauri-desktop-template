@@ -24,18 +24,18 @@
 > 版本唯一来源是 `package.json`（前端）与 `src-tauri/Cargo.toml`（后端），下表不记录版本号。
 > 生成代码时必须使用这两个文件中实际声明版本对应的 API，禁止自行升级 / 降级依赖。
 
-| 层级        | 技术选型                                                           | 说明 / 用途                                                                                                                                                                                                                                                 |
-| ----------- | ------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 前端框架    | SvelteKit + Svelte                                                 | SPA 模式（`adapter-static` + `fallback: index.html`，`ssr = false`）；`@sveltejs/vite-plugin-svelte` 构建集成                                                                                                                                               |
-| UI / 样式   | shadcn-svelte + Tailwind CSS                                       | shadcn-svelte（nova / neutral），Tailwind（`@tailwindcss/vite` + `tailwind-merge` / `tailwind-variants` / `tw-animate-css`）；图标 `@lucide/svelte`，字体 `@fontsource-variable/geist`，主题 `mode-watcher` + `layout.css` 的 `.dark` 变体，`cn()` 合并类名 |
-| 前端插件    | `@tauri-apps/api` + `plugin-log` / `opener` / `updater`            | Tauri JS 互操作与桌面能力；日志上报走 `plugin-log`，CLI 为 `@tauri-apps/cli`                                                                                                                                                                                |
-| 前后端契约  | tauri-specta + `specta` / `specta-typescript`                      | Rust 侧 `#[tauri::command]` + `#[specta::specta]` 导出类型，生成物 `src/libs/commands/bindings.ts`，禁止手改                                                                                                                                                |
-| 国际化      | Paraglide（前端）+ rust-i18n（后端）                               | 前端 `paraglide-js` / `paraglide-js-svelte`（策略 `localStorage` + `baseLocale`，CLI 为 `@inlang/cli`）；后端 `rust-i18n`（`src-tauri/locales/*.yml`，`fallback = "en"`）                                                                                   |
-| 后端框架    | Tauri + Rust                                                       | `edition = "2024"`，工具链由 `rust-toolchain.toml` 锁定；`tauri-build` 构建脚本                                                                                                                                                                             |
-| 后端插件    | `opener` / `store` / `log` / `os` / `updater`                      | 分别对应外部打开、持久化（`config.json` 存 `locale`）、日志、系统语言探测（已注册 `plugins/os.rs`，capability 仅 `os:allow-locale`）、自动更新（仅非移动端启用 `updater`）                                                                                  |
-| 后端支撑    | `serde` / `serde_json` + `chrono` + `log` + `thiserror` / `anyhow` | 序列化、UTC 时间、日志门面、统一错误（`CommandError` / `CommandResult`，见第 5 章第 4 条）                                                                                                                                                                  |
-| 构建 / 质量 | Vite + TypeScript + vitest + pnpm                                  | Vite 固定端口 `1420`；`svelte-check` 严格 TS 检查；ESLint + Prettier；vitest 单测；包管理器 `pnpm`（`engines.node >= 24`，`pnpm-lock.yaml` 锁定；后端 `Cargo.lock` 需提交）                                                                                 |
-| 部署        | GitHub Actions + Tauri bundler                                     | CI 入口 `.github/workflows/ci.yml`，发布入口 `.github/workflows/release.yml`                                                                                                                                                                                |
+| 层级        | 技术选型                                                                                      | 说明 / 用途                                                                                                                                                                                                                                                                                                |
+| ----------- | --------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 前端框架    | SvelteKit + Svelte                                                                            | SPA 模式（`adapter-static` + `fallback: index.html`，`ssr = false`）；`@sveltejs/vite-plugin-svelte` 构建集成                                                                                                                                                                                              |
+| UI / 样式   | shadcn-svelte + Tailwind CSS                                                                  | shadcn-svelte（nova / neutral），Tailwind（`@tailwindcss/vite` + `tailwind-merge` / `tailwind-variants` / `tw-animate-css`）；图标 `@lucide/svelte`，字体 `@fontsource-variable/geist`，主题 `mode-watcher` + `layout.css` 的 `.dark` 变体，`cn()` 合并类名                                                |
+| 前端插件    | `@tauri-apps/api` + `plugin-log` / `opener` / `updater` / `system-fonts`                      | Tauri JS 互操作与桌面能力；日志上报走 `plugin-log`，系统字体列表走 `tauri-plugin-system-fonts-api`，CLI 为 `@tauri-apps/cli`                                                                                                                                                                               |
+| 前后端契约  | tauri-specta + `specta` / `specta-typescript`                                                 | Rust 侧 `#[tauri::command]` + `#[specta::specta]` 导出类型，生成物 `src/libs/commands/bindings.ts`，禁止手改                                                                                                                                                                                               |
+| 国际化      | Paraglide（前端）+ rust-i18n（后端）                                                          | 前端 `paraglide-js` / `paraglide-js-svelte`（策略 `localStorage` + `baseLocale`，CLI 为 `@inlang/cli`）；后端 `rust-i18n`（`src-tauri/locales/*.yml`，`fallback = "en"`）                                                                                                                                  |
+| 后端框架    | Tauri + Rust                                                                                  | `edition = "2024"`，工具链由 `rust-toolchain.toml` 锁定；`tauri-build` 构建脚本                                                                                                                                                                                                                            |
+| 后端插件    | `opener` / `store` / `log` / `os` / `updater` / `autostart` / `window-state` / `system-fonts` | 分别对应外部打开、持久化（`config.json` 存 `locale`）、日志、系统语言探测（已注册 `plugins/os.rs`）、自动更新 / 开机自启 / 窗口状态（后三者仅非移动端启用 `updater` / `autostart` / `window-state`）、系统字体探测（`plugins/system_fonts.rs`，capability 含 `os:allow-locale` 与 `system-fonts:default`） |
+| 后端支撑    | `serde` / `serde_json` + `chrono` + `log` + `thiserror` / `anyhow`                            | 序列化、UTC 时间、日志门面、统一错误（`CommandError` / `CommandResult`，见第 5 章第 4 条）                                                                                                                                                                                                                 |
+| 构建 / 质量 | Vite + TypeScript + vitest + pnpm                                                             | Vite 固定端口 `1420`；`svelte-check` 严格 TS 检查；ESLint + Prettier；vitest 单测；包管理器 `pnpm`（`engines.node >= 24`，`pnpm-lock.yaml` 锁定；后端 `Cargo.lock` 需提交）                                                                                                                                |
+| 部署        | GitHub Actions + Tauri bundler                                                                | CI 入口 `.github/workflows/ci.yml`，发布入口 `.github/workflows/release.yml`                                                                                                                                                                                                                               |
 
 **版本查询命令：**
 
@@ -56,24 +56,25 @@ tauri-desktop-template/
 │   ├── app.html                    # HTML 外壳，SvelteKit 在此注入脚本与样式
 │   ├── assets/                     # 需要经构建处理的资源（预留目录，别名 $assets）
 │   ├── routes/                     # 页面与全局样式
-│   │   ├── +layout.svelte          # 根布局：ModeWatcher（主题）+ Toaster + ErrorBoundary（渲染异常）包裹全部分组
+│   │   ├── +layout.svelte          # 根布局：ModeWatcher（主题）+ Toaster + ErrorBoundary（渲染异常）包裹全部分组，首帧前对齐外观变量（字体/字重/字号）
 │   │   ├── +layout.ts              # ssr = false（SPA 模式）+ 首帧前对齐界面语言的 load()
 │   │   ├── (main)/                 # 分组路由（括号不进 URL）：常规页面分组，独享布局容器
 │   │   │   ├── +layout.svelte      # 分组布局：LayoutContainer 包裹，特殊页另起分组即可绕开布局
-│   │   │   └── +page.svelte        # 占位首页：布局骨架验证起点，业务在此开发；about / settings 为导航标签示例页
-│   │   └── layout.css              # Tailwind v4 入口与 shadcn-svelte 主题令牌（含 .dark 暗色变体）
+│   │   │   └── +page.svelte        # 占位首页：布局骨架验证起点，业务在此开发；about 为导航标签示例页，settings 为完整设置页（通用 + 外观两分组）
+│   │   └── layout.css              # Tailwind v4 入口与 shadcn-svelte 主题令牌（含 .dark 暗色变体与 --app-font-* 外观变量）
 │   ├── components/
-│   │   ├── common/                 # 手写共享组件（error-boundary.svelte 全局渲染兜底）
-│   │   ├── layout/                 # 布局子系统：layout-container.svelte 容器 + tabs（标题栏/标签栏/内容/底边）与 sidebar（侧边栏 + 标题栏/内容/底边）实现，新增布局需在 libs/hooks/layout.svelte.ts 中映射
+│   │   ├── common/                 # 手写共享组件（error-boundary.svelte 全局渲染兜底，card-section/row.svelte 通用卡片分组与行）
+│   │   ├── layout/                 # 布局子系统：layout-container.svelte 容器 + tabs（标题栏/标签栏/内容/底边）与 sidebar（侧边栏 + 标题栏/内容/底边）实现，新增布局需在 libs/hooks/appearance.svelte.ts 中映射
 │   │   │   └── parts/              # 布局配套部件（title-bar / nav-tabs-bar / side-nav-bar / copyright）
-│   │   ├── widget/                 # 手写业务小组件（当前无组件，待业务填充）
+│   │   ├── widget/                 # 手写页面小组件（settings/：设置页通用/外观分组与字体选择器；about/：关于页应用/项目/平台分组与更新面板）
 │   │   └── shadcn-svelte/          # CLI 生成的 UI 组件（nova / neutral / lucide），新增走 CLI 添加，勿手动重组
+│   ├── tests/                      # 前端测试集中目录，按源路径镜像：unit/ 纯逻辑（node）+ component/ 组件（jsdom）
 │   └── libs/
 │       ├── commands/               # tauri-specta 契约链（bindings.ts 生成物 + 链式 API 封装）
 │       ├── i18n/                   # Paraglide：messages/ 文案、project.inlang/ 配置、paraglide/ 生成物
 │       ├── navigation/             # 导航等应用级注册表（nav-tabs.ts：路径 / 图标 / 顺序，顶部标签栏与侧边栏导航同源）
-│       ├── utils/                  # 前端通用工具（shadcn-svelte.ts 的 cn()、window-controls.ts、toast.ts）
-│       └── hooks/                  # 前端共享状态（统一经 $hooks 引用），如 layout.svelte.ts 布局注册表、is-mobile.svelte.ts 响应式断点
+│       ├── utils/                  # 前端通用工具（shadcn-svelte.ts 的 cn()、window-controls.ts、toast.ts、opener.ts）
+│       └── hooks/                  # 前端共享状态（统一经 $hooks 引用），如 appearance.svelte.ts（布局注册表 + 字体偏好）、config.svelte.ts（后端配置内存态）、updater.svelte.ts（更新状态）、is-mobile.svelte.ts（响应式断点）
 ├── src-tauri/                      # 后端：Rust（edition 2024）
 │   ├── src/
 │   │   ├── main.rs                 # 二进制入口，仅转发到 lib::run()
@@ -81,7 +82,7 @@ tauri-desktop-template/
 │   │   ├── commands/               # 命令封装层：薄封装 + collect_commands! 注册
 │   │   ├── cores/                  # 通用能力与跨层共享类型（types / locale / config / specta / system）
 │   │   ├── features/               # 业务逻辑（纯函数，不依赖 Tauri 运行时）
-│   │   └── plugins/                # 各 Tauri 插件的初始化（log / store / opener / os / updater）
+│   │   └── plugins/                # 各 Tauri 插件的初始化（log / store / opener / os / updater / autostart / window-state / system-fonts）
 │   ├── locales/                    # rust-i18n 后端文案（*.yml）
 │   ├── capabilities/               # 权限配置（default.json / plugins.json），外部 URL 需同步更新
 │   ├── icons/                      # 应用图标（由 pnpm tauri:icon 生成）
@@ -152,7 +153,7 @@ pnpm release                       # bumpp 联动升级三处版本号（package
 
 > 优先级高于代码风格。违反以下任一条即视为不合格修改。
 
-1. **分层单向依赖：** `Svelte 组件 → libs/commands（链式 API）→ commands/（Rust 薄封装）→ features/ · cores/`，禁止反向调用与跨层跳跃（如组件裸 `invoke`、命令层写业务逻辑）。纯前端 UI 偏好（如布局名走 `localStorage`）是有意例外，不经 commands 链。
+1. **分层单向依赖：** `Svelte 组件 → libs/commands（链式 API）→ commands/（Rust 薄封装）→ features/ · cores/`，禁止反向调用与跨层跳跃（如组件裸 `invoke`、命令层写业务逻辑）。纯前端 UI 偏好（如布局 / 字体等外观偏好走 `localStorage`）是有意例外，不经 commands 链。
 2. **前后端契约优先：** 以 tauri-specta 为准（见第 10 章第 2 条）。改命令必须先改 `features/` + `commands/`（含 `#[tauri::command]` + `#[specta::specta]` + `collect_commands!`），再 `cargo test` 重生成 `bindings.ts`，最后改前端调用。禁止手改 `bindings.ts`、禁止跳过重生成直接改前端。
 3. **状态归属：** Svelte 5 runes（`$state` / `$props` / `$effect`）优先，禁用旧式 store；页面私有状态用局部 state，跨页面共享才考虑提升。主题经 `mode-watcher` 全局管理，语言对齐走第 10 章第 1 条数据流，禁止各页面自建语言状态。
 4. **错误处理分层：** `features/` 返回业务错误 → `commands/` 转为 `CommandResult`（错误统一 `CommandError::Internal(...)`，`anyhow::Error` 经已有 `From` 自动转换）→ 前端经 `.result() / .value() / .success() / .failed()` 处理。前端 `.failed()` 回调形状为 `{ kind, message }`；未注册 `.failed()` 的失败会自动经 plugin-log 上报，不会静默丢失。禁止在 `features/` 内直接耦合 Tauri 运行时。
@@ -266,7 +267,7 @@ CI（`.github/workflows/ci.yml`）在 `main` 分支上按变更路径触发：
 | 修改范围                                               | 最低验证要求                                                                                                   |
 | ------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------- |
 | 仅前端 UI / 文案 / 配置                                | `pnpm format` + `pnpm validate`（含 `prettier --check`、`eslint`、`svelte-check`、`vitest`、`cargo test`）通过 |
-| 前端逻辑 / commands 封装                               | 上述 + `pnpm test:vitest <相关用例>` 通过                                                                      |
+| 前端逻辑 / commands 封装                               | 上述 + `pnpm test:vitest src/tests/<相关用例>` 通过                                                            |
 | 后端 features / cores / commands                       | `pnpm test:cargo`（重写绑定 + 后端测试）+ `pnpm format` + `pnpm validate` 通过                                 |
 | 命令契约变更（新增 / 改签名 / 改 `collect_commands!`） | 上述 + 确认 `git diff src/libs/commands/bindings.ts` 有同步更新 + 前后端联调                                   |
 | 前端文案变更（`messages/`）                            | `pnpm i18n:compile` + `pnpm format` + `pnpm validate` 通过（跳过 compile 会导致 `build` / CI 失败）            |
@@ -275,7 +276,7 @@ CI（`.github/workflows/ci.yml`）在 `main` 分支上按变更路径触发：
 **回归 checklist（提交前逐项确认）：**
 
 - [ ] 修改功能以外的旧功能主流程不受影响
-- [ ] 新增逻辑有单测覆盖核心分支（含异常分支；前端 `*.test.ts` 与源文件同目录，后端 `cargo test`）
+- [ ] 新增逻辑有单测覆盖核心分支（含异常分支；前端测试集中 `src/tests/` 按源路径镜像，后端 `cargo test`）
 - [ ] 无 `console.log / print / debugger` 残留（失败上报走 plugin-log / 后端 log）
 - [ ] 无硬编码 URL / 密钥 / 本地绝对路径（外部 URL 已同步 capabilities + CSP）
 - [ ] 改文案已补跑 `i18n:compile`；`validate` 已含 `cargo test`（含绑定重生成），无需另跑
