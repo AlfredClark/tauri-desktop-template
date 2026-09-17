@@ -23,7 +23,7 @@ pub struct UpdateInfo {
 /// 下载进度事件载荷：`total` 缺失时前端展示不确定进度
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Type)]
 pub struct ProgressPayload {
-    /// 已下载字节数
+    /// 累计已下载字节数（插件回调给的是单包长度，此处已累加）
     pub downloaded: u64,
     /// 总字节数（服务端未提供时为 `None`）
     pub total: Option<u64>,
@@ -58,13 +58,16 @@ pub async fn download_and_install(app: &tauri::AppHandle) -> anyhow::Result<()> 
     let Some(update) = app.updater()?.check().await? else {
         return Err(anyhow::anyhow!("no update available"));
     };
+    // 插件回调的 `downloaded` 是单包长度，需在此累加成累计值再发出
+    let mut downloaded_total = 0_u64;
     update
         .download_and_install(
             |downloaded, total| {
+                downloaded_total += downloaded as u64;
                 let _ = app.emit(
                     APP_UPDATER_PROGRESS_EVENT,
                     ProgressPayload {
-                        downloaded: downloaded as u64,
+                        downloaded: downloaded_total,
                         total,
                     },
                 );

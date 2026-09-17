@@ -27,18 +27,19 @@ export const updaterState = $state<{
 
 let progressListening = false;
 
-/** 订阅下载进度事件；浏览器 / 单测下动态导入失败则静默降级（进度不刷新，不阻断流程） */
+/** 订阅下载进度事件；浏览器 / 单测下动态导入失败则警告并允许下次重试 */
 async function ensureProgressListener(): Promise<void> {
   if (progressListening) return;
-  progressListening = true;
   try {
     const { listen } = await import("@tauri-apps/api/event");
     await listen<{ downloaded: number; total: number | null }>(PROGRESS_EVENT, (event) => {
       updaterState.downloaded = event.payload.downloaded;
       updaterState.total = event.payload.total;
     });
-  } catch {
-    // 非 Tauri 环境无事件可订，保持阶段推进即可
+    progressListening = true;
+  } catch (error) {
+    // 非 Tauri 环境无事件可订：记一笔警告便于排查，下次下载再试
+    console.warn("[updater] progress listener unavailable:", error);
   }
 }
 
