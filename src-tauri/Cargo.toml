@@ -1,6 +1,6 @@
 [package]
 name = "tauri-desktop-template"
-version = "0.2.0"
+version = "0.3.0"
 edition = "2024"
 authors = ["Alfred Clark"]
 description = "Desktop application development template based on Tauri and Svelte."
