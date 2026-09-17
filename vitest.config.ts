@@ -1,11 +1,31 @@
 import { sveltekit } from "@sveltejs/kit/vite";
+import { svelteTesting } from "@testing-library/svelte/vite";
 import { defineConfig } from "vitest/config";
 
 // 单元测试配置：复用 SvelteKit 插件以继承 svelte.config.ts 的路径别名与 Svelte 编译能力，
 // 因此这里不需要再抄一份 resolve.alias。
+// 用两个 project 隔离环境：纯逻辑跑 node（不加 browser 解析条件，否则 `$app/*`
+// 客户端模块会误判 BROWSER 而崩）；组件测试跑 jsdom + svelteTesting。
 export default defineConfig({
   plugins: [sveltekit()],
   test: {
-    include: ["src/**/*.{test,spec}.{js,ts}"],
+    projects: [
+      {
+        test: {
+          name: "unit",
+          environment: "node",
+          include: ["src/**/*.{test,spec}.{js,ts}"],
+          exclude: ["src/**/*.component.{test,spec}.{js,ts}"],
+        },
+      },
+      {
+        plugins: [svelteTesting()],
+        test: {
+          name: "component",
+          environment: "jsdom",
+          include: ["src/**/*.component.{test,spec}.{js,ts}"],
+        },
+      },
+    ],
   },
 });
