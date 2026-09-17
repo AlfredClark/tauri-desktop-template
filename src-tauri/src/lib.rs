@@ -24,7 +24,7 @@ pub fn run() {
 
     let specta_builder = specta::init_builder();
 
-    tauri::Builder::default()
+    let builder = tauri::Builder::default()
         .plugin(plugins::log::init())
         .plugin(plugins::store::init())
         .plugin(plugins::opener::init())
@@ -32,10 +32,25 @@ pub fn run() {
         .plugin(plugins::system_fonts::init())
         .with_autostart()
         .with_updater()
-        .with_window_state()
+        .with_window_state();
+    // 单实例构造器是 `Wry` 具体的，走不了泛型 `BuilderExt`，此处直挂；
+    // 必须先于 deep-link 注册（官方顺序要求），且仅桌面端启用
+    #[cfg(not(any(target_os = "android", target_os = "ios")))]
+    let builder = builder.plugin(plugins::single_instance::init());
+    builder
+        .with_deep_link()
         .invoke_handler(specta_builder.invoke_handler())
         .setup(move |app| {
             setup_cores(app, &specta_builder);
+            // Win/Linux 的协议关联运行时注册（macOS 走包内 Info.plist，Linux 的
+            // `.desktop` MimeType 由打包器自动生成）；失败只记日志，不阻断启动
+            #[cfg(not(any(target_os = "android", target_os = "ios")))]
+            {
+                use tauri_plugin_deep_link::DeepLinkExt;
+                if let Err(err) = app.deep_link().register_all() {
+                    log::warn!("failed to register deep link schemes: {err:#}");
+                }
+            }
             Ok(())
         })
         .run(tauri::generate_context!())

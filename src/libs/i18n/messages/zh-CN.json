@@ -92,6 +92,8 @@
   "updater_update_ready": "更新就绪，重启生效",
   "updater_check_failed": "检查更新失败",
   "updater_download_failed": "下载失败",
+  "deep_link_opened": "已通过链接打开",
+  "deep_link_unknown": "不支持的链接，已停留在当前页面",
   "title_bar_pin": "置顶",
   "title_bar_unpin": "取消置顶",
   "title_bar_minimize": "最小化",

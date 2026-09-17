@@ -2,3 +2,5 @@
 //! 命令层只负责参数校验与结果转换，真正干活的是这里。
 
 pub mod demo;
+
+pub mod deeplink;

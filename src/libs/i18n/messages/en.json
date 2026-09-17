@@ -92,6 +92,8 @@
   "updater_update_ready": "Update ready, restart to apply",
   "updater_check_failed": "Failed to check for updates",
   "updater_download_failed": "Download failed",
+  "deep_link_opened": "Opened via link",
+  "deep_link_unknown": "Unsupported link, staying on the current page",
   "title_bar_pin": "Keep on top",
   "title_bar_unpin": "Cancel keep on top",
   "title_bar_minimize": "Minimize",

@@ -8,6 +8,7 @@
   import { getCurrentWindow } from "@tauri-apps/api/window";
   import { initAppearance } from "$hooks/appearance.svelte";
   import { configState } from "$hooks/config.svelte";
+  import { initDeepLinks } from "$hooks/deep-link.svelte";
   import { maybeAutoCheckForUpdate } from "$hooks/updater.svelte";
   import ErrorBoundary from "$components/common/error-boundary.svelte";
   import {
@@ -89,6 +90,28 @@
       .quitApp()
       .failed((failure) => reportCommandFailure("[window] failed to quit", failure));
   }
+
+  // 深链入口：冷启动 + 运行中 + 次实例转发三路订阅，单会话一次，非 Tauri 环境跳过
+  $effect(() => {
+    let cancelled = false;
+    let stop: (() => void) | null = null;
+    (async () => {
+      try {
+        const stopLinks = await initDeepLinks();
+        if (cancelled) {
+          stopLinks();
+        } else {
+          stop = stopLinks;
+        }
+      } catch {
+        // 非 Tauri 环境（浏览器预览）无深链事件，直接跳过
+      }
+    })();
+    return () => {
+      cancelled = true;
+      stop?.();
+    };
+  });
 </script>
 
 <!-- 跟随系统主题，并把 .dark 类同步到根元素 -->

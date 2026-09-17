@@ -4,9 +4,13 @@ use tauri::Runtime;
 
 #[cfg(not(any(target_os = "android", target_os = "ios")))]
 pub mod autostart;
+#[cfg(not(any(target_os = "android", target_os = "ios")))]
+pub mod deep_link;
 pub mod log;
 pub mod opener;
 pub mod os;
+#[cfg(not(any(target_os = "android", target_os = "ios")))]
+pub mod single_instance;
 pub mod store;
 pub mod system_fonts;
 #[cfg(not(any(target_os = "android", target_os = "ios")))]
@@ -25,6 +29,9 @@ pub trait BuilderExt<R: Runtime> {
     /// 注册窗口状态插件；移动端为空操作（该平台未声明 `window-state` 依赖）
     #[must_use]
     fn with_window_state(self) -> Self;
+    /// 注册深链插件；移动端为空操作（该平台未声明依赖）
+    #[must_use]
+    fn with_deep_link(self) -> Self;
 }
 
 #[cfg(not(any(target_os = "android", target_os = "ios")))]
@@ -40,6 +47,10 @@ impl<R: Runtime> BuilderExt<R> for tauri::Builder<R> {
     fn with_window_state(self) -> Self {
         self.plugin(window_state::init())
     }
+
+    fn with_deep_link(self) -> Self {
+        self.plugin(deep_link::init())
+    }
 }
 
 #[cfg(any(target_os = "android", target_os = "ios"))]
@@ -53,6 +64,10 @@ impl<R: Runtime> BuilderExt<R> for tauri::Builder<R> {
     }
 
     fn with_window_state(self) -> Self {
+        self
+    }
+
+    fn with_deep_link(self) -> Self {
         self
     }
 }
