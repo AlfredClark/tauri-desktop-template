@@ -2,6 +2,9 @@ use std::fs::OpenOptions;
 use std::io::Write;
 use std::{env, panic};
 
+use serde::{Deserialize, Serialize};
+use specta::Type;
+
 /// 安装 panic 钩子：先走常规日志，日志不可用时落盘到临时文件兜底
 fn setup_panic_hook() {
     // 获取原有的 panic hook（保留系统的默认行为）
@@ -88,5 +91,35 @@ pub fn init_system() {
                 }
             }
         }
+    }
+}
+
+/// 运行平台信息：经 `tauri-plugin-os` 采集，全字段必填，前端逐行展示
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Type)]
+pub struct SystemInfo {
+    /// 操作系统平台（如 `linux` / `windows` / `macos`）
+    pub platform: String,
+    /// 操作系统版本
+    pub os_version: String,
+    /// 系统架构（如 `x86_64`）
+    pub arch: String,
+    /// 主机名
+    pub hostname: String,
+}
+
+/// 采集运行平台信息；单项缺失时回落 `"unknown"`，绝不抛错
+pub fn gather_system_info() -> SystemInfo {
+    SystemInfo {
+        platform: tauri_plugin_os::platform().to_string(),
+        os_version: tauri_plugin_os::version().to_string(),
+        arch: tauri_plugin_os::arch().to_string(),
+        hostname: {
+            let name = tauri_plugin_os::hostname();
+            if name.is_empty() {
+                "unknown".into()
+            } else {
+                name
+            }
+        },
     }
 }

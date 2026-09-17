@@ -1,6 +1,6 @@
 {
   "name": "tauri-desktop-template",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Desktop application development template based on Tauri and Svelte.",
   "license": "GPL-3.0-only",
   "author": "Alfred Clark",
@@ -50,6 +50,10 @@
     "test:cargo": "cargo test --manifest-path Cargo.toml --workspace",
     "changelog": "git-cliff --output CHANGELOG.md",
     "changelog:preview": "git-cliff --unreleased",
+    "version:patch": "node scripts/bump-version.ts patch",
+    "version:minor": "node scripts/bump-version.ts minor",
+    "version:major": "node scripts/bump-version.ts major",
+    "version:set": "node scripts/bump-version.ts",
     "release": "bumpp package.json src-tauri/tauri.conf.json src-tauri/Cargo.toml --all --commit \"chore(release): prepare for {tag}\" --push false",
     "prepare": "husky"
   },

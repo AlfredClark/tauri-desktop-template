@@ -1,8 +1,8 @@
 <script lang="ts">
-  // 通用设置行：左侧文案、右侧控件插槽；控件状态一律由调用方持有，本组件只做布局。
+  // 通用设置行：左侧文案、右侧可选控件插槽；控件状态一律由调用方持有，本组件只做布局。
   import type { Snippet } from "svelte";
 
-  let { label, description, control }: { label: string; description?: string; control: Snippet } =
+  let { label, description, control }: { label: string; description?: string; control?: Snippet } =
     $props();
 </script>
 
@@ -10,10 +10,12 @@
   <div class="min-w-0">
     <p class="text-sm font-medium">{label}</p>
     {#if description}
-      <p class="text-sm text-muted-foreground">{description}</p>
+      <p class="text-sm break-all text-muted-foreground">{description}</p>
     {/if}
   </div>
-  <div class="shrink-0">
-    {@render control()}
-  </div>
+  {#if control}
+    <div class="shrink-0">
+      {@render control()}
+    </div>
+  {/if}
 </div>

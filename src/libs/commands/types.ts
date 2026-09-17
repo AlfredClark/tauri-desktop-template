@@ -4,6 +4,8 @@ import type {
   ConfigPatch,
   Config_Serialize,
   Locale,
+  SystemInfo,
+  UpdateInfo,
   commands as rawCommands,
 } from "$libs/commands/bindings";
 import type { EnhancedCommand } from "$libs/commands/cores";
@@ -28,4 +30,4 @@ export type CommandsMap = typeof rawCommands;
 /** 增强后的命令表类型：与 bindings 同名同参，但返回值是 `EnhancedCommand` */
 export type EnhancedCommands = { [K in keyof CommandsMap]: WrappedFn<CommandsMap[K]> };
 
-export type { CommandError, Config, ConfigPatch, Config_Serialize, Locale };
+export type { CommandError, Config, ConfigPatch, Config_Serialize, Locale, SystemInfo, UpdateInfo };

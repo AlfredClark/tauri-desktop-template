@@ -8,6 +8,7 @@ pub mod locale;
 pub mod specta;
 pub mod system;
 pub mod types;
+pub mod updater;
 
 /// 应用启动时的核心初始化：挂载事件系统并装配应用配置（含界面语言）
 pub fn setup_cores(app: &tauri::App, builder: &Builder<tauri::Wry>) {

@@ -5,9 +5,16 @@
   import { ModeWatcher } from "mode-watcher";
   import ErrorBoundary from "$components/common/error-boundary.svelte";
   import { Toaster } from "$components/shadcn-svelte/sonner";
+  import { configState } from "$hooks/config.svelte";
+  import { maybeAutoCheckForUpdate } from "$hooks/updater.svelte";
   import "./layout.css";
 
   const { children } = $props();
+
+  // 启动静默检查更新：开着开关才执行，单会话一次，非 Tauri 环境跳过
+  $effect(() => {
+    maybeAutoCheckForUpdate(configState.value?.auto_check_update ?? false);
+  });
 </script>
 
 <!-- 跟随系统主题，并把 .dark 类同步到根元素 -->

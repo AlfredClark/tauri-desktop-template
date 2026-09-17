@@ -41,6 +41,9 @@
   /** 窗口记忆切换进行中时禁用开关，避免重复提交。 */
   let switchingRememberWindow = $state(false);
 
+  /** 更新检查切换进行中时禁用开关，避免重复提交。 */
+  let switchingAutoCheckUpdate = $state(false);
+
   // 后端配置是语言的唯一真值；水合完成前用 Paraglide 当前语言兜底，避免首帧闪空。
   const currentLocale = $derived<Locale>(configState.value?.locale ?? getLocale());
 
@@ -49,6 +52,9 @@
 
   // 记住窗口同样以后端配置为真值；水合前按默认值关闭渲染。
   const rememberWindow = $derived(configState.value?.remember_window ?? false);
+
+  // 自动检查更新同样以后端配置为真值；水合前按默认值关闭渲染。
+  const autoCheckUpdate = $derived(configState.value?.auto_check_update ?? false);
 
   /** 主题即时生效，仅前端持久化，不经过后端。 */
   function handleThemeChange(value: string): void {
@@ -97,6 +103,19 @@
       toast.error(m.settings_remember_window_update_failed());
     }
     switchingRememberWindow = false;
+  }
+
+  /** 自动检查更新经命令落盘后端，次启动生效；失败不乐观更新，开关自动回滚。 */
+  async function handleAutoCheckUpdateChange(checked: boolean): Promise<void> {
+    if (checked === autoCheckUpdate || switchingAutoCheckUpdate) return;
+    switchingAutoCheckUpdate = true;
+    await updateConfig({ auto_check_update: checked });
+    if (configState.value?.auto_check_update === checked) {
+      toast.success(m.settings_auto_check_update_updated());
+    } else {
+      toast.error(m.settings_auto_check_update_failed());
+    }
+    switchingAutoCheckUpdate = false;
   }
 </script>
 
@@ -154,6 +173,19 @@
             onCheckedChange={handleRememberWindowChange}
             disabled={switchingRememberWindow}
             aria-label={m.settings_remember_window_label()}
+          />
+        {/snippet}
+      </SettingRow>
+      <SettingRow
+        label={m.settings_auto_check_update_label()}
+        description={m.settings_auto_check_update_description()}
+      >
+        {#snippet control()}
+          <Switch
+            checked={autoCheckUpdate}
+            onCheckedChange={handleAutoCheckUpdateChange}
+            disabled={switchingAutoCheckUpdate}
+            aria-label={m.settings_auto_check_update_label()}
           />
         {/snippet}
       </SettingRow>

@@ -11,6 +11,7 @@ const saved: Config_Serialize = {
   locale: "zh-CN",
   auto_start: true,
   remember_window: true,
+  auto_check_update: true,
   schema_version: 1,
 };
 
@@ -92,6 +93,7 @@ describe("updateConfig", () => {
       locale: "en",
       auto_start: false,
       remember_window: false,
+      auto_check_update: false,
       schema_version: 1,
     };
     configState.value = previous;
@@ -110,6 +112,7 @@ describe("updateConfig", () => {
       locale: "en",
       auto_start: false,
       remember_window: false,
+      auto_check_update: false,
       schema_version: 1,
     };
     configState.value = previous;

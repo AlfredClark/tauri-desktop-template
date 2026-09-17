@@ -19,6 +19,24 @@ export const commands = {
 	 *  `name` 为 `"123"` 时故意返回错误，用于演示前端 `.failed()` 分支与自动失败上报。
 	 */
 	greet: (name: string) => typedError<string, CommandError>(__TAURI_INVOKE("greet", { name })),
+	/**  采集运行平台信息；单项缺失时回落 `"unknown"`，绝不抛错 */
+	getSystemInfo: () => typedError<SystemInfo, CommandError>(__TAURI_INVOKE("get_system_info")),
+	/**  检查更新；无新版返回 `None`（仅桌面端有更新能力） */
+	checkUpdate: () => typedError<{
+	/**  远端版本号 */
+	version: string,
+	/**  当前版本号 */
+	current_version: string,
+	/**  发布说明（`latest.json` 的 `body`，可能缺失） */
+	body: string | null,
+} | null, CommandError>(__TAURI_INVOKE("check_update")),
+	/**
+	 *  下载并安装更新，进度经 `app-updater-progress` 事件推送；
+	 *  装完不自动重启，由前端手动触发（仅桌面端有更新能力）
+	 */
+	downloadAndInstallUpdate: () => typedError<null, CommandError>(__TAURI_INVOKE("download_and_install_update")),
+	/**  重启应用以完成更新；本命令不返回，前端调用时不要 `await` */
+	restartApp: () => typedError<null, CommandError>(__TAURI_INVOKE("restart_app")),
 };
 
 /* Types */
@@ -54,6 +72,8 @@ export type ConfigPatch = {
 	auto_start?: boolean | null,
 	/**  记住窗口状态 */
 	remember_window?: boolean | null,
+	/**  自动检查更新 */
+	auto_check_update?: boolean | null,
 };
 
 /**
@@ -78,6 +98,8 @@ export type Config_Deserialize = {
 	auto_start?: boolean,
 	/**  记住窗口状态：缺失或类型不符时回落 `false`，绝不让整包解析失败 */
 	remember_window?: boolean,
+	/**  自动检查更新：缺失或类型不符时回落 `false`，绝不让整包解析失败 */
+	auto_check_update?: boolean,
 };
 
 /**
@@ -102,10 +124,34 @@ export type Config_Serialize = {
 	auto_start: boolean,
 	/**  记住窗口状态：缺失或类型不符时回落 `false`，绝不让整包解析失败 */
 	remember_window: boolean,
+	/**  自动检查更新：缺失或类型不符时回落 `false`，绝不让整包解析失败 */
+	auto_check_update: boolean,
 };
 
 /**  应用支持的语言 */
 export type Locale = "en" | "zh-CN";
+
+/**  运行平台信息：经 `tauri-plugin-os` 采集，全字段必填，前端逐行展示 */
+export type SystemInfo = {
+	/**  操作系统平台（如 `linux` / `windows` / `macos`） */
+	platform: string,
+	/**  操作系统版本 */
+	os_version: string,
+	/**  系统架构（如 `x86_64`） */
+	arch: string,
+	/**  主机名 */
+	hostname: string,
+};
+
+/**  可用的更新信息：只含前端展示所需字段，插件的 `Update` 句柄不出命令边界 */
+export type UpdateInfo = {
+	/**  远端版本号 */
+	version: string,
+	/**  当前版本号 */
+	current_version: string,
+	/**  发布说明（`latest.json` 的 `body`，可能缺失） */
+	body: string | null,
+};
 
 /* Tauri Specta runtime */
 async function typedError<T, E>(result: Promise<T>): Promise<{ status: "ok"; data: T } | { status: "error"; error: E }> {

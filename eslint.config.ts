@@ -74,7 +74,7 @@ export default defineConfig(
 
   // Node 脚本与配置文件
   {
-    files: ["*.config.ts", "eslint.config.ts", "scripts/**/*.mjs"],
+    files: ["*.config.ts", "eslint.config.ts", "scripts/**/*.mjs", "scripts/**/*.ts"],
     languageOptions: {
       globals: { ...globals.node },
     },
