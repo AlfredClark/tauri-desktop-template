@@ -10,6 +10,8 @@ pub mod os;
 pub mod store;
 #[cfg(not(any(target_os = "android", target_os = "ios")))]
 pub mod updater;
+#[cfg(not(any(target_os = "android", target_os = "ios")))]
+pub mod window_state;
 
 /// 为 `tauri::Builder` 补充平台感知的插件注册方法，使 `lib.rs` 的注册链保持单一形式
 pub trait BuilderExt<R: Runtime> {
@@ -19,6 +21,9 @@ pub trait BuilderExt<R: Runtime> {
     /// 注册自动更新插件；移动端为空操作（该平台未声明 `updater` 依赖）
     #[must_use]
     fn with_updater(self) -> Self;
+    /// 注册窗口状态插件；移动端为空操作（该平台未声明 `window-state` 依赖）
+    #[must_use]
+    fn with_window_state(self) -> Self;
 }
 
 #[cfg(not(any(target_os = "android", target_os = "ios")))]
@@ -30,6 +35,10 @@ impl<R: Runtime> BuilderExt<R> for tauri::Builder<R> {
     fn with_updater(self) -> Self {
         self.plugin(updater::init())
     }
+
+    fn with_window_state(self) -> Self {
+        self.plugin(window_state::init())
+    }
 }
 
 #[cfg(any(target_os = "android", target_os = "ios"))]
@@ -39,6 +48,10 @@ impl<R: Runtime> BuilderExt<R> for tauri::Builder<R> {
     }
 
     fn with_updater(self) -> Self {
+        self
+    }
+
+    fn with_window_state(self) -> Self {
         self
     }
 }

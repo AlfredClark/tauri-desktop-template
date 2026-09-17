@@ -32,7 +32,7 @@ const toastMocks = vi.hoisted(() => ({
   error: vi.fn(),
 }));
 const configStateMock = vi.hoisted(() => ({
-  value: { locale: "en", auto_start: false, schema_version: 1 },
+  value: { locale: "en", auto_start: false, remember_window: false, schema_version: 1 },
 }));
 
 vi.mock("mode-watcher", () => ({
@@ -65,15 +65,23 @@ afterEach(() => {
 
 beforeEach(() => {
   vi.clearAllMocks();
-  configStateMock.value = { locale: "en", auto_start: false, schema_version: 1 };
+  configStateMock.value = {
+    locale: "en",
+    auto_start: false,
+    remember_window: false,
+    schema_version: 1,
+  };
   // 成功路径：写后回填配置状态，与真实 `updateConfig` 的回写行为一致。
-  updateConfigMock.mockImplementation(async (patch: { locale?: string; auto_start?: boolean }) => {
-    configStateMock.value = {
-      locale: patch.locale ?? configStateMock.value.locale,
-      auto_start: patch.auto_start ?? configStateMock.value.auto_start,
-      schema_version: 1,
-    };
-  });
+  updateConfigMock.mockImplementation(
+    async (patch: { locale?: string; auto_start?: boolean; remember_window?: boolean }) => {
+      configStateMock.value = {
+        locale: patch.locale ?? configStateMock.value.locale,
+        auto_start: patch.auto_start ?? configStateMock.value.auto_start,
+        remember_window: patch.remember_window ?? configStateMock.value.remember_window,
+        schema_version: 1,
+      };
+    },
+  );
 });
 
 describe("设置页", () => {
@@ -98,6 +106,7 @@ describe("设置页", () => {
     expect(screen.getByText("Language")).not.toBeNull();
     expect(screen.getByText("Theme")).not.toBeNull();
     expect(screen.getByText("Autostart")).not.toBeNull();
+    expect(screen.getByText("Remember window")).not.toBeNull();
     // 下拉触发器展示当前选中项的文案
     const languageTrigger = screen.getByRole("button", { name: "Language" });
     const themeTrigger = screen.getByRole("button", { name: "Theme" });
@@ -143,7 +152,12 @@ describe("设置页", () => {
   });
 
   it("自启开关渲染后端配置的当前状态", () => {
-    configStateMock.value = { locale: "en", auto_start: true, schema_version: 1 };
+    configStateMock.value = {
+      locale: "en",
+      auto_start: true,
+      remember_window: false,
+      schema_version: 1,
+    };
     render(Page);
 
     expect(screen.getByRole("switch", { name: "Autostart" }).getAttribute("data-state")).toBe(
@@ -171,6 +185,47 @@ describe("设置页", () => {
     render(Page);
 
     await user.click(screen.getByRole("switch", { name: "Autostart" }));
+
+    await vi.waitFor(() => {
+      expect(toastMocks.error).toHaveBeenCalled();
+    });
+    expect(setLocaleMock).not.toHaveBeenCalled();
+  });
+
+  it("窗口开关渲染后端配置的当前状态", () => {
+    configStateMock.value = {
+      locale: "en",
+      auto_start: false,
+      remember_window: true,
+      schema_version: 1,
+    };
+    render(Page);
+
+    expect(screen.getByRole("switch", { name: "Remember window" }).getAttribute("data-state")).toBe(
+      "checked",
+    );
+  });
+
+  it("打开窗口开关经命令落盘，成功后提示", async () => {
+    const user = userEvent.setup();
+    render(Page);
+
+    await user.click(screen.getByRole("switch", { name: "Remember window" }));
+
+    expect(updateConfigMock).toHaveBeenCalledWith({ remember_window: true });
+    await vi.waitFor(() => {
+      expect(toastMocks.success).toHaveBeenCalled();
+    });
+    expect(toastMocks.error).not.toHaveBeenCalled();
+    expect(setLocaleMock).not.toHaveBeenCalled();
+  });
+
+  it("窗口落盘失败时报错且不改语言", async () => {
+    const user = userEvent.setup();
+    updateConfigMock.mockImplementation(async () => {});
+    render(Page);
+
+    await user.click(screen.getByRole("switch", { name: "Remember window" }));
 
     await vi.waitFor(() => {
       expect(toastMocks.error).toHaveBeenCalled();

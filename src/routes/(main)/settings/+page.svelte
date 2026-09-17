@@ -38,11 +38,17 @@
   /** 自启切换进行中时禁用开关，避免重复提交。 */
   let switchingAutostart = $state(false);
 
+  /** 窗口记忆切换进行中时禁用开关，避免重复提交。 */
+  let switchingRememberWindow = $state(false);
+
   // 后端配置是语言的唯一真值；水合完成前用 Paraglide 当前语言兜底，避免首帧闪空。
   const currentLocale = $derived<Locale>(configState.value?.locale ?? getLocale());
 
   // 开机自启同样以后端配置为真值；水合前按默认值关闭渲染。
   const autoStart = $derived(configState.value?.auto_start ?? false);
+
+  // 记住窗口同样以后端配置为真值；水合前按默认值关闭渲染。
+  const rememberWindow = $derived(configState.value?.remember_window ?? false);
 
   /** 主题即时生效，仅前端持久化，不经过后端。 */
   function handleThemeChange(value: string): void {
@@ -78,6 +84,19 @@
       toast.error(m.settings_autostart_update_failed());
     }
     switchingAutostart = false;
+  }
+
+  /** 记住窗口经命令落盘后端，次启动生效；失败不乐观更新，开关自动回滚。 */
+  async function handleRememberWindowChange(checked: boolean): Promise<void> {
+    if (checked === rememberWindow || switchingRememberWindow) return;
+    switchingRememberWindow = true;
+    await updateConfig({ remember_window: checked });
+    if (configState.value?.remember_window === checked) {
+      toast.success(m.settings_remember_window_updated());
+    } else {
+      toast.error(m.settings_remember_window_update_failed());
+    }
+    switchingRememberWindow = false;
   }
 </script>
 
@@ -122,6 +141,19 @@
             onCheckedChange={handleAutostartChange}
             disabled={switchingAutostart}
             aria-label={m.settings_autostart_label()}
+          />
+        {/snippet}
+      </SettingRow>
+      <SettingRow
+        label={m.settings_remember_window_label()}
+        description={m.settings_remember_window_description()}
+      >
+        {#snippet control()}
+          <Switch
+            checked={rememberWindow}
+            onCheckedChange={handleRememberWindowChange}
+            disabled={switchingRememberWindow}
+            aria-label={m.settings_remember_window_label()}
           />
         {/snippet}
       </SettingRow>

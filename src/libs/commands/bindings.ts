@@ -52,6 +52,8 @@ export type ConfigPatch = {
 	locale?: Locale | null,
 	/**  开机自启 */
 	auto_start?: boolean | null,
+	/**  记住窗口状态 */
+	remember_window?: boolean | null,
 };
 
 /**
@@ -74,6 +76,8 @@ export type Config_Deserialize = {
 	locale?: Locale,
 	/**  开机自启：缺失或类型不符时回落 `false`，绝不让整包解析失败 */
 	auto_start?: boolean,
+	/**  记住窗口状态：缺失或类型不符时回落 `false`，绝不让整包解析失败 */
+	remember_window?: boolean,
 };
 
 /**
@@ -96,6 +100,8 @@ export type Config_Serialize = {
 	locale: Locale,
 	/**  开机自启：缺失或类型不符时回落 `false`，绝不让整包解析失败 */
 	auto_start: boolean,
+	/**  记住窗口状态：缺失或类型不符时回落 `false`，绝不让整包解析失败 */
+	remember_window: boolean,
 };
 
 /**  应用支持的语言 */

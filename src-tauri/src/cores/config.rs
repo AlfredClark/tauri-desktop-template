@@ -14,6 +14,8 @@ const KEY_SCHEMA_VERSION: &str = "schema_version";
 const KEY_LOCALE: &str = "locale";
 /// 开机自启在配置文件中的键名
 const KEY_AUTO_START: &str = "auto_start";
+/// 记住窗口状态在配置文件中的键名
+const KEY_REMEMBER_WINDOW: &str = "remember_window";
 /// 当前配置结构版本：变更字段语义时递增，并在迁移链中补对应升级步骤
 pub const CURRENT_SCHEMA_VERSION: u32 = 1;
 
@@ -43,6 +45,10 @@ pub struct Config {
     #[serde(deserialize_with = "de_auto_start")]
     #[specta(type = bool)]
     pub auto_start: bool,
+    /// 记住窗口状态：缺失或类型不符时回落 `false`，绝不让整包解析失败
+    #[serde(deserialize_with = "de_remember_window")]
+    #[specta(type = bool)]
+    pub remember_window: bool,
 }
 
 /// 局部更新补丁：字段缺省或为 `null` 均表示"不改该键"，非 `null` 表示写入该值
@@ -53,6 +59,8 @@ pub struct ConfigPatch {
     pub locale: Option<Locale>,
     /// 开机自启
     pub auto_start: Option<bool>,
+    /// 记住窗口状态
+    pub remember_window: Option<bool>,
 }
 
 /// 容错解析界面语言：经 `serde_json::Value` 中转，非字符串或未知标签一律回落默认值
@@ -66,6 +74,15 @@ where
 
 /// 容错解析开机自启：经 `serde_json::Value` 中转，非布尔值一律回落默认值（`false`）
 fn de_auto_start<'de, D>(deserializer: D) -> Result<bool, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let value = Value::deserialize(deserializer)?;
+    Ok(value.as_bool().unwrap_or_default())
+}
+
+/// 容错解析记住窗口状态：经 `serde_json::Value` 中转，非布尔值一律回落默认值（`false`）
+fn de_remember_window<'de, D>(deserializer: D) -> Result<bool, D::Error>
 where
     D: Deserializer<'de>,
 {
@@ -90,7 +107,7 @@ fn parse_schema_version(value: Option<&Value>) -> u32 {
         .unwrap_or_default()
 }
 
-/// 启动装配：先把磁盘配置迁移到当前结构版本，再确定运行时语言与开机自启
+/// 启动装配：先把磁盘配置迁移到当前结构版本，再确定运行时语言、开机自启与窗口状态
 pub fn setup(app: &tauri::App) {
     let handle = app.handle();
     migrate(handle);
@@ -106,13 +123,35 @@ pub fn setup(app: &tauri::App) {
     if let Err(err) = sync_autostart(handle, load_config(handle).auto_start) {
         log::warn!("failed to enforce autostart state: {err:#}");
     }
+    // 记住窗口开启时恢复上次几何；关闭时插件已跳过自动恢复，窗口按默认配置打开
+    if load_config(handle).remember_window {
+        restore_windows(handle);
+    }
 }
+
+/// 按磁盘状态恢复全部窗口；单个失败只记日志，不阻断启动（仅桌面端有窗口状态依赖）
+#[cfg(not(any(target_os = "android", target_os = "ios")))]
+fn restore_windows(app: &tauri::AppHandle) {
+    use tauri::Manager;
+    use tauri_plugin_window_state::{StateFlags, WindowExt};
+
+    for (label, window) in app.webview_windows() {
+        if let Err(err) = window.restore_state(StateFlags::all()) {
+            log::warn!("failed to restore window {label}: {err:#}");
+        }
+    }
+}
+
+/// 按磁盘状态恢复全部窗口；单个失败只记日志，不阻断启动（仅桌面端有窗口状态依赖）
+#[cfg(any(target_os = "android", target_os = "ios"))]
+fn restore_windows(_app: &tauri::AppHandle) {}
 
 /// 读取完整应用配置；各字段缺失或无法识别时逐项回落默认值（无落盘副作用）
 pub fn load_config(app: &tauri::AppHandle) -> Config {
     Config {
         locale: load_locale(app).unwrap_or_default(),
         auto_start: load_auto_start(app),
+        remember_window: load_remember_window(app),
         schema_version: load_schema_version(app),
     }
 }
@@ -125,6 +164,13 @@ fn load_locale(app: &tauri::AppHandle) -> Option<Locale> {
 /// 读取持久化的开机自启；未设置或类型不符时回落默认值（`false`）
 fn load_auto_start(app: &tauri::AppHandle) -> bool {
     read_key(app, KEY_AUTO_START)
+        .and_then(|value| value.as_bool())
+        .unwrap_or_default()
+}
+
+/// 读取持久化的记住窗口状态；未设置或类型不符时回落默认值（`false`）
+fn load_remember_window(app: &tauri::AppHandle) -> bool {
+    read_key(app, KEY_REMEMBER_WINDOW)
         .and_then(|value| value.as_bool())
         .unwrap_or_default()
 }
@@ -185,6 +231,7 @@ fn reset_patch() -> ConfigPatch {
     ConfigPatch {
         locale: Some(Locale::default()),
         auto_start: Some(false),
+        remember_window: Some(false),
     }
 }
 
@@ -229,6 +276,9 @@ fn write_entries(patch: &ConfigPatch) -> Vec<(&'static str, Value)> {
     }
     if let Some(auto_start) = patch.auto_start {
         entries.push((KEY_AUTO_START, Value::from(auto_start)));
+    }
+    if let Some(remember_window) = patch.remember_window {
+        entries.push((KEY_REMEMBER_WINDOW, Value::from(remember_window)));
     }
     entries.push((KEY_SCHEMA_VERSION, Value::from(CURRENT_SCHEMA_VERSION)));
     entries
@@ -367,6 +417,7 @@ mod tests {
         let config = Config::default();
         assert_eq!(config.locale, Locale::En);
         assert!(!config.auto_start);
+        assert!(!config.remember_window);
         assert_eq!(config.schema_version, 0);
     }
 
@@ -375,12 +426,13 @@ mod tests {
         let config = Config {
             locale: Locale::ZhCn,
             auto_start: true,
+            remember_window: true,
             schema_version: CURRENT_SCHEMA_VERSION,
         };
         let raw = serde_json::to_value(&config).expect("config serializes");
         assert_eq!(
             raw,
-            json!({ "locale": "zh-CN", "auto_start": true, "schema_version": 1 })
+            json!({ "locale": "zh-CN", "auto_start": true, "remember_window": true, "schema_version": 1 })
         );
         let back: Config = serde_json::from_value(raw).expect("config deserializes");
         assert_eq!(back, config);
@@ -414,6 +466,20 @@ mod tests {
     }
 
     #[test]
+    fn tolerates_missing_or_invalid_remember_window() {
+        for (raw, expected) in [
+            (json!({}), false),
+            (json!({ "remember_window": true }), true),
+            (json!({ "remember_window": "yes" }), false),
+            (json!({ "remember_window": 1 }), false),
+            (json!({ "remember_window": null }), false),
+        ] {
+            let config: Config = serde_json::from_value(raw).expect("never fails");
+            assert_eq!(config.remember_window, expected);
+        }
+    }
+
+    #[test]
     fn tolerates_missing_or_unrecognized_schema_version() {
         for (raw, expected) in [
             (json!({}), 0_u32),
@@ -440,6 +506,7 @@ mod tests {
         let absent: ConfigPatch = serde_json::from_value(json!({})).expect("patch deserializes");
         assert_eq!(absent.locale, None);
         assert_eq!(absent.auto_start, None);
+        assert_eq!(absent.remember_window, None);
 
         let cleared: ConfigPatch =
             serde_json::from_value(json!({ "locale": null })).expect("null tolerated");
@@ -452,6 +519,10 @@ mod tests {
         let toggled: ConfigPatch =
             serde_json::from_value(json!({ "auto_start": true })).expect("flag parsed");
         assert_eq!(toggled.auto_start, Some(true));
+
+        let remembered: ConfigPatch =
+            serde_json::from_value(json!({ "remember_window": true })).expect("flag parsed");
+        assert_eq!(remembered.remember_window, Some(true));
     }
 
     #[test]
@@ -466,13 +537,20 @@ mod tests {
         let patched = write_entries(&ConfigPatch {
             locale: Some(Locale::ZhCn),
             auto_start: Some(true),
+            remember_window: Some(true),
         });
         assert_eq!(
             keys_of(&patched),
-            vec![KEY_LOCALE, KEY_AUTO_START, KEY_SCHEMA_VERSION]
+            vec![
+                KEY_LOCALE,
+                KEY_AUTO_START,
+                KEY_REMEMBER_WINDOW,
+                KEY_SCHEMA_VERSION
+            ]
         );
         assert_eq!(patched[0].1, json!("zh-CN"));
         assert_eq!(patched[1].1, json!(true));
+        assert_eq!(patched[2].1, json!(true));
     }
 
     #[test]
@@ -480,11 +558,17 @@ mod tests {
         let entries = write_entries(&reset_patch());
         assert_eq!(
             keys_of(&entries),
-            vec![KEY_LOCALE, KEY_AUTO_START, KEY_SCHEMA_VERSION],
+            vec![
+                KEY_LOCALE,
+                KEY_AUTO_START,
+                KEY_REMEMBER_WINDOW,
+                KEY_SCHEMA_VERSION
+            ],
             "新增配置项时必须同步 reset_patch"
         );
         assert_eq!(entries[0].1, json!(Locale::default().as_str()));
         assert_eq!(entries[1].1, json!(false));
+        assert_eq!(entries[2].1, json!(false));
     }
 
     #[test]
@@ -492,6 +576,7 @@ mod tests {
         let base = Config {
             locale: Locale::En,
             auto_start: false,
+            remember_window: false,
             schema_version: CURRENT_SCHEMA_VERSION,
         };
         assert!(!needs_locale_apply(&base, &base));

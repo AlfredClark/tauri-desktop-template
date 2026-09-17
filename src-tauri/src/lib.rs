@@ -31,6 +31,7 @@ pub fn run() {
         .plugin(plugins::os::init())
         .with_autostart()
         .with_updater()
+        .with_window_state()
         .invoke_handler(specta_builder.invoke_handler())
         .setup(move |app| {
             setup_cores(app, &specta_builder);
