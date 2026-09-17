@@ -11,56 +11,76 @@ fn setup_panic_hook() {
     let default_hook = panic::take_hook();
 
     panic::set_hook(Box::new(move |info| {
-        let location = info.location().map_or_else(
-            || "unknown location".into(),
-            |l| format!("{}:{}:{}", l.file(), l.line(), l.column()),
-        );
-
-        let payload = info
-            .payload()
-            .downcast_ref::<&str>()
-            .map(ToString::to_string)
-            .or_else(|| info.payload().downcast_ref::<String>().cloned())
-            .unwrap_or_else(|| "Unknown panic payload".into());
-
-        let backtrace = std::backtrace::Backtrace::force_capture();
-
-        let error_log = format!(
-            "=== [CRASH PANIC] ===\nTime: {}\nLocation: {}\nReason: {}\nBacktrace:\n{}\n=====================\n",
-            chrono::Local::now().to_rfc3339(),
-            location,
-            payload,
-            backtrace
-        );
-
+        let error_log = format_crash_report(info);
         // 保留默认输出（带格式/颜色输出到 stderr）
         default_hook(info);
-
-        // 尝试走 tauri_plugin_log / log 系统
-        let mut logged = false;
-        if log::max_level() >= log::LevelFilter::Error {
-            // 使用 catch_unwind 防止 logger 内部持有锁导致死锁或二次 panic
-            let result = panic::catch_unwind(panic::AssertUnwindSafe(|| {
-                log::error!(target: "panic", "{error_log}");
-                log::logger().flush();
-            }));
-            if result.is_ok() {
-                logged = true;
-            }
-        }
-
-        // 兜底文件写入：只要 plugin 未记录或记录异常，立即写本地文件
-        if !logged {
-            let log_path = env::temp_dir().join("my_app_crash.log");
-            if let Ok(mut file) = OpenOptions::new().create(true).append(true).open(&log_path) {
-                let _ = file.write_all(error_log.as_bytes());
-                let _ = file.flush();
-            }
+        // 尝试走 tauri_plugin_log / log 系统，失败则落盘兜底
+        if !emit_via_log(&error_log) {
+            persist_fallback(&error_log);
         }
     }));
 }
 
-/// 是否运行在 Wayland 会话下（Wayland 与 `WebKitGTK` 的 DMABUF 渲染器存在兼容问题）
+/// 拼接崩溃报告：本地时间（`RFC3339` 带时区偏移）+ 位置 + 原因 + 堆栈
+fn format_crash_report(info: &panic::PanicHookInfo) -> String {
+    let backtrace = std::backtrace::Backtrace::force_capture();
+    format!(
+        "=== [CRASH PANIC] ===\nTime: {}\nLocation: {}\nReason: {}\nBacktrace:\n{}\n=====================\n",
+        chrono::Local::now().to_rfc3339(),
+        panic_location(info),
+        panic_payload(info),
+        backtrace
+    )
+}
+
+/// 提取 panic 位置，缺失时回落占位
+fn panic_location(info: &panic::PanicHookInfo) -> String {
+    info.location().map_or_else(
+        || "unknown location".into(),
+        |l| format!("{}:{}:{}", l.file(), l.line(), l.column()),
+    )
+}
+
+/// 提取 panic 负载，`&str` / `String` 之外回落占位
+fn panic_payload(info: &panic::PanicHookInfo) -> String {
+    info.payload()
+        .downcast_ref::<&str>()
+        .map(ToString::to_string)
+        .or_else(|| info.payload().downcast_ref::<String>().cloned())
+        .unwrap_or_else(|| "Unknown panic payload".into())
+}
+
+/// 经 `log` 上报崩溃；`logger` 不可用或二次 panic 时返回 `false` 走文件兜底
+fn emit_via_log(error_log: &str) -> bool {
+    if log::max_level() < log::LevelFilter::Error {
+        return false;
+    }
+    // 使用 catch_unwind 防止 logger 内部持有锁导致死锁或二次 panic
+    panic::catch_unwind(panic::AssertUnwindSafe(|| {
+        log::error!(target: "panic", "{error_log}");
+        log::logger().flush();
+    }))
+    .is_ok()
+}
+
+/// 兜底落盘到临时目录的 `my_app_crash.log`，写入失败静默忽略
+///
+/// 无限追加会撑满临时目录：超 512KB 时先轮转旧文件为 `.1`（仅保留一份），再写入本次崩溃
+fn persist_fallback(error_log: &str) {
+    const MAX_BYTES: u64 = 512 * 1024;
+    let log_path = env::temp_dir().join("my_app_crash.log");
+    if std::fs::metadata(&log_path).is_ok_and(|meta| meta.len() > MAX_BYTES) {
+        let rotated = log_path.with_extension("log.1");
+        let _ = std::fs::remove_file(&rotated);
+        let _ = std::fs::rename(&log_path, &rotated);
+    }
+    if let Ok(mut file) = OpenOptions::new().create(true).append(true).open(&log_path) {
+        let _ = file.write_all(error_log.as_bytes());
+        let _ = file.flush();
+    }
+}
+
+/// 是否运行在 `Wayland` 会话下（`Wayland` 与 `WebKitGTK` 的 `DMABUF` 渲染器存在兼容问题）
 #[cfg(target_os = "linux")]
 fn is_wayland_session() -> bool {
     env::var("XDG_SESSION_TYPE")

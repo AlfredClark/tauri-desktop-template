@@ -85,6 +85,19 @@ describe("hydrateConfig", () => {
       expect.stringContaining("[config] failed to load backend config"),
     );
   });
+
+  it("首次失败重试一次，第二次成功则水合", async () => {
+    vi.mocked(commands.getConfig)
+      .mockReturnValueOnce(
+        fakeCommand({ status: "error", error: { kind: "Internal", message: "boom" } }) as never,
+      )
+      .mockReturnValueOnce(fakeCommand({ status: "ok", data: saved }) as never);
+
+    await hydrateConfig();
+
+    expect(commands.getConfig).toHaveBeenCalledTimes(2);
+    expect(configState.value).toEqual(saved);
+  });
 });
 
 describe("updateConfig", () => {

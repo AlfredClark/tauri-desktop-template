@@ -13,14 +13,25 @@ export const configState = $state<{ value: AppConfig | null }>({ value: null });
 
 /** 首帧前水合；失败时保持未水合，由调用方决定如何回落 */
 export async function hydrateConfig(): Promise<void> {
-  await commands
-    .getConfig()
-    .success((config) => {
-      configState.value = config;
-    })
-    .failed((failure) => {
-      reportCommandFailure("[config] failed to load backend config", failure);
-    });
+  // 存储瞬时不可用时重试一次（最多阻塞首帧约 500ms + 两次 IPC），仍失败则上报并保持未水合
+  // （调用方回落显示，不阻断首帧）
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    let failed = false;
+    await commands
+      .getConfig()
+      .success((config) => {
+        configState.value = config;
+      })
+      .failed((failure) => {
+        failed = true;
+        reportCommandFailure(
+          `[config] failed to load backend config (attempt ${attempt + 1})`,
+          failure,
+        );
+      });
+    if (!failed) return;
+    if (attempt === 0) await new Promise((resolve) => setTimeout(resolve, 500));
+  }
 }
 
 /** 局部更新：只提交传入的字段，写后用命令返回的最新配置回写状态（失败不乐观更新） */

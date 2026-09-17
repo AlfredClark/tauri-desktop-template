@@ -14,6 +14,7 @@
   import SettingRow from "$components/widget/settings/setting-row.svelte";
   import SettingSection from "$components/widget/settings/setting-section.svelte";
   import commands from "$libs/commands";
+  import { reportCommandFailure } from "$libs/commands/cores";
   import { m } from "$libs/i18n/paraglide/messages";
   import { toast } from "$libs/utils/toast";
   import { openExternal } from "$libs/utils/opener";
@@ -44,7 +45,8 @@
       .success((info) => {
         sysInfo = info;
       })
-      .failed(() => {
+      .failed((failure) => {
+        reportCommandFailure("[about] failed to load system info", failure);
         toast.error(m.about_system_failed());
       });
   });

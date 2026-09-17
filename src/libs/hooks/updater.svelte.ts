@@ -38,19 +38,37 @@ async function ensureProgressListener(): Promise<void> {
     });
     progressListening = true;
   } catch (error) {
-    // 非 Tauri 环境无事件可订：记一笔警告便于排查，下次下载再试
-    console.warn("[updater] progress listener unavailable:", error);
+    // 非 Tauri 环境无事件可订：经统一上报走 plugin-log，下次下载再试
+    reportCommandFailure("[updater] progress listener unavailable", error);
   }
 }
 
 /** 检查更新；静默模式下仅在“有新版”时提示，发现最新与失败都不打扰 */
 export async function checkForUpdate(options?: { silent?: boolean }): Promise<void> {
   if (updaterState.phase === "checking" || updaterState.phase === "downloading") return;
+  // 待重启态不被覆盖：记下进入前的相位，成功回调里若之前已下好包则恢复，避免丢包重下
+  const prevPhase = updaterState.phase;
+  const prevLatest = updaterState.latest;
   updaterState.phase = "checking";
   updaterState.error = null;
+  // IPC 永不结算时兜底复位，避免永久卡在 `checking` 挡掉后续检查
+  const checkTimer = setTimeout(() => {
+    if (updaterState.phase === "checking") {
+      updaterState.phase = "error";
+      updaterState.error = "check timed out";
+      updaterState.autoChecked = false;
+      reportCommandFailure("[updater] check timed out", null);
+    }
+  }, 120_000);
   await commands
     .checkUpdate()
     .success((info) => {
+      clearTimeout(checkTimer);
+      if (prevPhase === "ready" && prevLatest) {
+        updaterState.phase = "ready";
+        updaterState.latest = prevLatest;
+        return;
+      }
       if (!info) {
         updaterState.phase = "idle";
         updaterState.latest = null;
@@ -63,9 +81,12 @@ export async function checkForUpdate(options?: { silent?: boolean }): Promise<vo
       }
     })
     .failed((failure) => {
+      clearTimeout(checkTimer);
       updaterState.phase = "error";
       updaterState.error = failure.message;
+      // 静默失败允许下次重试：重置标记，网络恢复后切配置/手动检查可再跑
       if (options?.silent) {
+        updaterState.autoChecked = false;
         reportCommandFailure("[updater] silent check failed", failure);
       } else {
         toast.error(m.updater_check_failed());
@@ -93,10 +114,19 @@ export async function downloadAndInstall(): Promise<void> {
     });
 }
 
-/** 重启以完成更新；命令永不结算，调用方不要 `await` */
+/** 重启以完成更新；桌面端命令永不结算（移动端返回错误），调用方不要 `await` */
+let restarting = false;
+/** 仅测试用：重置重启互斥（模块变量无法经 `updaterState` 复位） */
+export function __resetRestartForTests(): void {
+  restarting = false;
+}
 export function restartApp(): void {
-  if (updaterState.phase !== "ready") return;
+  if (updaterState.phase !== "ready" || restarting) return;
+  // 成功永不结算故保持互斥防重重启；若 OS 拦截重启而进程未死，需手动结束进程（有意为之）
+  restarting = true;
   void commands.restartApp().failed((failure) => {
+    // 重启失败才允许再点（如移动端返回错误），成功（永不结算）则保持互斥
+    restarting = false;
     reportCommandFailure("[updater] failed to restart", failure);
   });
 }

@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import commands from "$libs/commands";
 import type { AnyResult, UpdateInfo } from "$libs/commands/types";
 import {
+  __resetRestartForTests,
   checkForUpdate,
   downloadAndInstall,
   maybeAutoCheckForUpdate,
@@ -73,6 +74,7 @@ function resetUpdaterState(): void {
 
 beforeEach(() => {
   resetUpdaterState();
+  __resetRestartForTests();
   vi.spyOn(console, "error").mockImplementation(() => {});
 });
 
@@ -127,6 +129,27 @@ describe("checkForUpdate", () => {
 
     expect(commands.checkUpdate).not.toHaveBeenCalled();
   });
+
+  it("待重启态不被新检查结果覆盖", async () => {
+    updaterState.phase = "ready";
+    updaterState.latest = latest;
+    stubCheck({ status: "ok", data: { ...latest, version: "0.3.0" } });
+
+    await checkForUpdate();
+
+    expect(updaterState.phase).toBe("ready");
+    expect(updaterState.latest).toEqual(latest);
+  });
+
+  it("静默失败重置自动检查标记，允许下次重试", async () => {
+    updaterState.autoChecked = true;
+    stubCheck({ status: "error", error: { kind: "Internal", message: "boom" } });
+
+    await checkForUpdate({ silent: true });
+
+    expect(updaterState.phase).toBe("error");
+    expect(updaterState.autoChecked).toBe(false);
+  });
 });
 
 describe("downloadAndInstall", () => {
@@ -170,6 +193,17 @@ describe("restartApp", () => {
     expect(commands.restartApp).not.toHaveBeenCalled();
 
     updaterState.phase = "ready";
+    restartApp();
+
+    expect(commands.restartApp).toHaveBeenCalledOnce();
+  });
+
+  it("重启连点只发一次请求", () => {
+    vi.mocked(commands.restartApp).mockReturnValue(
+      fakeCommand({ status: "ok", data: null }) as never,
+    );
+    updaterState.phase = "ready";
+    restartApp();
     restartApp();
 
     expect(commands.restartApp).toHaveBeenCalledOnce();

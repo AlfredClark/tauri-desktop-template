@@ -18,10 +18,11 @@ pub async fn download_and_install_update(app: tauri::AppHandle) -> CommandResult
     Ok(updater::download_and_install(&app).await?)
 }
 
-/// 重启应用以完成更新；本命令不返回，前端调用时不要 `await`
+/// 重启应用以完成更新；桌面端本命令不返回，前端调用时不要 `await`
+/// （移动端返回错误，前端经 `.failed()` 处理）
 #[tauri::command]
 #[specta::specta]
 #[allow(clippy::needless_pass_by_value)]
 pub fn restart_app(app: tauri::AppHandle) -> CommandResult<()> {
-    updater::restart(&app);
+    Ok(updater::restart(&app)?)
 }

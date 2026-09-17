@@ -1,6 +1,8 @@
+use anyhow::Context;
 use serde::{Deserialize, Deserializer, Serialize};
 use serde_json::{Map, Value};
 use specta::Type;
+use std::sync::{Mutex, OnceLock};
 use tauri::Runtime;
 use tauri_plugin_store::{Store, StoreExt};
 
@@ -135,31 +137,67 @@ pub fn setup(app: &tauri::App) {
         }
         detected
     });
-    rust_i18n::set_locale(locale.as_str());
+    // 启动无 `before` 可比，直接经统一的语言应用入口生效，避免与更新路径分叉
+    // `store` 打不开时 `load_locale` 回落 `None`，此处用探测值仅设运行时、不覆盖用户存量
+    // （`save_locale` 失败只记日志，待存储恢复后下次启动再落盘）
+    apply_locale(locale);
+    // 存储不可用时跳过自启 enforcement：此时 `load_config` 全回落默认值，
+    // 若按 `false` 执行会误关用户自启；只记日志，待恢复后下次启动按盘纠正
+    if app.handle().store(STORE_FILE).is_err() {
+        log::warn!("skipping autostart enforcement and window restore: {STORE_FILE} unavailable");
+        // 窗口初始不可见，任何提前返回前必须显示，否则应用永久黑屏
+        show_windows(handle);
+        return;
+    }
     // 开机自启以后端配置为权威，外部删改后重启自动修复；失败只记日志，不阻断启动
     if let Err(err) = sync_autostart(handle, load_config(handle).auto_start) {
         log::warn!("failed to enforce autostart state: {err:#}");
     }
     // 记住窗口开启时恢复上次几何；关闭时插件已跳过自动恢复，窗口按默认配置打开
+    // 窗口初始不可见（`tauri.conf.json` 的 `visible: false` 防恢复闪烁），此处统一显示
     if load_config(handle).remember_window {
         restore_windows(handle);
     }
+    show_windows(handle);
 }
 
-/// 按磁盘状态恢复全部窗口；单个失败只记日志，不阻断启动（仅桌面端有窗口状态依赖）
+/// 显示全部窗口；恢复流程依赖此调用，失败只记日志（窗口已存在，仅可见性受影响）
+#[cfg(not(any(target_os = "android", target_os = "ios")))]
+fn show_windows(app: &tauri::AppHandle) {
+    use tauri::Manager;
+
+    for (label, window) in app.webview_windows() {
+        if let Err(err) = window.show() {
+            log::warn!("failed to show window {label}: {err:#}");
+        }
+    }
+}
+
+/// 显示全部窗口；恢复流程依赖此调用，失败只记日志（窗口已存在，仅可见性受影响）
+#[cfg(any(target_os = "android", target_os = "ios"))]
+fn show_windows(_app: &tauri::AppHandle) {}
+
+/// 仅恢复主窗口状态；插件已跳过 `main` 的启动自动恢复，其余窗口无视用户开关照常由插件恢复，
+/// 此处不碰它们。关闭记住窗口开关不删除已存快照（插件无公开清理接口），重开后恢复陈旧几何
+/// 为已知残留，接受此行为。
 #[cfg(not(any(target_os = "android", target_os = "ios")))]
 fn restore_windows(app: &tauri::AppHandle) {
     use tauri::Manager;
     use tauri_plugin_window_state::{StateFlags, WindowExt};
 
     for (label, window) in app.webview_windows() {
+        if label != "main" {
+            continue;
+        }
         if let Err(err) = window.restore_state(StateFlags::all()) {
             log::warn!("failed to restore window {label}: {err:#}");
         }
     }
 }
 
-/// 按磁盘状态恢复全部窗口；单个失败只记日志，不阻断启动（仅桌面端有窗口状态依赖）
+/// 仅恢复主窗口状态；插件已跳过 `main` 的启动自动恢复，其余窗口无视用户开关照常由插件恢复，
+/// 此处不碰它们。关闭记住窗口开关不删除已存快照（插件无公开清理接口），重开后恢复陈旧几何
+/// 为已知残留，接受此行为。
 #[cfg(any(target_os = "android", target_os = "ios"))]
 fn restore_windows(_app: &tauri::AppHandle) {}
 
@@ -205,15 +243,49 @@ fn load_schema_version(app: &tauri::AppHandle) -> u32 {
     parse_schema_version(read_key(app, KEY_SCHEMA_VERSION).as_ref())
 }
 
+/// 配置写互斥：`update` 的读-改-写非原子，`tauri::command` 可并发执行，
+///
+/// 无锁时两路更新交错即后写覆盖先写（`lost update`），此处以进程内锁串行化。
+/// 加锁点收敛在 `update` / `save_locale` / `migrate` 三个入口，内部函数
+/// （`apply_patch` / `migrate_inner` / `persist_diff`）一律不加锁，
+/// 避免重复加锁自死锁——新增写入路径必须走这三个入口之一。
+fn config_write_lock() -> &'static Mutex<()> {
+    static LOCK: OnceLock<Mutex<()>> = OnceLock::new();
+    LOCK.get_or_init(|| Mutex::new(()))
+}
+
+/// 取写锁；锁毒化时记日志后继续（`store.save()` 是原子写盘，半写风险低）
+fn lock_config() -> std::sync::MutexGuard<'static, ()> {
+    config_write_lock().lock().unwrap_or_else(|poison| {
+        log::error!("config write lock poisoned, continuing with recovered guard");
+        poison.into_inner()
+    })
+}
+
 /// 应用局部更新并执行副作用，返回写后的最新配置。
 /// 返回写后值是刻意的：前端据此回写内存态，无需再读一次，也就不会持陈旧值。
-/// 开机自启先同步操作系统再落盘：失败时整条命令失败，盘与内存都不动。
+/// 开机自启先同步操作系统再落盘：落盘失败时回滚操作系统状态，整条命令失败，内存不动。
 pub fn update(app: &tauri::AppHandle, patch: &ConfigPatch) -> anyhow::Result<Config> {
+    // 串行化并发更新；`store` 打不开时直接失败，避免基于陈旧 `before` 做自启决策
+    let _guard = lock_config();
+    if app.store(STORE_FILE).is_err() {
+        anyhow::bail!("failed to open {STORE_FILE}: store unavailable");
+    }
+    // 幂等迁移：保证任何写入前磁盘已升到当前版本，不依赖调用方先调 `migrate`
+    migrate_inner(app);
     let before = load_config(app);
     if let Some(target) = wants_autostart_sync(patch, before.auto_start) {
         sync_autostart(app, target)?;
     }
-    apply_patch(app, patch)?;
+    if let Err(err) = apply_patch(app, patch) {
+        // 落盘失败时把已翻转的操作系统自启状态回滚，避免 OS≠盘≠内存
+        if wants_autostart_sync(patch, before.auto_start).is_some()
+            && let Err(rollback_err) = sync_autostart(app, before.auto_start)
+        {
+            log::error!("failed to roll back autostart state: {rollback_err:#}");
+        }
+        return Err(err).context("failed to persist config patch");
+    }
     let after = load_config(app);
     apply_runtime_effects(&before, &after);
     Ok(after)
@@ -261,8 +333,9 @@ fn reset_patch() -> ConfigPatch {
     }
 }
 
-/// 写入界面语言并立即落盘
+/// 写入界面语言并立即落盘（启动探测落库路径，同样持写锁防与并发更新交错）
 fn save_locale(app: &tauri::AppHandle, locale: Locale) -> anyhow::Result<()> {
+    let _guard = lock_config();
     apply_patch(
         app,
         &ConfigPatch {
@@ -275,8 +348,13 @@ fn save_locale(app: &tauri::AppHandle, locale: Locale) -> anyhow::Result<()> {
 /// 写后副作用：仅对发生变化的字段生效，避免无谓的全局状态切换
 fn apply_runtime_effects(before: &Config, after: &Config) {
     if needs_locale_apply(before, after) {
-        rust_i18n::set_locale(after.locale.as_str());
+        apply_locale(after.locale);
     }
+}
+
+/// 运行时语言的唯一应用入口：启动与更新两条路径共用，避免直接散调 `set_locale`
+fn apply_locale(locale: Locale) {
+    rust_i18n::set_locale(locale.as_str());
 }
 
 /// 语言是否需要重新应用到运行时
@@ -284,7 +362,8 @@ fn needs_locale_apply(before: &Config, after: &Config) -> bool {
     before.locale != after.locale
 }
 
-/// 逐键写入补丁：只写提交的键 + 版本号，不做整包覆盖
+/// 逐键写入补丁：只写提交的键 + 版本号，不做整包覆盖。
+/// 调用方必须已持 `lock_config` 守卫（当前为 `update` / `save_locale`），本函数不重复加锁。
 fn apply_patch(app: &tauri::AppHandle, patch: &ConfigPatch) -> anyhow::Result<()> {
     let store = app.store(STORE_FILE)?;
     for (key, value) in write_entries(patch) {
@@ -313,7 +392,10 @@ fn write_entries(patch: &ConfigPatch) -> Vec<(&'static str, Value)> {
     entries
 }
 
-/// 读取某个键的原始值；打开配置文件失败时记日志并返回 `None`（读路径一律不阻断）
+/// 读取某个键的原始值；打开配置文件失败时记日志并返回 `None`（读路径一律不阻断）。
+///
+/// 注意：`update` / `setup` 的决策路径不依赖此回落——`update` 在存储不可用时直接失败，
+/// `setup` 在存储不可用时跳过自启 enforcement，避免基于全默认快照误决策。
 fn read_key(app: &tauri::AppHandle, key: &str) -> Option<Value> {
     let store = match app.store(STORE_FILE) {
         Ok(store) => store,
@@ -377,10 +459,17 @@ fn migrate_snapshot(map: &mut Map<String, Value>) -> bool {
     true
 }
 
-/// 启动迁移：把磁盘上的配置升到当前结构版本。
-///
-/// **必须在任何写入之前调用**——首次落库会直接写上当前版本号，跑在迁移之后就再也升不上来。
+/// 启动迁移：把磁盘上的配置升到当前结构版本（加锁入口）。
 pub fn migrate(app: &tauri::AppHandle) {
+    let _guard = lock_config();
+    migrate_inner(app);
+}
+
+/// 启动迁移（无锁内部实现，调用方必须已持 `lock_config` 守卫）。
+///
+/// 首次落库会直接写上当前版本号，迁移必须跑在任何写入之前，否则旧盘再也升不上来。
+/// `update` 内已幂等调用，此处供 `setup` 首行调用。
+fn migrate_inner(app: &tauri::AppHandle) {
     let store = match app.store(STORE_FILE) {
         Ok(store) => store,
         Err(err) => {
@@ -608,16 +697,17 @@ mod tests {
 
     #[test]
     fn reset_covers_every_known_key() {
+        // 期望派生自全量补丁的写入清单：`write_entries` 加新键而 `reset_patch` 遗漏时必失败
+        let full = ConfigPatch {
+            locale: Some(Locale::En),
+            auto_start: Some(true),
+            remember_window: Some(true),
+            auto_check_update: Some(true),
+        };
         let entries = write_entries(&reset_patch());
         assert_eq!(
             keys_of(&entries),
-            vec![
-                KEY_LOCALE,
-                KEY_AUTO_START,
-                KEY_REMEMBER_WINDOW,
-                KEY_AUTO_CHECK_UPDATE,
-                KEY_SCHEMA_VERSION
-            ],
+            keys_of(&write_entries(&full)),
             "新增配置项时必须同步 reset_patch"
         );
         assert_eq!(entries[0].1, json!(Locale::default().as_str()));
@@ -658,6 +748,13 @@ mod tests {
         };
         assert_eq!(wants_autostart_sync(&on, false), Some(true));
         assert_eq!(wants_autostart_sync(&on, true), None);
+
+        // 关闭路径：当前开启时提交关闭，必须触发一次同步
+        let off_while_on = ConfigPatch {
+            auto_start: Some(false),
+            ..ConfigPatch::default()
+        };
+        assert_eq!(wants_autostart_sync(&off_while_on, true), Some(false));
 
         assert_eq!(wants_autostart_sync(&ConfigPatch::default(), false), None);
     }

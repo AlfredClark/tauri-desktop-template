@@ -16,7 +16,7 @@ export const commands = {
 	/**
 	 *  演示命令：把入参转交给 `features::demo::greet` 处理。
 	 * 
-	 *  `name` 为 `"123"` 时故意返回错误，用于演示前端 `.failed()` 分支与自动失败上报。
+	 *  `anyhow` 错误经 `From` 自动转为 `CommandError::Internal`。
 	 */
 	greet: (name: string) => typedError<string, CommandError>(__TAURI_INVOKE("greet", { name })),
 	/**  采集运行平台信息；单项缺失时回落 `"unknown"`，绝不抛错 */
@@ -35,7 +35,10 @@ export const commands = {
 	 *  装完不自动重启，由前端手动触发（仅桌面端有更新能力）
 	 */
 	downloadAndInstallUpdate: () => typedError<null, CommandError>(__TAURI_INVOKE("download_and_install_update")),
-	/**  重启应用以完成更新；本命令不返回，前端调用时不要 `await` */
+	/**
+	 *  重启应用以完成更新；桌面端本命令不返回，前端调用时不要 `await`
+	 *  （移动端返回错误，前端经 `.failed()` 处理）
+	 */
 	restartApp: () => typedError<null, CommandError>(__TAURI_INVOKE("restart_app")),
 };
 

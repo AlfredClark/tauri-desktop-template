@@ -1,7 +1,7 @@
 use tauri::{Runtime, plugin::Plugin};
 
 /// 日志插件：同时输出到 `stdout`、日志文件（单文件 1MB、保留 10 份轮转）与 `Webview` 控制台；
-/// 级别为开发 Debug / 发布 Info
+/// 级别为开发 `Debug` / 发布 `Info`
 pub fn init<R: Runtime>() -> impl Plugin<R> {
     tauri_plugin_log::Builder::new()
         .level(if cfg!(debug_assertions) {

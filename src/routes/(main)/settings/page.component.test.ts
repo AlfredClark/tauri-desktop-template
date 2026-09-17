@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { cleanup, render, screen, waitFor } from "@testing-library/svelte";
 import userEvent from "@testing-library/user-event";
+import type { Locale } from "$libs/commands/types";
 import Page from "./+page.svelte";
 
 // jsdom 缺少指针捕获与滚动 API，bits-ui 下拉用得到，仅在本文件内就地补齐。
@@ -81,7 +82,7 @@ beforeEach(() => {
   // 成功路径：写后回填配置状态，与真实 `updateConfig` 的回写行为一致。
   updateConfigMock.mockImplementation(
     async (patch: {
-      locale?: string;
+      locale?: Locale;
       auto_start?: boolean;
       remember_window?: boolean;
       auto_check_update?: boolean;
@@ -163,6 +164,41 @@ describe("设置页", () => {
       expect(toastMocks.error).toHaveBeenCalled();
     });
     expect(setLocaleMock).not.toHaveBeenCalled();
+  });
+
+  it("语言落盘失败时加载提示关闭且下拉恢复可用", async () => {
+    const user = userEvent.setup();
+    // 生产真实失败路径：命令结算为失败（ resolve 但不回写状态），而非抛错
+    updateConfigMock.mockImplementationOnce(async () => {});
+    render(Page);
+
+    await chooseOption(user, "Language", "zh-CN");
+
+    // 加载提示不自动消失，结算后必定关闭
+    expect(toastMocks.loading).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ duration: Infinity }),
+    );
+    await vi.waitFor(() => {
+      expect(toastMocks.dismiss).toHaveBeenCalled();
+    });
+    // finally 复位：下拉恢复可用，不会永久禁用
+    await vi.waitFor(() => {
+      expect(screen.getByRole("button", { name: "Language" }).hasAttribute("disabled")).toBe(false);
+    });
+  });
+
+  it("自启落盘失败时开关恢复可用", async () => {
+    const user = userEvent.setup();
+    updateConfigMock.mockImplementationOnce(async () => {});
+    render(Page);
+
+    await user.click(screen.getByRole("switch", { name: "Autostart" }));
+
+    await vi.waitFor(() => {
+      expect(toastMocks.error).toHaveBeenCalled();
+    });
+    expect(screen.getByRole("switch", { name: "Autostart" }).hasAttribute("disabled")).toBe(false);
   });
 
   it("自启开关渲染后端配置的当前状态", () => {

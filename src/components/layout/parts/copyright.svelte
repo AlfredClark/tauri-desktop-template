@@ -5,7 +5,7 @@
   // 年份取运行时当前年，构建产物跨年也不会过期；作者以 package.json 为唯一来源
   const copyrightYear = new Date().getFullYear().toString();
 
-  let { class: className = "" } = $props();
+  let { class: className = "" }: { class?: string } = $props();
 </script>
 
 <span class={cn("text-center", className)}>

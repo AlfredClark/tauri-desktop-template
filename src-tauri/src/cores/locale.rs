@@ -12,6 +12,7 @@ pub enum Locale {
 }
 
 impl Locale {
+    /// 取对应的 BCP-47 标签，与 `serde` 落盘值一致，前后端契约共用
     pub const fn as_str(self) -> &'static str {
         match self {
             Self::En => "en",
@@ -20,6 +21,9 @@ impl Locale {
     }
 
     /// 容错解析 BCP-47 语言标签（`zh-Hans-CN`、`zh_CN`、`en-US` 等）
+    ///
+    /// 有意归一：当前仅支持 `en` / `zh-CN`，`zh-HK` / `zh-TW` / `zh-Hant` 等一律归 `zh-CN`，
+    /// 未知语言一律回落默认 `en`。新增语言时同步扩展此处、`locales/*.yml` 与前端文案。
     pub fn parse(raw: &str) -> Self {
         let primary = raw.trim().split(['-', '_']).next().unwrap_or_default();
         if primary.eq_ignore_ascii_case("zh") {
@@ -46,6 +50,9 @@ mod tests {
             ("zh-CN", Locale::ZhCn),
             ("zh_CN", Locale::ZhCn),
             ("zh-Hans-CN", Locale::ZhCn),
+            ("zh-HK", Locale::ZhCn),
+            ("zh-TW", Locale::ZhCn),
+            ("zh-Hant", Locale::ZhCn),
             ("ZH-cn", Locale::ZhCn),
             ("  zh-CN  ", Locale::ZhCn),
         ];

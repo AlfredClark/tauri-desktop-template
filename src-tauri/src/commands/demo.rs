@@ -1,14 +1,11 @@
-use crate::cores::types::{CommandError, CommandResult};
+use crate::cores::types::CommandResult;
 use crate::features::demo;
 
 /// 演示命令：把入参转交给 `features::demo::greet` 处理。
 ///
-/// `name` 为 `"123"` 时故意返回错误，用于演示前端 `.failed()` 分支与自动失败上报。
+/// `anyhow` 错误经 `From` 自动转为 `CommandError::Internal`。
 #[tauri::command]
 #[specta::specta]
 pub fn greet(name: &str) -> CommandResult<String> {
-    if name == "123" {
-        return Err(CommandError::Internal("Invalid argument".to_string()));
-    }
-    Ok(demo::greet(name))
+    Ok(demo::greet(name)?)
 }

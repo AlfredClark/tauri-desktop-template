@@ -2,6 +2,10 @@ import { error as logError } from "@tauri-apps/plugin-log";
 import type { AnyFn, AnyResult, CommandFailure, FnResult, OkData, WrappedFn } from "./types";
 
 /** 命令调用的链式封装：取值、分支、副作用三条路都收敛到同一个结算结果上。 */
+///
+/// 回调内不得做关键状态变更：`success` / `failed` 回调抛错只上报不扩散，
+/// `await` 仍得原结果。关键逻辑（如语言切换的 `setLocale`）应在 `await result()`
+/// 按 `status` 分支后执行，或确保回调自身不抛错。
 
 // 取值（失败或数据为 null/undefined 时回落默认值，默认值可省略）：
 //   const name = await commands.greet(input).value("陌生人");
@@ -50,6 +54,8 @@ export class EnhancedCommand<R extends AnyResult> implements PromiseLike<R> {
   }
 
   /** 取数据；失败或数据为 null/undefined 时返回 fallback（省略则返回 undefined） */
+  // 注意：`value()` 把“后端错 / IPC 断 / 数据 null”压成同一个回落值，
+  // 关键取值（如语言）请用 `result()` 按 `status` 分支，避免把回落误当真值
   value(): Promise<NonNullable<OkData<R>> | undefined>;
   value<D>(fallback: D): Promise<NonNullable<OkData<R>> | D>;
   async value<D>(fallback?: D): Promise<NonNullable<OkData<R>> | D | undefined> {
@@ -77,6 +83,7 @@ export function wrapFn<F extends AnyFn>(fn: F): WrappedFn<F> {
 }
 
 /** 统一的失败上报：Tauri 内写入日志文件，其它环境（如单元测试）退回控制台，且永不抛错 */
+// 全仓唯一允许的控制台直写点：调用方一律经此函数上报，禁止各处散写 `console.*`
 export function reportCommandFailure(message: string, detail: unknown): void {
   const text = `[commands] ${message}: ${describe(detail)}`;
   console.error(text);
@@ -89,7 +96,12 @@ export function reportCommandFailure(message: string, detail: unknown): void {
 
 /** 把任意错误值转成可读文本 */
 function describe(detail: unknown): string {
-  if (detail instanceof Error) return `${detail.name}: ${detail.message}`;
+  if (detail instanceof Error) {
+    const brief = `${detail.name}: ${detail.message}`;
+    // 开发环境附堆栈便于排障；生产仅保留简述，避免日志膨胀
+    if (detail.stack && import.meta.env.DEV) return `${brief}\nStack:\n${detail.stack}`;
+    return brief;
+  }
   if (typeof detail === "string") return detail;
   try {
     return JSON.stringify(detail) ?? String(detail);

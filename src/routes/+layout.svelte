@@ -3,13 +3,14 @@
   // 界面语言的对齐在 +layout.ts 的 load() 里完成，早于本组件首次渲染。
   // 布局容器下沉到 (main) 分组，特殊页面另起分组即可绕开布局。
   import { ModeWatcher } from "mode-watcher";
-  import ErrorBoundary from "$components/common/error-boundary.svelte";
-  import { Toaster } from "$components/shadcn-svelte/sonner";
+  import type { Snippet } from "svelte";
   import { configState } from "$hooks/config.svelte";
   import { maybeAutoCheckForUpdate } from "$hooks/updater.svelte";
+  import ErrorBoundary from "$components/common/error-boundary.svelte";
+  import { Toaster } from "$components/shadcn-svelte/sonner";
   import "./layout.css";
 
-  const { children } = $props();
+  const { children }: { children: Snippet } = $props();
 
   // 启动静默检查更新：开着开关才执行，单会话一次，非 Tauri 环境跳过
   $effect(() => {

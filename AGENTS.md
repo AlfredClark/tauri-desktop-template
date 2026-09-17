@@ -156,9 +156,9 @@ pnpm release                       # bumpp 联动升级三处版本号（package
 2. **前后端契约优先：** 以 tauri-specta 为准（见第 10 章第 2 条）。改命令必须先改 `features/` + `commands/`（含 `#[tauri::command]` + `#[specta::specta]` + `collect_commands!`），再 `cargo test` 重生成 `bindings.ts`，最后改前端调用。禁止手改 `bindings.ts`、禁止跳过重生成直接改前端。
 3. **状态归属：** Svelte 5 runes（`$state` / `$props` / `$effect`）优先，禁用旧式 store；页面私有状态用局部 state，跨页面共享才考虑提升。主题经 `mode-watcher` 全局管理，语言对齐走第 10 章第 1 条数据流，禁止各页面自建语言状态。
 4. **错误处理分层：** `features/` 返回业务错误 → `commands/` 转为 `CommandResult`（错误统一 `CommandError::Internal(...)`，`anyhow::Error` 经已有 `From` 自动转换）→ 前端经 `.result() / .value() / .success() / .failed()` 处理。前端 `.failed()` 回调形状为 `{ kind, message }`；未注册 `.failed()` 的失败会自动经 plugin-log 上报，不会静默丢失。禁止在 `features/` 内直接耦合 Tauri 运行时。
-5. **配置外置与同步：** Paraglide 编译选项唯一来源是 `src/libs/i18n/project.inlang/paraglide.config.ts`（CLI 与 vite 插件都读它，禁止往 `package.json` / `vite.config.ts` 各写一份）；路径别名唯一来源是 `svelte.config.ts` 的 `kit.alias`。新增外部 URL 必须同步更新 `capabilities/*.json` 与 `tauri.conf.json` 的 CSP（`updater` 下载端点由 Rust 侧发起，不受 WebView CSP 约束，无需同步 CSP，见第 8 章第 2 条）。新增配置必须检查第 10 章第 4 条成对维护表。路径别名共四个（`$assets` / `$components` / `$hooks` / `$libs`），均由该处定义；其中 hooks 一律经 `$hooks` 引用，禁止写 `$libs/hooks`（两者都能解析）——`components.json` 的 `aliases.hooks` 即 `$hooks`，CLI 生成的组件也走 `$hooks`，保持唯一写法才能避免漂移。新增 / 变更配置项必须同步 `cores/config.rs` 的 `CURRENT_SCHEMA_VERSION` 与 `MIGRATIONS` 迁移链（仅改动已有字段语义时才递增版本），否则老用户配置会静默失效。
-6. **崩溃边界：** 前端 `ErrorBoundary`（经 `@tauri-apps/plugin-log` 上报，堆栈仅 dev 显示）+ 后端 `cores/system.rs` panic 钩子（日志 + `%TEMP%/my_app_crash.log` 兜底）。两者互不替代，禁止另加并行机制。
-7. **语言数据流：** 唯一持久化点是后端 `config.json` 的 `locale` 键（`cores/config.rs`），类型为 `cores/locale.rs` 的 `Locale` 枚举（经 specta 导出为 `"en" | "zh-CN"` 联合类型，禁止裸 `string` 或类型断言）。启动时后端先读持久化值、缺失则 `tauri_plugin_os::locale()` 探测并落库，再 `rust_i18n::set_locale`；前端在 `+layout.ts` 的 `load()` 首帧前经 `commands.getConfig` 水合配置，再用 `config.locale` 调 Paraglide 的 `setLocale(locale, { reload: false })` 对齐（否则整页重载 + 语言闪烁）；用户切换时 `commands.updateConfig({ locale })` 先落盘再改内存，运行时 `rust_i18n` 由 `config::apply_runtime_effects` 统一同步，前端随后用 Paraglide 默认 `setLocale` 重载。完整流程见第 10 章第 1 条。
+5. **配置外置与同步：** Paraglide 编译选项唯一来源是 `src/libs/i18n/project.inlang/paraglide.config.ts`（CLI 与 vite 插件都读它，禁止往 `package.json` / `vite.config.ts` 各写一份）；路径别名唯一来源是 `svelte.config.ts` 的 `kit.alias`。新增外部 URL 必须同步更新 `capabilities/*.json` 与 `tauri.conf.json` 的 CSP（`updater` 下载端点由 Rust 侧发起，不受 WebView CSP 约束，无需同步 CSP，见第 8 章第 2 条）。新增配置必须检查第 10 章第 4 条成对维护表。路径别名共四个（`$assets` / `$components` / `$hooks` / `$libs`），均由该处定义；其中 hooks 一律经 `$hooks` 引用，禁止写 `$libs/hooks`（两者都能解析）——`components.json` 的 `aliases.hooks` 即 `$hooks`，CLI 生成的组件也走 `$hooks`，保持唯一写法才能避免漂移。新增 / 变更配置项必须同步 `cores/config.rs` 的 `CURRENT_SCHEMA_VERSION` 与 `MIGRATIONS` 迁移链（仅改动已有字段语义时才递增版本），否则老用户配置会静默失效。配置写锁三入口（`update` / `save_locale` / `migrate`，内部函数不加锁，新增写入路径必须走其一）；`update` 内幂等 `migrate`，存储不可用直接失败（不基于回落默认值决策），自启落盘失败回滚操作系统状态。
+6. **崩溃边界：** 前端 `ErrorBoundary`（经 `@tauri-apps/plugin-log` 上报，堆栈仅 dev 显示；同步 `console.error` 留底 + 2s 节流防刷屏）+ 后端 `cores/system.rs` panic 钩子（日志 + `%TEMP%/my_app_crash.log` 兜底，超 512KB 轮转为 `.1` 仅保留一份）。两者互不替代，禁止另加并行机制。
+7. **语言数据流：** 唯一持久化点是后端 `config.json` 的 `locale` 键（`cores/config.rs`），类型为 `cores/locale.rs` 的 `Locale` 枚举（经 specta 导出为 `"en" | "zh-CN"` 联合类型，禁止裸 `string` 或类型断言；`Locale::parse` 仅支持这两项，繁体一律归 `zh-CN`，加语言时同步改解析、`locales/*.yml` 与前端文案）。启动时后端先读持久化值、缺失则 `tauri_plugin_os::locale()` 探测并落库，再 `rust_i18n::set_locale`；前端在 `+layout.ts` 的 `load()` 首帧前经 `commands.getConfig` 水合配置（失败重试一次，不阻断首帧），再用 `config.locale` 调 Paraglide 的 `setLocale(locale, { reload: false })` 对齐（否则整页重载 + 语言闪烁）；用户切换时 `commands.updateConfig({ locale })` 先落盘再改内存，运行时 `rust_i18n` 由 `config::apply_runtime_effects` 统一同步，前端随后用 Paraglide 默认 `setLocale` 重载。更新命令 `restart` 桌面端永不结算（勿 `await`）、移动端返回错误走 `.failed()`；检查 120s 超时兜底，待重启态不被新检查覆盖。完整流程见第 10 章第 1 条。
 
 ---
 
@@ -214,7 +214,7 @@ pub fn greet(name: String) -> CommandResult<String> {
 
 ### 6.4 前后端交互约定
 
-- 调用：一律 `libs/commands` 链式 API，禁止裸 `invoke`；`EnhancedCommand` 三种用法见 6.2 示例（取值 `.value()` / 分支 `.result()` / 事务 `.success()/.failed()`）。
+- 调用：一律 `libs/commands` 链式 API，禁止裸 `invoke`；`EnhancedCommand` 三种用法见 6.2 示例（取值 `.value()` / 分支 `.result()` / 事务 `.success()/.failed()`）。关键取值用 `.result()` 按 `status` 分支，`.value()` 的回落会把失败与空数据压成同一个值。回调内不得做关键状态变更（回调抛错只上报不扩散，`await` 仍得原结果）。
 - 错误体：后端 `CommandError::Internal(...)`，前端 `.failed()` 收到 `{ kind, message }`；`anyhow::Error` 经 `From` 自动转换。
 - 语言类型：前后端共用 specta 导出的 `"en" | "zh-CN"` 联合类型，禁止裸 `string` 或类型断言。
 - 时间：后端 `chrono`；业务时间全链路 UTC，展示层转本地时区；崩溃日志时间戳使用本地时间字符串（`chrono::Local`，RFC3339 带时区偏移）；禁止无时区信息的本地时间与 UTC 解析混用。
@@ -235,10 +235,10 @@ pub fn greet(name: String) -> CommandResult<String> {
 CI（`.github/workflows/ci.yml`）在 `main` 分支上按变更路径触发：
 
 - **前端**：`i18n:compile` → `lint:frontend` → `check` → `test` → `build`。
-- **后端**：`fmt --check` → `clippy -D warnings`（警告即错误）→ `check` → `test` → `git diff --exit-code src/libs/commands/bindings.ts`（绑定同步校验）。
+- **后端**：`fmt --check` → `clippy -D warnings`（警告即错误）→ `check` → `test` → `git diff --exit-code src/libs/commands/bindings.ts`（绑定同步校验；`bindings.ts` 已纳入 backend 的 `changes` 过滤器，单改它也会触发后端校验）。
 - 门禁作业（`ci-passed`）同时拦截 `changes`（变更检测）作业的失败——它失败时前后端都会被跳过，只查前后端会漏放。
 
-发布流水线（`.github/workflows/release.yml`）会校验 `tauri.conf.json` 中的版本号与 `v*` 标签一致。
+发布流水线（`.github/workflows/release.yml`）会校验三处版本号（`package.json` + `tauri.conf.json` + `Cargo.toml`）与 `v*` 标签一致。
 
 ---
 
@@ -253,7 +253,7 @@ CI（`.github/workflows/ci.yml`）在 `main` 分支上按变更路径触发：
    - `.github/workflows/release.yml` 发布流水线
    - `bindings.ts` 生成物（只允许 `cargo test` 重生成，禁止手改）
 3. **输入安全：** 所有外部输入必须校验 + 转义；Svelte 渲染默认转义，禁止 `{@html ...}` 直渲用户输入；Rust 侧字符串拼接 shell / SQL 时必须参数化。
-4. **越权与能力最小化：** Tauri capability 按需最小授权，禁止全开 `*`；前端隐藏按钮不算权限控制，涉及本地文件 / 系统能力时后端必须二次校验。
+4. **越权与能力最小化：** Tauri capability 按需最小授权，禁止全开 `*`；前端隐藏按钮不算权限控制，涉及本地文件 / 系统能力时后端必须二次校验。前端 `openExternal` 仅放行 `http(s)`（先剥 `git+` 前缀再校验），其它 scheme 直接拒绝并上报。
 5. **依赖安全：** 禁止引入未知来源依赖；新增依赖必须说明理由；前端经 `pnpm audit`、后端经 `cargo audit / cargo deny`（如已配置）检查无高危漏洞；依赖升级走手动 `chore(deps:update)` 提交。
 
 ---
@@ -296,7 +296,7 @@ CI（`.github/workflows/ci.yml`）在 `main` 分支上按变更路径触发：
    - `.prettierrc` 的 `importOrderTypeScriptVersion` ↔ `package.json` 的 `typescript`
    - `.prettierignore` ↔ `.gitignore` 中的构建产物（Prettier 不读 `.gitignore`）
    - CI backend 的 `changes` 路径过滤器 ↔ 新增的后端配置文件
-5. **构建与忽略：** 构建产物（`target/`、`build/`、`.svelte-kit/`、`src-tauri/gen/`、`node_modules/`、`src/libs/i18n/paraglide/`）均已忽略；`bindings.ts` 虽是生成物但**需要提交**；`Cargo.lock` 需要提交；`static/icon.png` 为图标源文件（`pnpm tauri:icon` 生成各平台图标）。Vite 固定端口 `1420`，忽略监听 `src-tauri/**`，`clearScreen: false` 以保留 Rust 日志。
+5. **构建与忽略：** 构建产物（`target/`、`build/`、`.svelte-kit/`、`src-tauri/gen/`、`node_modules/`、`src/libs/i18n/paraglide/`）均已忽略；`bindings.ts` 虽是生成物但**需要提交**；`Cargo.lock` 需要提交；`static/icon.png` 为图标源文件（`pnpm tauri:icon` 生成各平台图标）。Vite 固定端口 `1420`，忽略监听 `src-tauri/**`，`clearScreen: false` 以保留 Rust 日志。主窗口初始 `visible: false`（防恢复闪烁），由 `cores/config.rs` 的 `setup` 按记住窗口配置恢复后统一 `show`，任何提前返回前必须显示，否则永久黑屏；仅恢复 `main` 窗口。
 
 ---
 

@@ -57,65 +57,80 @@
   const autoCheckUpdate = $derived(configState.value?.auto_check_update ?? false);
 
   /** 主题即时生效，仅前端持久化，不经过后端。 */
+  // 入参用 `string` 是 `bits-ui` 的 `onValueChange` 约束，内部经候选项收窄后才生效，无类型断言
   function handleThemeChange(value: string): void {
     const theme = themeItems.find((item) => item.value === value)?.value;
     if (theme) setMode(theme);
   }
 
   /** 语言先经命令落盘后端，成功后再用 Paraglide 默认重载生效；失败则回滚并提示。 */
+  // 同上：`bits-ui` 给 `string`，经 `localeItems` 收窄为 `Locale` 后才提交
   async function handleLocaleChange(value: string): Promise<void> {
     const locale = localeItems.find((item) => item.value === value)?.value;
     if (!locale || locale === currentLocale || switchingLocale) return;
     switchingLocale = true;
-    const toastId = toast.loading(m.settings_language_switching());
-    await updateConfig({ locale });
-    toast.dismiss(toastId);
-    if (configState.value?.locale === locale) {
-      toast.success(m.settings_language_updated());
-      setLocale(locale);
-    } else {
-      toast.error(m.settings_language_update_failed());
+    // 加载提示不自动消失（后端慢于默认 3s 时仍有反馈），结算后必定关闭
+    const toastId = toast.loading(m.settings_language_switching(), { duration: Infinity });
+    try {
+      await updateConfig({ locale });
+      if (configState.value?.locale === locale) {
+        toast.success(m.settings_language_updated());
+        setLocale(locale);
+      } else {
+        toast.error(m.settings_language_update_failed());
+      }
+    } finally {
+      toast.dismiss(toastId);
+      switchingLocale = false;
     }
-    switchingLocale = false;
   }
 
   /** 开机自启经命令落盘后端并同步操作系统；失败不乐观更新，开关自动回滚。 */
   async function handleAutostartChange(checked: boolean): Promise<void> {
     if (checked === autoStart || switchingAutostart) return;
     switchingAutostart = true;
-    await updateConfig({ auto_start: checked });
-    if (configState.value?.auto_start === checked) {
-      toast.success(m.settings_autostart_updated());
-    } else {
-      toast.error(m.settings_autostart_update_failed());
+    try {
+      await updateConfig({ auto_start: checked });
+      if (configState.value?.auto_start === checked) {
+        toast.success(m.settings_autostart_updated());
+      } else {
+        toast.error(m.settings_autostart_update_failed());
+      }
+    } finally {
+      switchingAutostart = false;
     }
-    switchingAutostart = false;
   }
 
   /** 记住窗口经命令落盘后端，次启动生效；失败不乐观更新，开关自动回滚。 */
   async function handleRememberWindowChange(checked: boolean): Promise<void> {
     if (checked === rememberWindow || switchingRememberWindow) return;
     switchingRememberWindow = true;
-    await updateConfig({ remember_window: checked });
-    if (configState.value?.remember_window === checked) {
-      toast.success(m.settings_remember_window_updated());
-    } else {
-      toast.error(m.settings_remember_window_update_failed());
+    try {
+      await updateConfig({ remember_window: checked });
+      if (configState.value?.remember_window === checked) {
+        toast.success(m.settings_remember_window_updated());
+      } else {
+        toast.error(m.settings_remember_window_update_failed());
+      }
+    } finally {
+      switchingRememberWindow = false;
     }
-    switchingRememberWindow = false;
   }
 
   /** 自动检查更新经命令落盘后端，次启动生效；失败不乐观更新，开关自动回滚。 */
   async function handleAutoCheckUpdateChange(checked: boolean): Promise<void> {
     if (checked === autoCheckUpdate || switchingAutoCheckUpdate) return;
     switchingAutoCheckUpdate = true;
-    await updateConfig({ auto_check_update: checked });
-    if (configState.value?.auto_check_update === checked) {
-      toast.success(m.settings_auto_check_update_updated());
-    } else {
-      toast.error(m.settings_auto_check_update_failed());
+    try {
+      await updateConfig({ auto_check_update: checked });
+      if (configState.value?.auto_check_update === checked) {
+        toast.success(m.settings_auto_check_update_updated());
+      } else {
+        toast.error(m.settings_auto_check_update_failed());
+      }
+    } finally {
+      switchingAutoCheckUpdate = false;
     }
-    switchingAutoCheckUpdate = false;
   }
 </script>
 

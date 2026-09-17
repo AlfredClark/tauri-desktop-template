@@ -60,13 +60,27 @@ jobs:
         shell: bash
         run: |
           APP_VERSION=$(node -p "require('./src-tauri/tauri.conf.json').version")
+          PKG_VERSION=$(node -p "require('./package.json').version")
+          CARGO_VERSION=$(grep -m1 '^version' src-tauri/Cargo.toml | sed -E 's/.*"([^"]+)".*/\1/')
           EXPECTED_VERSION="${{ steps.resolve_tag.outputs.version }}"
 
           echo "App Version in tauri.conf.json: $APP_VERSION"
+          echo "App Version in package.json: $PKG_VERSION"
+          echo "App Version in src-tauri/Cargo.toml: $CARGO_VERSION"
           echo "Expected Version from Tag: $EXPECTED_VERSION"
 
           if [ "$APP_VERSION" != "$EXPECTED_VERSION" ]; then
             echo "::error::tauri.conf.json version ($APP_VERSION) does not match tag version ($EXPECTED_VERSION)!"
+            exit 1
+          fi
+
+          if [ "$PKG_VERSION" != "$EXPECTED_VERSION" ]; then
+            echo "::error::package.json version ($PKG_VERSION) does not match tag version ($EXPECTED_VERSION)!"
+            exit 1
+          fi
+
+          if [ "$CARGO_VERSION" != "$EXPECTED_VERSION" ]; then
+            echo "::error::src-tauri/Cargo.toml version ($CARGO_VERSION) does not match tag version ($EXPECTED_VERSION)!"
             exit 1
           fi
 
