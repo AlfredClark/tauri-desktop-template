@@ -18,6 +18,10 @@ rust_i18n::i18n!("locales", fallback = "en");
 /// # Panics
 ///
 /// 如果应用程序无法初始化或运行，则会出现 panics
+// `generate_context!` 把各插件的 JS API 与权限表嵌进同一闭包逐项装配，
+// 上游已为其单开 8MiB 栈线程（见 `tauri-codegen` 的 context 生成），
+// 加插件即涨栈帧是预期行为，此处仅豁免宏生成闭包，不掩盖手写代码
+#[allow(clippy::large_stack_frames)]
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     cores::system::init_system();
@@ -29,9 +33,14 @@ pub fn run() {
         .plugin(plugins::store::init())
         .plugin(plugins::opener::init())
         .plugin(plugins::os::init())
+        .plugin(plugins::fs::init())
+        .plugin(plugins::dialog::init())
+        .plugin(plugins::clipboard::init())
+        .plugin(plugins::notification::init())
         .plugin(plugins::system_fonts::init())
         .with_autostart()
         .with_updater()
+        .with_global_shortcut()
         .with_window_state();
     // 单实例构造器是 `Wry` 具体的，走不了泛型 `BuilderExt`，此处直挂；
     // 必须先于 deep-link 注册（官方顺序要求），且仅桌面端启用
