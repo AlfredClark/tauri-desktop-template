@@ -13,8 +13,8 @@ macro_rules! collect_commands {
     () => {
         tauri_specta::collect_commands![
             $crate::commands::config::get_config,
-            $crate::commands::config::get_locale,
-            $crate::commands::config::set_locale,
+            $crate::commands::config::reset_config,
+            $crate::commands::config::update_config,
             $crate::commands::demo::greet,
         ]
     };

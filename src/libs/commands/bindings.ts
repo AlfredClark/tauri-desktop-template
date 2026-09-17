@@ -6,10 +6,13 @@ import { invoke as __TAURI_INVOKE } from "@tauri-apps/api/core";
 export const commands = {
 	/**  读取完整应用配置；各字段缺失或无法识别时逐项回落默认值 */
 	getConfig: () => typedError<Config_Serialize, CommandError>(__TAURI_INVOKE("get_config")),
-	/**  读取当前界面语言；持久化值缺失或无法识别时回落 `Locale` 的默认值 */
-	getLocale: () => typedError<Locale, CommandError>(__TAURI_INVOKE("get_locale")),
-	/**  切换界面语言：先落盘再改内存，写盘失败时运行时语言与磁盘保持一致 */
-	setLocale: (locale: Locale) => typedError<Locale, CommandError>(__TAURI_INVOKE("set_locale", { locale })),
+	/**  重置全部已知配置项为默认值，返回写后的完整配置 */
+	resetConfig: () => typedError<Config_Serialize, CommandError>(__TAURI_INVOKE("reset_config")),
+	/**
+	 *  局部更新配置：只写提交的字段，返回写后的完整配置（前端据此回写内存态，无需再读一次）。
+	 *  界面语言亦经此切换——运行时 `rust_i18n` 由 `config::apply_runtime_effects` 统一同步。
+	 */
+	updateConfig: (patch: ConfigPatch) => typedError<Config_Serialize, CommandError>(__TAURI_INVOKE("update_config", { patch })),
 	/**
 	 *  演示命令：把入参转交给 `features::demo::greet` 处理。
 	 * 
@@ -30,27 +33,61 @@ export type CommandError =
 
 /**
  *  应用完整配置：各持久化项聚合于此，`store` 内仍按扁平键（`KEY_*`）逐项存储。
- *  新增字段必须能 `Default`（否则旧文件缺键会解析失败）；写路径保持逐键写入，
- *  后续整包写必须先读再改再存，禁止用陈旧的 `Config` 直接覆盖。
+ *  新增字段必须能 `Default`（否则旧文件缺键会解析失败）；写路径统一走 `apply_patch` 逐键写入，
+ *  禁止用陈旧的 `Config` 整体覆盖。
+ * 
+ *  新增一个配置项的固定步骤：
+ *  `KEY_*` 常量 → 本结构体加字段 → `ConfigPatch` 加同名 `Option` 字段 → `load_config` 回填
+ *  → 需要运行时副作用则加进 `apply_runtime_effects` → `reset_patch` 补默认值
+ *  → `cargo test` 重生成绑定。
+ * 
+ *  只有**改动已有字段的语义或位置**时才需要递增 `CURRENT_SCHEMA_VERSION` 并在 `MIGRATIONS`
+ *  末尾补一级迁移，否则老用户配置会静默失效（纯新增字段由 `Default` + 容错读取兜住）。
  */
 export type Config = Config_Serialize | Config_Deserialize;
 
+/**  局部更新补丁：字段缺省或为 `null` 均表示"不改该键"，非 `null` 表示写入该值 */
+export type ConfigPatch = {
+	/**  界面语言 */
+	locale?: Locale | null,
+};
+
 /**
  *  应用完整配置：各持久化项聚合于此，`store` 内仍按扁平键（`KEY_*`）逐项存储。
- *  新增字段必须能 `Default`（否则旧文件缺键会解析失败）；写路径保持逐键写入，
- *  后续整包写必须先读再改再存，禁止用陈旧的 `Config` 直接覆盖。
+ *  新增字段必须能 `Default`（否则旧文件缺键会解析失败）；写路径统一走 `apply_patch` 逐键写入，
+ *  禁止用陈旧的 `Config` 整体覆盖。
+ * 
+ *  新增一个配置项的固定步骤：
+ *  `KEY_*` 常量 → 本结构体加字段 → `ConfigPatch` 加同名 `Option` 字段 → `load_config` 回填
+ *  → 需要运行时副作用则加进 `apply_runtime_effects` → `reset_patch` 补默认值
+ *  → `cargo test` 重生成绑定。
+ * 
+ *  只有**改动已有字段的语义或位置**时才需要递增 `CURRENT_SCHEMA_VERSION` 并在 `MIGRATIONS`
+ *  末尾补一级迁移，否则老用户配置会静默失效（纯新增字段由 `Default` + 容错读取兜住）。
  */
 export type Config_Deserialize = {
+	/**  配置结构版本：旧文件缺键时回落 `0`，任何写入都会带上当前版本号 */
+	schema_version?: number,
 	/**  界面语言：缺失、类型不符或无法识别时回落默认值，绝不让整包解析失败 */
 	locale?: Locale,
 };
 
 /**
  *  应用完整配置：各持久化项聚合于此，`store` 内仍按扁平键（`KEY_*`）逐项存储。
- *  新增字段必须能 `Default`（否则旧文件缺键会解析失败）；写路径保持逐键写入，
- *  后续整包写必须先读再改再存，禁止用陈旧的 `Config` 直接覆盖。
+ *  新增字段必须能 `Default`（否则旧文件缺键会解析失败）；写路径统一走 `apply_patch` 逐键写入，
+ *  禁止用陈旧的 `Config` 整体覆盖。
+ * 
+ *  新增一个配置项的固定步骤：
+ *  `KEY_*` 常量 → 本结构体加字段 → `ConfigPatch` 加同名 `Option` 字段 → `load_config` 回填
+ *  → 需要运行时副作用则加进 `apply_runtime_effects` → `reset_patch` 补默认值
+ *  → `cargo test` 重生成绑定。
+ * 
+ *  只有**改动已有字段的语义或位置**时才需要递增 `CURRENT_SCHEMA_VERSION` 并在 `MIGRATIONS`
+ *  末尾补一级迁移，否则老用户配置会静默失效（纯新增字段由 `Default` + 容错读取兜住）。
  */
 export type Config_Serialize = {
+	/**  配置结构版本：旧文件缺键时回落 `0`，任何写入都会带上当前版本号 */
+	schema_version: number,
 	/**  界面语言：缺失、类型不符或无法识别时回落默认值，绝不让整包解析失败 */
 	locale: Locale,
 };

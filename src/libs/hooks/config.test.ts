@@ -1,0 +1,110 @@
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import commands from "$libs/commands";
+import type { AnyResult, Config_Serialize } from "$libs/commands/types";
+import { configState, hydrateConfig, updateConfig } from "$hooks/config.svelte";
+
+vi.mock("$libs/commands", () => ({
+  default: { getConfig: vi.fn(), updateConfig: vi.fn() },
+}));
+
+const saved: Config_Serialize = { locale: "zh-CN", schema_version: 1 };
+
+type FakeResult = AnyResult;
+type FakeChain = {
+  success: (handler: (data: never) => unknown) => FakeChain;
+  failed: (handler: (failure: never) => unknown) => FakeChain;
+  then: (resolve: (value: FakeResult) => unknown) => Promise<unknown>;
+};
+
+/** 与 `EnhancedCommand` 行为一致的替身：先按分支跑回调，再结算结果 */
+function fakeCommand(result: FakeResult): FakeChain {
+  const onSuccess: ((data: never) => unknown)[] = [];
+  const onFailure: ((failure: never) => unknown)[] = [];
+
+  const chain: FakeChain = {
+    success(handler) {
+      onSuccess.push(handler);
+      return chain;
+    },
+    failed(handler) {
+      onFailure.push(handler);
+      return chain;
+    },
+    then(resolve) {
+      const handlers = result.status === "ok" ? onSuccess : onFailure;
+      const payload = (result.status === "ok" ? result.data : result.error) as never;
+      for (const handler of handlers) {
+        handler(payload);
+      }
+      return Promise.resolve(result).then(resolve);
+    },
+  };
+  return chain;
+}
+
+function stubGetConfig(result: FakeResult): void {
+  vi.mocked(commands.getConfig).mockReturnValue(fakeCommand(result) as never);
+}
+
+function stubUpdateConfig(result: FakeResult): void {
+  vi.mocked(commands.updateConfig).mockReturnValue(fakeCommand(result) as never);
+}
+
+beforeEach(() => {
+  configState.value = null;
+  // 失败路径会走上报，这里统一静音，需要断言的用例再单独取用
+  vi.spyOn(console, "error").mockImplementation(() => {});
+});
+
+afterEach(() => {
+  vi.restoreAllMocks();
+});
+
+describe("hydrateConfig", () => {
+  it("成功时写入配置状态", async () => {
+    stubGetConfig({ status: "ok", data: saved });
+
+    await hydrateConfig();
+
+    expect(configState.value).toEqual(saved);
+  });
+
+  it("失败时保持未水合并上报", async () => {
+    stubGetConfig({ status: "error", error: { kind: "Internal", message: "boom" } });
+
+    await hydrateConfig();
+
+    expect(configState.value).toBeNull();
+    expect(console.error).toHaveBeenCalledWith(
+      expect.stringContaining("[config] failed to load backend config"),
+    );
+  });
+});
+
+describe("updateConfig", () => {
+  it("原样提交补丁，并以命令返回的写后值回写", async () => {
+    const previous: Config_Serialize = { locale: "en", schema_version: 1 };
+    configState.value = previous;
+    const patch = { locale: "zh-CN" } as const;
+    stubUpdateConfig({ status: "ok", data: saved });
+
+    await updateConfig(patch);
+
+    // 不注入默认值：未提交的键必须留在后端不动
+    expect(commands.updateConfig).toHaveBeenCalledWith(patch);
+    expect(configState.value).toEqual(saved);
+  });
+
+  it("失败时不乐观更新并上报", async () => {
+    const previous: Config_Serialize = { locale: "en", schema_version: 1 };
+    configState.value = previous;
+    stubUpdateConfig({ status: "error", error: { kind: "Internal", message: "boom" } });
+
+    await updateConfig({ locale: "zh-CN" });
+
+    expect(configState.value).toEqual(previous);
+    expect(console.error).toHaveBeenCalledWith(
+      expect.stringContaining("[config] failed to update backend config"),
+    );
+  });
+});

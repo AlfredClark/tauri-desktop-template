@@ -8,7 +8,7 @@ import type { AnyFn, AnyResult, CommandFailure, FnResult, OkData, WrappedFn } fr
 // 需要自己按成败分支：
 //   const result = await commands.greet(input).result();
 // 事务（回调可为 async；await 整条链会等回调执行完）：
-//   await commands.setLocale("zh-CN").success(applyLocale).failed(showError);
+//   await commands.updateConfig({ locale: "zh-CN" }).success(applyLocale).failed(showError);
 export class EnhancedCommand<R extends AnyResult> implements PromiseLike<R> {
   private readonly onSuccess: ((data: OkData<R>) => unknown)[] = [];
   private readonly onFailure: ((failure: CommandFailure<R>) => unknown)[] = [];

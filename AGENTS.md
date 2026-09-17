@@ -156,9 +156,9 @@ pnpm release                       # bumpp 联动升级三处版本号（package
 2. **前后端契约优先：** 以 tauri-specta 为准（见第 10 章第 2 条）。改命令必须先改 `features/` + `commands/`（含 `#[tauri::command]` + `#[specta::specta]` + `collect_commands!`），再 `cargo test` 重生成 `bindings.ts`，最后改前端调用。禁止手改 `bindings.ts`、禁止跳过重生成直接改前端。
 3. **状态归属：** Svelte 5 runes（`$state` / `$props` / `$effect`）优先，禁用旧式 store；页面私有状态用局部 state，跨页面共享才考虑提升。主题经 `mode-watcher` 全局管理，语言对齐走第 10 章第 1 条数据流，禁止各页面自建语言状态。
 4. **错误处理分层：** `features/` 返回业务错误 → `commands/` 转为 `CommandResult`（错误统一 `CommandError::Internal(...)`，`anyhow::Error` 经已有 `From` 自动转换）→ 前端经 `.result() / .value() / .success() / .failed()` 处理。前端 `.failed()` 回调形状为 `{ kind, message }`；未注册 `.failed()` 的失败会自动经 plugin-log 上报，不会静默丢失。禁止在 `features/` 内直接耦合 Tauri 运行时。
-5. **配置外置与同步：** Paraglide 编译选项唯一来源是 `src/libs/i18n/project.inlang/paraglide.config.ts`（CLI 与 vite 插件都读它，禁止往 `package.json` / `vite.config.ts` 各写一份）；路径别名唯一来源是 `svelte.config.ts` 的 `kit.alias`。新增外部 URL 必须同步更新 `capabilities/*.json` 与 `tauri.conf.json` 的 CSP（`updater` 下载端点由 Rust 侧发起，不受 WebView CSP 约束，无需同步 CSP，见第 8 章第 2 条）。新增配置必须检查第 10 章第 4 条成对维护表。路径别名共四个（`$assets` / `$components` / `$hooks` / `$libs`），均由该处定义；其中 hooks 一律经 `$hooks` 引用，禁止写 `$libs/hooks`（两者都能解析）——`components.json` 的 `aliases.hooks` 即 `$hooks`，CLI 生成的组件也走 `$hooks`，保持唯一写法才能避免漂移。
+5. **配置外置与同步：** Paraglide 编译选项唯一来源是 `src/libs/i18n/project.inlang/paraglide.config.ts`（CLI 与 vite 插件都读它，禁止往 `package.json` / `vite.config.ts` 各写一份）；路径别名唯一来源是 `svelte.config.ts` 的 `kit.alias`。新增外部 URL 必须同步更新 `capabilities/*.json` 与 `tauri.conf.json` 的 CSP（`updater` 下载端点由 Rust 侧发起，不受 WebView CSP 约束，无需同步 CSP，见第 8 章第 2 条）。新增配置必须检查第 10 章第 4 条成对维护表。路径别名共四个（`$assets` / `$components` / `$hooks` / `$libs`），均由该处定义；其中 hooks 一律经 `$hooks` 引用，禁止写 `$libs/hooks`（两者都能解析）——`components.json` 的 `aliases.hooks` 即 `$hooks`，CLI 生成的组件也走 `$hooks`，保持唯一写法才能避免漂移。新增 / 变更配置项必须同步 `cores/config.rs` 的 `CURRENT_SCHEMA_VERSION` 与 `MIGRATIONS` 迁移链（仅改动已有字段语义时才递增版本），否则老用户配置会静默失效。
 6. **崩溃边界：** 前端 `ErrorBoundary`（经 `@tauri-apps/plugin-log` 上报，堆栈仅 dev 显示）+ 后端 `cores/system.rs` panic 钩子（日志 + `%TEMP%/my_app_crash.log` 兜底）。两者互不替代，禁止另加并行机制。
-7. **语言数据流：** 唯一持久化点是后端 `config.json` 的 `locale` 键（`cores/config.rs`），类型为 `cores/locale.rs` 的 `Locale` 枚举（经 specta 导出为 `"en" | "zh-CN"` 联合类型，禁止裸 `string` 或类型断言）。启动时后端先读持久化值、缺失则 `tauri_plugin_os::locale()` 探测并落库，再 `rust_i18n::set_locale`；前端在 `+layout.ts` 的 `load()` 首帧前 `getLocale` 对齐并传 `{ reload: false }`（否则整页重载 + 语言闪烁）；用户切换时 `commands.setLocale` 先落盘再改内存，前端随后用默认 `setLocale` 重载。完整流程见第 10 章第 1 条。
+7. **语言数据流：** 唯一持久化点是后端 `config.json` 的 `locale` 键（`cores/config.rs`），类型为 `cores/locale.rs` 的 `Locale` 枚举（经 specta 导出为 `"en" | "zh-CN"` 联合类型，禁止裸 `string` 或类型断言）。启动时后端先读持久化值、缺失则 `tauri_plugin_os::locale()` 探测并落库，再 `rust_i18n::set_locale`；前端在 `+layout.ts` 的 `load()` 首帧前经 `commands.getConfig` 水合配置，再用 `config.locale` 调 Paraglide 的 `setLocale(locale, { reload: false })` 对齐（否则整页重载 + 语言闪烁）；用户切换时 `commands.updateConfig({ locale })` 先落盘再改内存，运行时 `rust_i18n` 由 `config::apply_runtime_effects` 统一同步，前端随后用 Paraglide 默认 `setLocale` 重载。完整流程见第 10 章第 1 条。
 
 ---
 
@@ -187,7 +187,7 @@ pnpm release                       # bumpp 联动升级三处版本号（package
 import commands from "$libs/commands";
 const msg = await commands.greet(name).value("Default");
 const result = await commands.greet(name).result();
-await commands.setLocale(locale).success(onOk).failed(onFail);
+await commands.updateConfig({ locale }).success(onOk).failed(onFail);
 
 // ❌ 禁止：裸 invoke + 手改绑定
 import { invoke } from "@tauri-apps/api/core";
