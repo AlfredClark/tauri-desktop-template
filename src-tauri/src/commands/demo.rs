@@ -1,4 +1,4 @@
-//! 示例命令：演示页（文件 / 对话框 / 剪贴板 / 通知 / 快捷键）薄封装，运行时胶水在 `cores::demo`。
+//! 示例命令：演示页（文件 / 对话框 / 剪贴板 / 通知 / 快捷键 / 拖放）薄封装，运行时胶水在 `cores::demo`。
 
 use crate::cores::demo::{self, DemoAppPaths};
 use crate::cores::types::CommandResult;
@@ -128,4 +128,20 @@ pub fn demo_shortcut_is_registered(app: tauri::AppHandle) -> CommandResult<bool>
 #[allow(clippy::needless_pass_by_value)]
 pub fn demo_shortcut_unregister(app: tauri::AppHandle) -> CommandResult<()> {
     Ok(demo::shortcut_unregister(&app)?)
+}
+
+/// 鉴别拖放批次：只取元信息不读内容，任一项失败整批失败
+#[tauri::command]
+#[specta::specta]
+#[allow(clippy::needless_pass_by_value)]
+pub fn demo_inspect_drop(paths: Vec<String>) -> CommandResult<Vec<demo::DropFileInfo>> {
+    Ok(demo::inspect_drop(&paths)?)
+}
+
+/// 存拖放文件到沙盒：仅常规文件可拷，返回沙盒绝对路径列表
+#[tauri::command]
+#[specta::specta]
+#[allow(clippy::needless_pass_by_value)]
+pub fn demo_import_drop(app: tauri::AppHandle, paths: Vec<String>) -> CommandResult<Vec<String>> {
+    Ok(demo::import_drop(&app, &paths)?)
 }

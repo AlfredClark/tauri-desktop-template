@@ -41,10 +41,11 @@ crash safety nets, and common desktop capabilities out of the box.
 4. **Crash safety nets, frontend + backend** — frontend `ErrorBoundary` (reports via
    `@tauri-apps/plugin-log`, stack trace in dev only, 2s throttle); backend panic hook in
    `cores/system.rs` (normal log first, `%TEMP%/my_app_crash.log` fallback with 512KB rotation).
-5. **Desktop capability demo page (`/demo`)** — one card per plugin, deletable to bootstrap
-   your own app (see “Remove the demo” below):
+5. **Desktop capability demo page (`/demo`)** — one card per plugin plus a file-drop card,
+   deletable to bootstrap your own app (see “Remove the demo” below):
    - App directories (backend-resolved `appData` / `appCache` / `temp`)
    - Sandbox file (`$APPDATA/demo/*` scope + backend path-convergence check)
+   - File drop (window drag-drop events; backend inspects metadata and imports into the sandbox)
    - Native dialogs (async-callback file / folder / save pickers, cancel returns `None`)
    - Plain-text clipboard (length-checked read/write)
    - Local notification (sent from backend)
@@ -110,12 +111,12 @@ pnpm release         # bumpp linked versions: package.json + tauri.conf.json + C
 
 ## Pages
 
-| Route       | Screenshot                 | Contents                                                                                        |
-| ----------- | -------------------------- | ----------------------------------------------------------------------------------------------- |
-| `/`         | `docs/images/home.png`     | Hero: stack icons + app name + intro. Layout-skeleton starting point, build your business here. |
-| `/demo`     | `docs/images/demo.png`     | Six plugin cards (paths / sandbox fs / dialogs / clipboard / notification / shortcut).          |
-| `/settings` | `docs/images/settings.png` | General (backend-persisted) + Appearance (frontend-only) groups + reset button.                 |
-| `/about`    | `docs/images/about.png`    | App / project / platform / diagnostics groups + updater panel.                                  |
+| Route       | Screenshot                 | Contents                                                                                           |
+| ----------- | -------------------------- | -------------------------------------------------------------------------------------------------- |
+| `/`         | `docs/images/home.png`     | Hero: stack icons + app name + intro. Layout-skeleton starting point, build your business here.    |
+| `/demo`     | `docs/images/demo.png`     | Six plugin cards (paths / sandbox fs / dialogs / clipboard / notification / shortcut) + file drop. |
+| `/settings` | `docs/images/settings.png` | General (backend-persisted) + Appearance (frontend-only) groups + reset button.                    |
+| `/about`    | `docs/images/about.png`    | App / project / platform / diagnostics groups + updater panel.                                     |
 
 Navigation tabs are registered once in `src/libs/navigation/nav-tabs.ts` and shared by the
 `tabs` and `sidebar` layouts (`src/components/layout/`); add a page by adding one entry there.

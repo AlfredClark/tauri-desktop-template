@@ -187,5 +187,16 @@
   "demo_shortcut_unregister_button": "Unregister",
   "demo_shortcut_register_success": "Shortcut registered",
   "demo_shortcut_unregister_success": "Shortcut unregistered",
-  "demo_shortcut_failed": "Shortcut operation failed"
+  "demo_shortcut_failed": "Shortcut operation failed",
+  "demo_drop_title": "File drop",
+  "demo_drop_description": "Drag files onto the window; the backend inspects and imports them into the sandbox",
+  "demo_drop_zone_idle": "Drag files here",
+  "demo_drop_zone_active": "Release to inspect",
+  "demo_drop_unavailable": "Unavailable outside the desktop window",
+  "demo_drop_inspect_failed": "Failed to inspect dropped files",
+  "demo_drop_import_button": "Save to sandbox",
+  "demo_drop_import_success": "Files saved to sandbox",
+  "demo_drop_import_failed": "Failed to save dropped files",
+  "demo_drop_dir_badge": "Directory",
+  "demo_drop_size_unit": "{size} bytes"
 }

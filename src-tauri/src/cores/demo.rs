@@ -1,7 +1,7 @@
-//! 演示页能力：应用目录解析、沙盒文件读写、对话框、剪贴板、通知与全局快捷键。
+//! 演示页能力：应用目录解析、沙盒文件读写、对话框、剪贴板、通知、全局快捷键与文件拖放。
 //!
 //! 需要 Tauri 运行时（插件状态与系统 API），故放在 `cores` 而非纯函数的 `features`；
-//! 输入校验（文件名 / 文本长度 / 通知长度）仍在 `features::demo`，此处只做路径装配与调用。
+//! 输入校验（文件名 / 文本长度 / 通知长度 / 拖放批次）仍在 `features::demo`，此处只做路径装配与调用。
 //! 删除演示页时本文件整体删除，命令层对应项同步下线。
 use std::path::PathBuf;
 
@@ -93,6 +93,88 @@ pub fn read_demo_file(app: &tauri::AppHandle, filename: &str) -> anyhow::Result<
     let path = demo_file_path(app, filename)?;
     ensure_inside_sandbox(app, &path)?;
     std::fs::read_to_string(&path).context("failed to read demo file")
+}
+
+/// 拖放文件元信息：只取 `symlink_metadata`（不跟随符号链接），不读内容；
+/// 目录仅展示不导入，符号链接直接拒绝（目标可能指向沙盒之外）
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Type)]
+pub struct DropFileInfo {
+    /// 末段文件名（展示用，不含目录部分）
+    pub name: String,
+    /// 文件字节数；目录按 `0` 返回（`f64`：`specta` 禁止导出 `u64`，展示精度足够）
+    pub size: f64,
+    /// 是否为目录
+    pub is_dir: bool,
+}
+
+/// 鉴别拖放批次：先过数量门禁，再逐项取元信息；任一项失败整批失败，
+/// 前端收到错误后按通用失败提示处理，不做部分回显
+// `u64 as f64` 在 2^53 以上丢精度，但此处仅做展示，无需精确值
+#[allow(clippy::cast_precision_loss)]
+pub fn inspect_drop(paths: &[String]) -> anyhow::Result<Vec<DropFileInfo>> {
+    demo_features::validate_drop_paths(paths)?;
+    paths
+        .iter()
+        .map(|raw| {
+            let path = PathBuf::from(raw);
+            // 不跟随链接：链接本身一律拒绝，不解析目标，避免目标越界不可见
+            let meta = std::fs::symlink_metadata(&path)
+                .with_context(|| format!("failed to stat dropped path: {raw}"))?;
+            if meta.is_symlink() {
+                anyhow::bail!("symbolic links are not accepted: {raw}");
+            }
+            let name = path
+                .file_name()
+                .context("dropped path has no file name")?
+                .to_string_lossy()
+                .into_owned();
+            Ok(DropFileInfo {
+                name,
+                size: if meta.is_dir() {
+                    0.0
+                } else {
+                    meta.len() as f64
+                },
+                is_dir: meta.is_dir(),
+            })
+        })
+        .collect()
+}
+
+/// 存拖放文件到沙盒：仅常规文件可拷，目录与链接拒绝；单个超大拒绝；
+/// 文件名取末段后走沙盒装配与门禁，与 `write_demo_file` 同一收敛点
+pub fn import_drop(app: &tauri::AppHandle, paths: &[String]) -> anyhow::Result<Vec<String>> {
+    demo_features::validate_drop_paths(paths)?;
+    paths
+        .iter()
+        .map(|raw| {
+            let source = PathBuf::from(raw);
+            let meta = std::fs::symlink_metadata(&source)
+                .with_context(|| format!("failed to stat dropped path: {raw}"))?;
+            if meta.is_symlink() {
+                anyhow::bail!("symbolic links are not accepted: {raw}");
+            }
+            if !meta.is_file() {
+                anyhow::bail!("only files can be imported: {raw}");
+            }
+            if meta.len() > demo_features::MAX_DROP_FILE_SIZE {
+                anyhow::bail!("dropped file is too large: {raw}");
+            }
+            let name = source
+                .file_name()
+                .context("dropped path has no file name")?
+                .to_string_lossy()
+                .into_owned();
+            // 末段天然无分隔符，仍走文件名校验与沙盒门禁，收敛点与写文件一致
+            let target = demo_file_path(app, &name)?;
+            ensure_inside_sandbox(app, &target)?;
+            if let Some(parent) = target.parent() {
+                std::fs::create_dir_all(parent).context("failed to create demo folder")?;
+            }
+            std::fs::copy(&source, &target).context("failed to import dropped file")?;
+            Ok(target.display().to_string())
+        })
+        .collect()
 }
 
 /// 系统选文件框：异步回调版经主线程弹窗，取消返回 `None`（正常分支，前端展示"已取消"而非报错）。

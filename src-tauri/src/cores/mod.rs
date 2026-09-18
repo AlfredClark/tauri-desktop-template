@@ -15,7 +15,7 @@ pub mod types;
 pub mod updater;
 
 /// 应用启动时的核心初始化：挂载事件系统并装配应用配置（含界面语言），最后挂载系统托盘
-pub fn setup_cores(app: &tauri::App, builder: &Builder<tauri::Wry>) {
+pub fn setup(app: &tauri::App, builder: &Builder<tauri::Wry>) {
     specta::setup(app, builder);
     config::setup(app);
     tray::setup(app);

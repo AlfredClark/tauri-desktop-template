@@ -45,6 +45,10 @@ export const commands = {
 	demoShortcutIsRegistered: () => typedError<boolean, CommandError>(__TAURI_INVOKE("demo_shortcut_is_registered")),
 	/**  注销演示快捷键；幂等（移动端报错走 `.failed()`） */
 	demoShortcutUnregister: () => typedError<null, CommandError>(__TAURI_INVOKE("demo_shortcut_unregister")),
+	/**  鉴别拖放批次：只取元信息不读内容，任一项失败整批失败 */
+	demoInspectDrop: (paths: string[]) => typedError<DropFileInfo[], CommandError>(__TAURI_INVOKE("demo_inspect_drop", { paths })),
+	/**  存拖放文件到沙盒：仅常规文件可拷，返回沙盒绝对路径列表 */
+	demoImportDrop: (paths: string[]) => typedError<string[], CommandError>(__TAURI_INVOKE("demo_import_drop", { paths })),
 	/**  采集运行平台信息；单项缺失时回落 `"unknown"`，绝不抛错 */
 	getSystemInfo: () => typedError<SystemInfo, CommandError>(__TAURI_INVOKE("get_system_info")),
 	/**  真退出应用进程；调用后进程结束，结果体永不可达（按 `CommandResult<()>` 保持命令类型统一） */
@@ -191,6 +195,19 @@ export type DemoAppPaths = {
 	app_cache: string,
 	/**  系统临时目录 */
 	temp: string,
+};
+
+/**
+ *  拖放文件元信息：只取 `symlink_metadata`（不跟随符号链接），不读内容；
+ *  目录仅展示不导入，符号链接直接拒绝（目标可能指向沙盒之外）
+ */
+export type DropFileInfo = {
+	/**  末段文件名（展示用，不含目录部分） */
+	name: string,
+	/**  文件字节数；目录按 `0` 返回（`f64`：`specta` 禁止导出 `u64`，展示精度足够） */
+	size: number | null,
+	/**  是否为目录 */
+	is_dir: boolean,
 };
 
 /**  应用支持的语言 */

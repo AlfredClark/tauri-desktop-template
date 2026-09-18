@@ -21,6 +21,10 @@ pub const MAX_NOTIFY_TITLE_LEN: usize = 64;
 pub const MAX_NOTIFY_BODY_LEN: usize = 256;
 /// 演示文件名长度上限：`demo.txt` 固定名本用不上，供派生项目放开自定义文件名时复用
 pub const MAX_DEMO_FILE_NAME_LEN: usize = 64;
+/// 单次拖放文件数量上限：超限整批拒绝，避免误拖整个目录卡死命令线程
+pub const MAX_DROP_FILES: usize = 10;
+/// 拖放单文件大小上限（字节）：超限整批拒绝，落盘前逐个再验
+pub const MAX_DROP_FILE_SIZE: u64 = 5 * 1024 * 1024;
 
 /// 问候文案：`name` 为 `"123"` 时返回业务错误，用于演示前端 `.failed()` 分支与自动失败上报。
 ///
@@ -64,6 +68,18 @@ pub fn validate_notify(title: &str, body: &str) -> anyhow::Result<()> {
     }
     if title.len() > MAX_NOTIFY_TITLE_LEN || body.len() > MAX_NOTIFY_BODY_LEN {
         anyhow::bail!("notification text is too long");
+    }
+    Ok(())
+}
+
+/// 校验拖放路径批：非空且数量受限；内容级校验（存在性 / 类型 / 大小）
+/// 由调用方逐项 `symlink_metadata` 后判定，此处只做批次门禁
+pub fn validate_drop_paths(paths: &[String]) -> anyhow::Result<()> {
+    if paths.is_empty() {
+        anyhow::bail!("drop must contain at least one path");
+    }
+    if paths.len() > MAX_DROP_FILES {
+        anyhow::bail!("drop exceeds {MAX_DROP_FILES} files");
     }
     Ok(())
 }
@@ -163,5 +179,15 @@ mod tests {
         for raw in ["../evil.txt", "sub/evil.txt", "", "."] {
             assert!(resolve_demo_file(base, raw).is_err(), "must reject {raw:?}");
         }
+    }
+
+    #[test]
+    fn rejects_empty_or_oversized_drop() {
+        assert!(validate_drop_paths(&[]).is_err());
+        assert!(validate_drop_paths(&["a.txt".to_owned()]).is_ok());
+        let oversized = (0..=MAX_DROP_FILES)
+            .map(|i| format!("{i}.txt"))
+            .collect::<Vec<_>>();
+        assert!(validate_drop_paths(&oversized).is_err());
     }
 }

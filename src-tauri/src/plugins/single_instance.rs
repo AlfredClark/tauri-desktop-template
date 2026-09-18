@@ -7,7 +7,8 @@ use tauri::{AppHandle, Emitter, Manager, plugin::TauriPlugin};
 /// 与前端 `onOpenUrl` 路径互斥：首启走 deep-link 事件，次启走此处回调，
 /// 两处最终都进前端同一 `handle`（另有短窗去重），故此处不做去重。
 ///
-/// 构造器是 `Wry` 具体的，走不了泛型 `BuilderExt`，由 `lib.rs` 直挂并 `cfg` 门控。
+/// 构造器是 `Wry` 具体的，故桌面端 `BuilderExt` 实现收窄到 `Builder<Wry>`；
+/// 经 `with_single_instance` 进注册链（移动端为空操作），调用处须保持先于深链注册。
 pub fn init() -> TauriPlugin<tauri::Wry> {
     tauri_plugin_single_instance::init(|app: &AppHandle, args: Vec<String>, _cwd: String| {
         if let Some(window) = app.get_webview_window("main") {

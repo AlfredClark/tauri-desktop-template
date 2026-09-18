@@ -8,7 +8,6 @@ mod cores;
 mod features;
 mod plugins;
 
-use crate::cores::{setup_cores, specta};
 use crate::plugins::BuilderExt;
 
 rust_i18n::i18n!("locales", fallback = "en");
@@ -26,9 +25,9 @@ rust_i18n::i18n!("locales", fallback = "en");
 pub fn run() {
     cores::system::init_system();
 
-    let specta_builder = specta::init_builder();
+    let specta_builder = cores::specta::init_builder();
 
-    let builder = tauri::Builder::default()
+    tauri::Builder::default()
         .plugin(plugins::log::init())
         .plugin(plugins::store::init())
         .plugin(plugins::opener::init())
@@ -41,25 +40,14 @@ pub fn run() {
         .with_autostart()
         .with_updater()
         .with_global_shortcut()
-        .with_window_state();
-    // 单实例构造器是 `Wry` 具体的，走不了泛型 `BuilderExt`，此处直挂；
-    // 必须先于 deep-link 注册（官方顺序要求），且仅桌面端启用
-    #[cfg(not(any(target_os = "android", target_os = "ios")))]
-    let builder = builder.plugin(plugins::single_instance::init());
-    builder
+        .with_window_state()
+        // 单实例必须先于 deep-link 注册（官方顺序要求），且仅桌面端启用（移动端为空操作）
+        .with_single_instance()
         .with_deep_link()
         .invoke_handler(specta_builder.invoke_handler())
         .setup(move |app| {
-            setup_cores(app, &specta_builder);
-            // Win/Linux 的协议关联运行时注册（macOS 走包内 Info.plist，Linux 的
-            // `.desktop` MimeType 由打包器自动生成）；失败只记日志，不阻断启动
-            #[cfg(not(any(target_os = "android", target_os = "ios")))]
-            {
-                use tauri_plugin_deep_link::DeepLinkExt;
-                if let Err(err) = app.deep_link().register_all() {
-                    log::warn!("failed to register deep link schemes: {err:#}");
-                }
-            }
+            cores::setup(app, &specta_builder);
+            plugins::setup(app);
             Ok(())
         })
         .run(tauri::generate_context!())

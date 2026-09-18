@@ -15,7 +15,7 @@
   2. 明暗主题跟随（`mode-watcher` system 跟随 + Tailwind v4 `.dark` 变体）与配色主题（`neutral/blue/green/violet/rose`，`data-theme` 属性切换，见 `themes.css`）
   3. 前后端双轨国际化（前端 Paraglide + 后端 rust-i18n，持久化于后端 `config.json`）
   4. 前后端崩溃兜底（前端 `ErrorBoundary` + 后端 panic 钩子写 `%TEMP%/my_app_crash.log`）
-  5. 桌面能力演示页（`/demo`：应用目录 / 沙盒文件 / 系统对话框 / 剪贴板 / 通知 / 全局快捷键，每插件一卡片分组，删页即初始化）
+  5. 桌面能力演示页（`/demo`：应用目录 / 沙盒文件 / 文件拖放 / 系统对话框 / 剪贴板 / 通知 / 全局快捷键，每插件一卡片分组 + 拖放分组，删页即初始化）
 - **用户角色：** Tauri + Svelte 技术栈的桌面应用开发者
 
 ---
@@ -62,14 +62,14 @@ tauri-desktop-template/
 │   │   ├── (main)/                 # 分组路由（括号不进 URL）：常规页面分组，独享布局容器
 │   │   │   ├── +layout.svelte      # 分组布局：LayoutContainer 包裹，特殊页另起分组即可绕开布局
 │   │   │   └── +page.svelte        # 占位首页：布局骨架验证起点，业务在此开发；about 为导航标签示例页，settings 为完整设置页（通用 + 外观两分组）
-│   │   │   └── demo/                 # 演示页：每插件一卡片分组（文案全 `demo_` 开头），移除流程见第 10 章第 6 条
+│   │   │   └── demo/                 # 演示页：每插件一卡片分组 + 文件拖放分组（文案全 `demo_` 开头），移除流程见第 10 章第 6 条
 │   │   └── layout.css              # Tailwind v4 入口与 shadcn-svelte 主题令牌（含 .dark 暗色变体与 --app-font-* 外观变量）
 │   │   └── themes.css              # 配色主题令牌（blue/green/violet/rose 的浅色 + :root.dark 暗色块，neutral 回落 layout.css）
 │   ├── components/
 │   │   ├── common/                 # 手写共享组件（error-boundary.svelte 全局渲染兜底，card-section/row.svelte 通用卡片分组与行）
 │   │   ├── layout/                 # 布局子系统：layout-container.svelte 容器 + tabs（标题栏/标签栏/内容/底边）与 sidebar（侧边栏 + 标题栏/内容/底边）实现，新增布局需在 libs/hooks/appearance.svelte.ts 中映射
 │   │   │   └── parts/              # 布局配套部件（title-bar / nav-tabs-bar / side-nav-bar / copyright）
-│   │   ├── widget/                 # 手写页面小组件（settings/：设置页通用/外观分组与字体选择器；about/：关于页应用/项目/平台分组与更新面板；demo/：演示页六插件分组）
+│   │   ├── widget/                 # 手写页面小组件（settings/：设置页通用/外观分组与字体选择器；about/：关于页应用/项目/平台分组与更新面板；demo/：演示页六插件分组 + 文件拖放分组）
 │   │   └── shadcn-svelte/          # CLI 生成的 UI 组件（nova / neutral / lucide），新增走 CLI 添加，勿手动重组
 │   ├── tests/                      # 前端测试集中目录，按源路径镜像：unit/ 纯逻辑（node）+ component/ 组件（jsdom）
 │   └── libs/
@@ -306,7 +306,7 @@ CI（`.github/workflows/ci.yml`）在 `main` 分支上按变更路径触发：
    - 删导航：`nav-tabs.ts` 的 `/demo` 项（含 `FlaskConicalIcon` 导入）
    - 删文案：`src/libs/i18n/messages/*.json` 中全部 `demo_` 开头键 → `pnpm i18n:compile`
    - 瘦身后端：`features/demo.rs` 删校验常量与函数（保留 `greet`）；`commands/demo.rs` 删全部 `demo_*` 命令（保留 `greet`）；`collect_commands!` 同步删项；`cores/mod.rs` 删 `pub mod demo`
-   - 摘注册：`plugins/mod.rs` 删五模块声明与 `with_global_shortcut`（含移动端空实现）；`lib.rs` 删四个 `.plugin(...)` 与 `.with_global_shortcut()`；`capabilities/plugins.json` 删本次新增权限（回 6 项基线）；`Cargo.toml` 删五个插件依赖；`libs/commands/types.ts` 删 `DemoAppPaths` 的导入与透出
+   - 摘注册：`plugins/mod.rs` 删五模块声明与 `with_global_shortcut`（含移动端空实现）；`lib.rs` 删四个 `.plugin(...)` 与 `.with_global_shortcut()`；`capabilities/plugins.json` 删本次新增权限（回 6 项基线）；`Cargo.toml` 删五个插件依赖；`libs/commands/types.ts` 删 `DemoAppPaths` / `DropFileInfo` 的导入与透出
    - 收尾：`cargo test` 重生成 `bindings.ts` → `pnpm format` + `pnpm validate`；`rg "demo_" src src-tauri` 应无残留（`demo.rs` 文件名与注释除外）；`lib.rs` 的 `large_stack_frames` 豁免若不再触发则同步删除（`allow` 与 6.3 对应半句）
 
 ---

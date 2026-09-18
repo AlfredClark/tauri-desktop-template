@@ -187,5 +187,16 @@
   "demo_shortcut_unregister_button": "注销",
   "demo_shortcut_register_success": "快捷键已注册",
   "demo_shortcut_unregister_success": "快捷键已注销",
-  "demo_shortcut_failed": "快捷键操作失败"
+  "demo_shortcut_failed": "快捷键操作失败",
+  "demo_drop_title": "文件拖放",
+  "demo_drop_description": "把文件拖到窗口上，后端鉴别后可存入沙盒",
+  "demo_drop_zone_idle": "把文件拖到这里",
+  "demo_drop_zone_active": "松开以鉴别",
+  "demo_drop_unavailable": "桌面窗口外不可用",
+  "demo_drop_inspect_failed": "鉴别拖放文件失败",
+  "demo_drop_import_button": "存入沙盒",
+  "demo_drop_import_success": "文件已存入沙盒",
+  "demo_drop_import_failed": "存入沙盒失败",
+  "demo_drop_dir_badge": "目录",
+  "demo_drop_size_unit": "{size} 字节"
 }

@@ -1,4 +1,5 @@
-//! 插件初始化层：每个 Tauri 插件一个文件，只暴露 `init()` 供 `lib.rs` 注册。
+//! 插件初始化层：每个 Tauri 插件一个文件，只暴露 `init()` 供 `lib.rs` 注册；
+//! 运行时收尾统一走 `plugins::setup`（对标 `cores::setup`），保持 `lib.rs` 的 `setup` 只有两行。
 
 use tauri::Runtime;
 
@@ -35,6 +36,10 @@ pub trait BuilderExt<R: Runtime> {
     /// 注册窗口状态插件；移动端为空操作（该平台未声明 `window-state` 依赖）
     #[must_use]
     fn with_window_state(self) -> Self;
+    /// 注册单实例插件；移动端为空操作（该平台未声明 `single-instance` 依赖）。
+    /// 必须先于深链插件注册（官方顺序要求），调用处保持该先后顺序
+    #[must_use]
+    fn with_single_instance(self) -> Self;
     /// 注册深链插件；移动端为空操作（该平台未声明依赖）
     #[must_use]
     fn with_deep_link(self) -> Self;
@@ -43,8 +48,10 @@ pub trait BuilderExt<R: Runtime> {
     fn with_global_shortcut(self) -> Self;
 }
 
+// 桌面端实现收窄到 `Wry`：单实例构造器是 `Wry` 具体的，泛型 `R` 调不动
+// `single_instance::init()`；应用只用 `Builder::default()`（即 `Builder<Wry>`），收窄无影响
 #[cfg(not(any(target_os = "android", target_os = "ios")))]
-impl<R: Runtime> BuilderExt<R> for tauri::Builder<R> {
+impl BuilderExt<tauri::Wry> for tauri::Builder<tauri::Wry> {
     fn with_autostart(self) -> Self {
         self.plugin(autostart::init())
     }
@@ -55,6 +62,10 @@ impl<R: Runtime> BuilderExt<R> for tauri::Builder<R> {
 
     fn with_window_state(self) -> Self {
         self.plugin(window_state::init())
+    }
+
+    fn with_single_instance(self) -> Self {
+        self.plugin(single_instance::init())
     }
 
     fn with_deep_link(self) -> Self {
@@ -80,6 +91,10 @@ impl<R: Runtime> BuilderExt<R> for tauri::Builder<R> {
         self
     }
 
+    fn with_single_instance(self) -> Self {
+        self
+    }
+
     fn with_deep_link(self) -> Self {
         self
     }
@@ -87,4 +102,10 @@ impl<R: Runtime> BuilderExt<R> for tauri::Builder<R> {
     fn with_global_shortcut(self) -> Self {
         self
     }
+}
+
+/// 应用启动时的插件运行时收尾（对标 `cores::setup`）：目前只有深链协议的
+/// Win/Linux 运行时注册；各插件的具体收尾放在各自文件的 `setup` 内，这里只做串联
+pub fn setup(app: &tauri::App) {
+    deep_link::setup(app);
 }

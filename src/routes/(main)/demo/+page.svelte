@@ -1,8 +1,9 @@
 <script lang="ts">
-  // 演示页组装：滚动壳 + 标题 + 六个插件分组，无业务逻辑；派生项目删除本目录即初始化。
+  // 演示页组装：滚动壳 + 标题 + 六个插件分组 + 文件拖放分组，无业务逻辑；派生项目删除本目录即初始化。
   import { ScrollArea } from "$components/shadcn-svelte/scroll-area";
   import DemoClipboardSection from "$components/widget/demo/demo-clipboard-section.svelte";
   import DemoDialogSection from "$components/widget/demo/demo-dialog-section.svelte";
+  import DemoDropSection from "$components/widget/demo/demo-drop-section.svelte";
   import DemoFsSection from "$components/widget/demo/demo-fs-section.svelte";
   import DemoNotificationSection from "$components/widget/demo/demo-notification-section.svelte";
   import DemoPathSection from "$components/widget/demo/demo-path-section.svelte";
@@ -20,6 +21,7 @@
 
     <DemoPathSection />
     <DemoFsSection />
+    <DemoDropSection />
     <DemoDialogSection />
     <DemoClipboardSection />
     <DemoNotificationSection />

@@ -31,6 +31,8 @@ macro_rules! collect_commands {
             $crate::commands::demo::demo_shortcut_register,
             $crate::commands::demo::demo_shortcut_is_registered,
             $crate::commands::demo::demo_shortcut_unregister,
+            $crate::commands::demo::demo_inspect_drop,
+            $crate::commands::demo::demo_import_drop,
             $crate::commands::system::get_system_info,
             $crate::commands::system::quit_app,
             $crate::commands::system::open_log_dir,
