@@ -1,5 +1,8 @@
 //! 命令层：每个命令都是轻量的 `#[tauri::command]` 封装，业务逻辑放在 `features`，
 //! 通用能力放在 `cores`，这里只做参数校验与结果转换。
+//!
+//! 本层按前端调用域分组（配置 / 演示 / 系统 / 更新），不与 `features` 一一对应：
+//! 需 `Tauri` 运行时的命令委托给 `cores`，纯函数命令才委托给 `features`。
 
 #![allow(clippy::unnecessary_wraps)]
 

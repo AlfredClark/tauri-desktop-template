@@ -14,9 +14,6 @@
 #
 # Inlang handles the gitignore itself starting with version ^2.5.
 #
-# 仅忽略插件缓存与日志，配置与文档默认跟踪（新增配置文件无需 `git add -f`，见 AGENTS.md §10.1）
-cache/
-.lix/
-*.log
+# everything is ignored except settings.json
+*
 !settings.json
-!paraglide.config.ts

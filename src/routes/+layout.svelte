@@ -10,17 +10,8 @@
   import { configState } from "$hooks/config.svelte";
   import { initDeepLinks } from "$hooks/deep-link.svelte";
   import { maybeAutoCheckForUpdate } from "$hooks/updater.svelte";
+  import ConfirmDialog from "$components/common/confirm-dialog.svelte";
   import ErrorBoundary from "$components/common/error-boundary.svelte";
-  import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
-  } from "$components/shadcn-svelte/alert-dialog";
   import { Toaster } from "$components/shadcn-svelte/sonner";
   import commands from "$libs/commands";
   import { reportCommandFailure } from "$libs/commands/cores";
@@ -83,9 +74,8 @@
     };
   });
 
-  /** 确认弹窗中真退出；进程结束故无需处理返回值，失败仅上报 */
+  /** 确认弹窗中真退出；弹窗已由通用组件关闭，进程结束故无需处理返回值，失败仅上报 */
   async function handleConfirmQuit(): Promise<void> {
-    confirmCloseOpen = false;
     await commands
       .quitApp()
       .failed((failure) => reportCommandFailure("[window] failed to quit", failure));
@@ -121,20 +111,14 @@
 <Toaster position="bottom-right" richColors closeButton />
 
 <!-- 关闭行为为弹窗提示时的确认框：平时不挂载，由关闭拦截按需打开 -->
-<AlertDialog bind:open={confirmCloseOpen}>
-  <AlertDialogContent>
-    <AlertDialogHeader>
-      <AlertDialogTitle>{m.settings_close_confirm_title()}</AlertDialogTitle>
-      <AlertDialogDescription>{m.settings_close_confirm_description()}</AlertDialogDescription>
-    </AlertDialogHeader>
-    <AlertDialogFooter class="border-t-0 bg-transparent">
-      <AlertDialogCancel>{m.settings_close_confirm_cancel()}</AlertDialogCancel>
-      <AlertDialogAction onclick={() => void handleConfirmQuit()}>
-        {m.settings_close_confirm_ok()}
-      </AlertDialogAction>
-    </AlertDialogFooter>
-  </AlertDialogContent>
-</AlertDialog>
+<ConfirmDialog
+  bind:open={confirmCloseOpen}
+  title={m.settings_close_confirm_title()}
+  description={m.settings_close_confirm_description()}
+  cancelLabel={m.settings_close_confirm_cancel()}
+  confirmLabel={m.settings_close_confirm_ok()}
+  onConfirm={() => void handleConfirmQuit()}
+/>
 
 <ErrorBoundary>
   {@render children()}

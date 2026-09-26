@@ -16,7 +16,7 @@ pub fn init() -> TauriPlugin<tauri::Wry> {
             let _ = window.show();
             let _ = window.set_focus();
         }
-        let urls = crate::features::deep_link::extract_deep_link_urls(&args);
+        let urls = crate::cores::deep_link::extract_deep_link_urls(&args);
         if !urls.is_empty() {
             log::info!(
                 "forwarding {} deep link url(s) from second instance",

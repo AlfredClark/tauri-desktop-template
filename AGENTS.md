@@ -55,7 +55,7 @@ rustc --version && cat rust-toolchain.toml && cat src-tauri/Cargo.toml | grep -A
 tauri-desktop-template/
 ├── src/                            # 前端：SvelteKit 单页应用（adapter-static + fallback: index.html）
 │   ├── app.html                    # HTML 外壳，SvelteKit 在此注入脚本与样式
-│   ├── assets/                     # 需要经构建处理的资源（预留目录，别名 $assets）
+│   ├── assets/                     # 需要经构建处理的资源（预留空目录占位，别名 $assets，见 svelte.config.ts）
 │   ├── routes/                     # 页面与全局样式
 │   │   ├── +layout.svelte          # 根布局：ModeWatcher（主题）+ Toaster + ErrorBoundary（渲染异常）包裹全部分组，首帧前对齐外观变量（字体/字重/字号）
 │   │   ├── +layout.ts              # ssr = false（SPA 模式）+ 首帧前对齐界面语言的 load()
@@ -66,7 +66,7 @@ tauri-desktop-template/
 │   │   └── layout.css              # Tailwind v4 入口与 shadcn-svelte 主题令牌（含 .dark 暗色变体与 --app-font-* 外观变量）
 │   │   └── themes.css              # 配色主题令牌（blue/green/violet/rose 的浅色 + :root.dark 暗色块，neutral 回落 layout.css）
 │   ├── components/
-│   │   ├── common/                 # 手写共享组件（error-boundary.svelte 全局渲染兜底，card-section/row.svelte 通用卡片分组与行）
+│   │   ├── common/                 # 手写共享组件（error-boundary.svelte 全局渲染兜底，card-section/row.svelte 通用卡片分组与行，confirm-dialog.svelte 通用确认弹窗，icons/ 内联品牌图标如 github-logo）
 │   │   ├── layout/                 # 布局子系统：layout-container.svelte 容器 + tabs（标题栏/标签栏/内容/底边）与 sidebar（侧边栏 + 标题栏/内容/底边）实现，新增布局需在 libs/hooks/appearance.svelte.ts 中映射
 │   │   │   └── parts/              # 布局配套部件（title-bar / nav-tabs-bar / side-nav-bar / copyright）
 │   │   ├── widget/                 # 手写页面小组件（settings/：设置页通用/外观分组与字体选择器；about/：关于页应用/项目/平台分组与更新面板；demo/：演示页六插件分组 + 文件拖放分组）
@@ -77,16 +77,16 @@ tauri-desktop-template/
 │       ├── i18n/                   # Paraglide：messages/ 文案、project.inlang/ 配置、paraglide/ 生成物
 │       ├── navigation/             # 导航等应用级注册表（nav-tabs.ts：路径 / 图标 / 顺序，顶部标签栏与侧边栏导航同源）
 │       ├── utils/                  # 前端通用工具（shadcn-svelte.ts 的 cn()、window-controls.ts、toast.ts、opener.ts）
-│       └── hooks/                  # 前端共享状态（统一经 $hooks 引用），如 appearance.svelte.ts（布局注册表 + 字体偏好）、config.svelte.ts（后端配置内存态）、updater.svelte.ts（更新状态）、is-mobile.svelte.ts（响应式断点）
+│       └── hooks/                  # 前端共享状态（统一经 $hooks 引用），如 appearance.svelte.ts（布局注册表 + 字体偏好）、config.svelte.ts（后端配置内存态）、updater.svelte.ts（更新状态）、is-mobile.svelte.ts（响应式断点）、deep-link.svelte.ts（三路深链入口）
 ├── src-tauri/                      # 后端：Rust（edition 2024）
 │   ├── src/
 │   │   ├── main.rs                 # 二进制入口，仅转发到 lib::run()
 │   │   ├── lib.rs                  # 串联插件注册 → 命令处理器 → 核心初始化
 │   │   ├── commands/               # 命令封装层：薄封装 + collect_commands! 注册
-│   │   ├── cores/                  # 通用能力与跨层共享类型（types / locale / config / specta / system / tray / updater / demo）
+│   │   ├── cores/                  # 通用能力与跨层共享类型（types / locale / config / deep_link / specta / system / tray / updater / demo）
 │   │   ├── features/               # 业务逻辑（纯函数，不依赖 Tauri 运行时；demo 含演示输入校验）
 │   │   └── plugins/                # 各 Tauri 插件的初始化（log / store / opener / os / updater / autostart / window-state / system-fonts / single-instance / deep-link / fs / dialog / clipboard / notification / global-shortcut）
-│   ├── locales/                    # rust-i18n 后端文案（*.yml）
+│   ├── locales/                    # rust-i18n 后端文案（*.yml，单文件可内含多 locale，如 demo.yml 的 en/zh-CN 双写）
 │   ├── capabilities/               # 权限配置（default.json / plugins.json），外部 URL 需同步更新
 │   ├── icons/                      # 应用图标（由 pnpm tauri:icon 生成）
 │   ├── build.rs                    # tauri-build 构建脚本
@@ -141,6 +141,11 @@ pnpm clean                         # 清理构建产物；clean:frontend / clean
 # ---- 测试 ----
 pnpm test                          # vitest + cargo test 单次运行；test:vitest 仅前端单测；test:watch 为监听模式
 pnpm test:cargo                    # 后端测试，同时重新生成 src/libs/commands/bindings.ts
+
+# ---- 依赖升级（禁止裸 pnpm update / cargo update，必须经以下脚本以触发对齐检查） ----
+pnpm update:frontend                # 仅前端：caret 范围内升级（不跨 major）
+pnpm update:backend                 # 仅后端：semver 兼容范围内升级（不跨 major）
+pnpm update:all                     # 双端一起升 + check:sync 对齐检查；之后必跑 audit 双端 + validate，单独提交 chore(deps:update)
 
 # ---- 国际化 / 图标 / 发布 ----
 pnpm i18n:compile                  # 编译前端国际化文案，改完 messages/ 后必须执行
@@ -258,7 +263,7 @@ CI（`.github/workflows/ci.yml`）在 `main` 分支上按变更路径触发：
    - `bindings.ts` 生成物（只允许 `cargo test` 重生成，禁止手改）
 3. **输入安全：** 所有外部输入必须校验 + 转义；Svelte 渲染默认转义，禁止 `{@html ...}` 直渲用户输入；Rust 侧字符串拼接 shell / SQL 时必须参数化。
 4. **越权与能力最小化：** Tauri capability 按需最小授权，禁止全开 `*`；前端隐藏按钮不算权限控制，涉及本地文件 / 系统能力时后端必须二次校验。前端 `openExternal` 仅放行 `http(s)`（先剥 `git+` 前缀再校验），其它 scheme 直接拒绝并上报。`store` / `autostart` / `window-state` / `single-instance` 仅 Rust 侧注册使用（见 `lib.rs`），无前端 JS 直调，故不在 `plugins.json` 声明，属刻意最小授权；新增前端直调时再按需补声明。
-5. **依赖安全：** 禁止引入未知来源依赖；新增依赖必须说明理由；前端经 `pnpm audit`、后端经 `cargo audit / cargo deny`（如已配置）检查无高危漏洞；依赖升级走手动 `chore(deps:update)` 提交。
+5. **依赖安全：** 禁止引入未知来源依赖；新增依赖必须说明理由；前端经 `pnpm audit`、后端经 `cargo audit / cargo deny`（如已配置）检查无高危漏洞；依赖升级走手动 `chore(deps:update)` 提交，升级入口一律 `pnpm update:frontend | update:backend | update:all`（禁止裸 `pnpm update` / `cargo update`，前者是 pnpm 内建命令，会绕过脚本门禁）。
 
 ---
 
@@ -298,6 +303,7 @@ CI（`.github/workflows/ci.yml`）在 `main` 分支上按变更路径触发：
 4. **必须成对维护的配置：**
    - 两个 workflow 里 `dtolnay/rust-toolchain` 的 `toolchain: 1.98.0` ↔ `rust-toolchain.toml`
    - `.prettierrc` 的 `importOrderTypeScriptVersion` ↔ `package.json` 的 `typescript`
+   - Tauri 插件前后端版本：`pnpm-lock.yaml` 的 npm 包 ↔ `Cargo.lock` 的 cargo 包（major.minor 一致，升级入口为 `pnpm update:all`，由 `scripts/check-version-sync.ts` 在 `pnpm check` 中校验）
    - `.prettierignore` ↔ `.gitignore` 中的构建产物（Prettier 不读 `.gitignore`）
    - CI backend 的 `changes` 路径过滤器 ↔ 新增的后端配置文件
 5. **构建与忽略：** 构建产物（`target/`、`build/`、`.svelte-kit/`、`src-tauri/gen/`、`node_modules/`、`src/libs/i18n/paraglide/`）均已忽略；`bindings.ts` 虽是生成物但**需要提交**；`Cargo.lock` 需要提交；`static/icon.png` 为图标源文件（`pnpm tauri:icon` 生成各平台图标）。Vite 固定端口 `1420`，忽略监听 `src-tauri/**`，`clearScreen: false` 以保留 Rust 日志。主窗口初始 `visible: false`（防恢复闪烁），由 `cores/config.rs` 的 `setup` 按记住窗口配置恢复后统一 `show`，任何提前返回前必须显示，否则永久黑屏；仅恢复 `main` 窗口。

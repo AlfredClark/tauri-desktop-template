@@ -1,0 +1,1 @@
+# 构建期资源预留目录，别名 $assets 指向此处（见 svelte.config.ts）

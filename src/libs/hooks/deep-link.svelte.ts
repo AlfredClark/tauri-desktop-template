@@ -2,7 +2,7 @@
 // 三路互斥（首启 / 运行中 OS 投递 / 次进程转发），另有短窗去重兜底。
 // 协议 `scheme` 的三处 touch 点（模板二次开发自定义时同步改）：
 // `tauri.conf.json` 的 `plugins.deep-link.desktop.schemes`、
-// 后端 `features/deeplink.rs` 的 `SCHEME_PREFIX`、此处的 `DEEP_LINK_SCHEME`。
+// 后端 `cores/deep_link.rs` 的 `SCHEME_PREFIX`、此处的 `DEEP_LINK_SCHEME`。
 import { goto } from "$app/navigation";
 import { resolve } from "$app/paths";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";

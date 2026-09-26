@@ -1,4 +1,7 @@
-//! 示例命令：演示页（文件 / 对话框 / 剪贴板 / 通知 / 快捷键 / 拖放）薄封装，运行时胶水在 `cores::demo`。
+//! 示例命令：演示页（文件 / 对话框 / 剪贴板 / 通知 / 快捷键 / 拖放）薄封装。
+//!
+//! 本文件是唯一同时委托两层的命令：问候语等纯函数走 `features::demo`，
+//! 其余需 `Tauri` 运行时的能力走 `cores::demo`。
 
 use crate::cores::demo::{self, DemoAppPaths};
 use crate::cores::types::CommandResult;
