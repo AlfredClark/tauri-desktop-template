@@ -19,6 +19,7 @@ pub mod opener;
 pub mod os;
 #[cfg(not(any(target_os = "android", target_os = "ios")))]
 pub mod single_instance;
+pub mod sql;
 pub mod store;
 pub mod system_fonts;
 #[cfg(not(any(target_os = "android", target_os = "ios")))]

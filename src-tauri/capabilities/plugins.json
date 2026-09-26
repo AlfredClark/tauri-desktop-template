@@ -36,6 +36,9 @@
     "notification:default",
     "opener:default",
     "os:allow-locale",
+    "sql:allow-load",
+    "sql:allow-select",
+    "sql:allow-execute",
     "system-fonts:default",
     "updater:default"
   ]

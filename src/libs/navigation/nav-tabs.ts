@@ -3,6 +3,7 @@
 import InfoIcon from "@lucide/svelte/icons/info";
 import FlaskConicalIcon from "@lucide/svelte/icons/flask-conical";
 import HouseIcon from "@lucide/svelte/icons/house";
+import NotebookPenIcon from "@lucide/svelte/icons/notebook-pen";
 import SettingsIcon from "@lucide/svelte/icons/settings";
 import { m } from "$libs/i18n/paraglide/messages";
 
@@ -11,6 +12,8 @@ export const NAV_TABS = [
   { path: "/", label: m.nav_home, icon: HouseIcon },
   // 演示页：模板能力一览，文案键同样 `demo_` 开头，删除演示时本行一并删除
   { path: "/demo", label: m.demo_nav_label, icon: FlaskConicalIcon },
+  // 笔记页：最小端到端业务示例，删除业务示例时本行一并删除
+  { path: "/notes", label: m.notes_nav_label, icon: NotebookPenIcon },
   { path: "/settings", label: m.nav_settings, icon: SettingsIcon },
   { path: "/about", label: m.nav_about, icon: InfoIcon },
 ] as const;

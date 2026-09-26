@@ -38,6 +38,7 @@ pub fn run() {
         .plugin(plugins::notification::init())
         .plugin(plugins::system_fonts::init())
         .plugin(plugins::http::init())
+        .plugin(plugins::sql::init())
         .with_autostart()
         .with_updater()
         .with_global_shortcut()

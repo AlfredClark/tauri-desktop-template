@@ -36,6 +36,8 @@ specta = "=2.0.0-rc.25"
 specta-typescript = "=0.0.12"
 tauri-specta = { version = "=2.0.0-rc.25", features = ["javascript", "typescript"] }
 anyhow = "1.0.104"
+# 与 `@tauri-apps/plugin-sql` 同 minor（`check-version-sync` 会校验）
+tauri-plugin-sql = { version = "2", features = ["sqlite"] }
 tauri-plugin-system-fonts = "2.0.2"
 tauri-plugin-fs = "2"
 tauri-plugin-dialog = "2"
