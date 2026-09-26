@@ -108,6 +108,7 @@
   "about_diagnostics_copy_failed": "Failed to copy system info",
   "about_diagnostics_open_failed": "Failed to open folder",
   "updater_check_update": "Check for updates",
+  "updater_recheck": "Check again",
   "updater_checking": "Checking…",
   "updater_up_to_date": "Already up to date",
   "updater_update_available": "New version available",

@@ -10,10 +10,11 @@ import { toast } from "$libs/utils/toast";
 const PROGRESS_EVENT = "app-updater-progress";
 
 /**
- * 更新流程阶段：`idle` 空闲 / `checking` 检查中 / `available` 有新版 / `downloading` 下载中 /
- * `ready` 待重启 / `error` 失败
+ * 更新流程阶段：`idle` 空闲（尚未检查）/ `checking` 检查中 / `up-to-date` 已是最新 / `available` 有新版
+ * / `downloading` 下载中 / `ready` 待重启 / `error` 失败
  */
-export type UpdaterPhase = "idle" | "checking" | "available" | "downloading" | "ready" | "error";
+export type UpdaterPhase =
+  "idle" | "checking" | "up-to-date" | "available" | "downloading" | "ready" | "error";
 
 /** 跨页面共享的更新状态；`autoChecked` 保证启动静默检查单会话只跑一次 */
 export const updaterState = $state<{
@@ -70,7 +71,7 @@ export async function checkForUpdate(options?: { silent?: boolean }): Promise<vo
         return;
       }
       if (!info) {
-        updaterState.phase = "idle";
+        updaterState.phase = "up-to-date";
         updaterState.latest = null;
         if (!options?.silent) toast.message(m.updater_up_to_date());
       } else {

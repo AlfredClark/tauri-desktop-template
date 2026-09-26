@@ -108,6 +108,7 @@
   "about_diagnostics_copy_failed": "复制系统信息失败",
   "about_diagnostics_open_failed": "打开文件夹失败",
   "updater_check_update": "检查更新",
+  "updater_recheck": "重新检查",
   "updater_checking": "正在检查",
   "updater_up_to_date": "已是最新版本",
   "updater_update_available": "发现新版本",

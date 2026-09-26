@@ -2,6 +2,7 @@
   // 应用信息分组：构建常量展示 + 版本检查按钮 + 更新状态面板，零 props。
   // 应用元信息以构建常量为唯一来源（版本号与 tauri.conf.json 一致）。
   import { checkForUpdate, updaterState } from "$hooks/updater.svelte";
+  import { Badge } from "$components/shadcn-svelte/badge";
   import { Button } from "$components/shadcn-svelte/button";
   import CardRow from "$components/common/card-row.svelte";
   import CardSection from "$components/common/card-section.svelte";
@@ -20,15 +21,20 @@
 
   <CardRow label={m.about_current_version()} description={appVersion}>
     {#snippet control()}
-      {#if updaterState.phase === "checking" || updaterState.phase === "downloading"}
-        <Button size="sm" disabled>
-          {updaterState.phase === "checking" ? m.updater_checking() : m.updater_downloading()}
-        </Button>
-      {:else}
-        <Button size="sm" onclick={() => void checkForUpdate()}>
-          {m.updater_check_update()}
-        </Button>
-      {/if}
+      <div class="flex items-center gap-2">
+        {#if updaterState.phase === "checking" || updaterState.phase === "downloading"}
+          <Button size="sm" disabled>
+            {updaterState.phase === "checking" ? m.updater_checking() : m.updater_downloading()}
+          </Button>
+        {:else}
+          {#if updaterState.phase === "up-to-date"}
+            <Badge variant="secondary">{m.updater_up_to_date()}</Badge>
+          {/if}
+          <Button size="sm" onclick={() => void checkForUpdate()}>
+            {updaterState.phase === "up-to-date" ? m.updater_recheck() : m.updater_check_update()}
+          </Button>
+        {/if}
+      </div>
     {/snippet}
   </CardRow>
 

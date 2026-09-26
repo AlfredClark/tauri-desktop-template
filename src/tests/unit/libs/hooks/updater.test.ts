@@ -92,12 +92,12 @@ describe("checkForUpdate", () => {
     expect(updaterState.latest).toEqual(latest);
   });
 
-  it("已是最新时回空闲并提示", async () => {
+  it("已是最新时进最新态并提示", async () => {
     stubCheck({ status: "ok", data: null });
 
     await checkForUpdate();
 
-    expect(updaterState.phase).toBe("idle");
+    expect(updaterState.phase).toBe("up-to-date");
     expect(vi.mocked(toastMock.message)).toHaveBeenCalled();
   });
 

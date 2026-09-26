@@ -182,6 +182,18 @@ describe("关于页", () => {
     );
   });
 
+  it("已是最新时徽章常驻且按钮变为重新检查", async () => {
+    updaterStateMock.phase = "up-to-date";
+    const user = userEvent.setup();
+    render(Page);
+
+    expect(screen.getByText("Already up to date")).not.toBeNull();
+
+    await user.click(screen.getByRole("button", { name: "Check again" }));
+
+    expect(checkForUpdateMock).toHaveBeenCalledOnce();
+  });
+
   it("有新版时展示版本说明与下载入口", async () => {
     // mock 版本号刻意与应用版本拉开，避免与版本行重复匹配
     updaterStateMock.phase = "available";
