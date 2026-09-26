@@ -197,6 +197,13 @@
   "demo_drop_inspect_failed": "Failed to inspect dropped files",
   "demo_drop_import_button": "Save to sandbox",
   "demo_drop_import_success": "Files saved to sandbox",
+  "demo_http_title": "HTTP request",
+  "demo_http_description": "Fetch the current time from timeapi.io through the http plugin",
+  "demo_http_fetch_label": "Current time",
+  "demo_http_fetch_button": "Fetch time",
+  "demo_http_fetching": "Fetching…",
+  "demo_http_failed": "Failed to fetch time",
+  "demo_http_timezone_label": "Time zone",
   "demo_drop_import_failed": "Failed to save dropped files",
   "demo_drop_dir_badge": "Directory",
   "demo_drop_size_unit": "{size} bytes"

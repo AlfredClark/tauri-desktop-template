@@ -25,7 +25,7 @@
     "security": {
       "devCsp": {
         "default-src": "'self' http://localhost:1420",
-        "connect-src": "'self' ipc: http://ipc.localhost https://ipc.localhost tauri: http://localhost:1420 ws://localhost:1420 ws://localhost:1421",
+        "connect-src": "'self' ipc: http://ipc.localhost https://ipc.localhost tauri: http://localhost:1420 ws://localhost:1420 ws://localhost:1421 https://timeapi.io",
         "script-src": "'self' 'unsafe-inline' 'unsafe-eval' http://localhost:1420",
         "style-src": "'self' 'unsafe-inline' http://localhost:1420",
         "img-src": "'self' asset: https://asset.localhost data: http://localhost:1420",
@@ -34,7 +34,7 @@
       },
       "csp": {
         "default-src": "'self'",
-        "connect-src": "'self' ipc: http://ipc.localhost https://ipc.localhost tauri:",
+        "connect-src": "'self' ipc: http://ipc.localhost https://ipc.localhost tauri: https://timeapi.io",
         "script-src": "'self' 'unsafe-inline'",
         "style-src": "'self' 'unsafe-inline'",
         "img-src": "'self' asset: https://asset.localhost data:",

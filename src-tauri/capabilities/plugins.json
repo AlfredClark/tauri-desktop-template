@@ -28,6 +28,10 @@
     "global-shortcut:allow-is-registered",
     "global-shortcut:allow-register",
     "global-shortcut:allow-unregister",
+    {
+      "identifier": "http:default",
+      "allow": [{ "url": "https://timeapi.io/*" }]
+    },
     "log:default",
     "notification:default",
     "opener:default",

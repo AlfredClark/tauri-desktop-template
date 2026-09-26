@@ -197,6 +197,13 @@
   "demo_drop_inspect_failed": "鉴别拖放文件失败",
   "demo_drop_import_button": "存入沙盒",
   "demo_drop_import_success": "文件已存入沙盒",
+  "demo_http_title": "网络请求",
+  "demo_http_description": "经 http 插件从 timeapi.io 获取当前时间",
+  "demo_http_fetch_label": "当前时间",
+  "demo_http_fetch_button": "获取时间",
+  "demo_http_fetching": "正在获取",
+  "demo_http_failed": "获取时间失败",
+  "demo_http_timezone_label": "时区",
   "demo_drop_import_failed": "存入沙盒失败",
   "demo_drop_dir_badge": "目录",
   "demo_drop_size_unit": "{size} 字节"

@@ -37,6 +37,7 @@ pub fn run() {
         .plugin(plugins::clipboard::init())
         .plugin(plugins::notification::init())
         .plugin(plugins::system_fonts::init())
+        .plugin(plugins::http::init())
         .with_autostart()
         .with_updater()
         .with_global_shortcut()

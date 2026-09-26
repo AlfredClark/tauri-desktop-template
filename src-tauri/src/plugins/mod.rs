@@ -12,6 +12,7 @@ pub mod dialog;
 pub mod fs;
 #[cfg(not(any(target_os = "android", target_os = "ios")))]
 pub mod global_shortcut;
+pub mod http;
 pub mod log;
 pub mod notification;
 pub mod opener;
