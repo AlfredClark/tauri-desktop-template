@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { createNote, deleteNote, listNotes, updateNote } from "$libs/notes/db";
+import { createNote, deleteNote, listNotes, NOTES_PAGE_SIZE, updateNote } from "$libs/notes/db";
 import type { Note } from "$libs/notes/types";
 
 // 连接单例常驻模块：全文件共用同一 fake 连接，逐用例重设其行为即可，无需复位导出。
@@ -30,7 +30,21 @@ describe("笔记数据访问", () => {
 
     expect(notes).toEqual([row]);
     expect(selectMock).toHaveBeenCalledOnce();
-    expect(selectMock.mock.calls[0][0]).toContain("ORDER BY updated_at DESC");
+    const [sql, params] = selectMock.mock.calls[0] as [string, unknown[]];
+    expect(sql).toContain("ORDER BY updated_at DESC");
+    expect(sql).toContain("LIMIT $1 OFFSET $2");
+    // 默认首屏一页
+    expect(params).toEqual([NOTES_PAGE_SIZE, 0]);
+  });
+
+  it("分页参数透传", async () => {
+    selectMock.mockResolvedValue([]);
+
+    await listNotes(10, 20);
+
+    const [sql, params] = selectMock.mock.calls[0] as [string, unknown[]];
+    expect(sql).toContain("LIMIT $1 OFFSET $2");
+    expect(params).toEqual([10, 20]);
   });
 
   it("新增走参数化并返回写后行", async () => {

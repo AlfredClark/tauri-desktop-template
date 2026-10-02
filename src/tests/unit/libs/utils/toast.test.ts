@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { toast as sonnerToast } from "svelte-sonner";
-import { toast } from "$libs/utils/toast";
+import { __resetToastDedupeForTests, toast } from "$libs/utils/toast";
 
 vi.mock("svelte-sonner", () => ({
   toast: {
@@ -20,6 +20,7 @@ const mocked = vi.mocked(sonnerToast);
 describe("通用 toast 封装", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    __resetToastDedupeForTests();
   });
 
   it("各通道透传文案并补齐默认时长", () => {
@@ -55,5 +56,18 @@ describe("通用 toast 封装", () => {
   it("透出 promise 与 dismiss 能力", () => {
     expect(toast.promise).toBe(mocked.promise);
     expect(toast.dismiss).toBe(mocked.dismiss);
+  });
+
+  it("同 kind 同文案短窗内合并，不同文案或跨通道不合并", () => {
+    const first = toast.error("失败");
+    const deduped = toast.error("失败");
+
+    expect(mocked.error).toHaveBeenCalledOnce();
+    expect(deduped).toBe(first);
+
+    toast.error("另一种失败");
+    toast.warning("失败");
+    expect(mocked.error).toHaveBeenCalledTimes(2);
+    expect(mocked.warning).toHaveBeenCalledOnce();
   });
 });

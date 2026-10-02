@@ -2,12 +2,13 @@
   // 笔记管理：顶部新增表单 + 列表行内编辑 + 删除二次确认，数据经 libs/notes，零 props。
   // 校验失败 toast 提示（键与 validate 同源）；删除经通用确认弹窗；时间展示转本地时区。
   import { onMount } from "svelte";
+  import { SvelteMap } from "svelte/reactivity";
   import ConfirmDialog from "$components/common/confirm-dialog.svelte";
   import { Button } from "$components/shadcn-svelte/button";
   import { Input } from "$components/shadcn-svelte/input";
   import { Textarea } from "$components/shadcn-svelte/textarea";
   import CardSection from "$components/common/card-section.svelte";
-  import { createNote, deleteNote, listNotes, updateNote } from "$libs/notes/db";
+  import { createNote, deleteNote, listNotes, NOTES_PAGE_SIZE, updateNote } from "$libs/notes/db";
   import type { Note, NoteValidationError } from "$libs/notes/types";
   import { validateNote } from "$libs/notes/validate";
   import { m } from "$libs/i18n/paraglide/messages";
@@ -18,6 +19,8 @@
   let draftTitle = $state("");
   let draftBody = $state("");
   let busy = $state(false);
+  let loadingMore = $state(false);
+  let hasMore = $state(false);
   let editingId = $state<number | null>(null);
   let editTitle = $state("");
   let editBody = $state("");
@@ -33,8 +36,24 @@
   async function refresh(): Promise<void> {
     try {
       notes = await listNotes();
+      hasMore = notes.length === NOTES_PAGE_SIZE;
     } catch {
       toast.error(m.notes_load_failed());
+    }
+  }
+
+  /** 追加下一页；写操作仍走 refresh 重拉，此处只追加展示 */
+  async function loadMore(): Promise<void> {
+    if (busy || loadingMore || !hasMore) return;
+    loadingMore = true;
+    try {
+      const more = await listNotes(NOTES_PAGE_SIZE, notes.length);
+      notes = [...notes, ...more];
+      hasMore = more.length === NOTES_PAGE_SIZE;
+    } catch {
+      toast.error(m.notes_load_failed());
+    } finally {
+      loadingMore = false;
     }
   }
 
@@ -118,6 +137,15 @@
     if (Number.isNaN(time)) return iso;
     return new Date(time).toLocaleString();
   }
+
+  /** 行时间展示缓存：草稿键入等重渲染不重复做 toLocaleString，随列表整体更新 */
+  const formattedTimes = $derived.by(() => {
+    const cache = new SvelteMap<number, string>();
+    for (const note of notes) {
+      cache.set(note.id, formatLocal(note.updated_at));
+    }
+    return cache;
+  });
 </script>
 
 <CardSection title={m.notes_page_title()} description={m.notes_page_description()}>
@@ -155,7 +183,9 @@
             {#if note.body}
               <p class="text-sm whitespace-pre-wrap text-muted-foreground">{note.body}</p>
             {/if}
-            <p class="text-xs text-muted-foreground">{formatLocal(note.updated_at)}</p>
+            <p class="text-xs text-muted-foreground">
+              {formattedTimes.get(note.id) ?? note.updated_at}
+            </p>
             <div class="flex gap-2 pt-1">
               <Button size="sm" variant="outline" onclick={() => startEdit(note)}>
                 {m.notes_edit_button()}
@@ -168,6 +198,13 @@
         {/if}
       {/each}
     </div>
+    {#if hasMore}
+      <div>
+        <Button size="sm" variant="outline" disabled={loadingMore} onclick={() => void loadMore()}>
+          {m.notes_load_more_button()}
+        </Button>
+      </div>
+    {/if}
   {/if}
 </CardSection>
 

@@ -50,16 +50,34 @@
     await closeWindow();
   }
 
-  // 鼠标拖动窗口边缘或双击标题栏唤起系统最大化时，按钮图标需随之切换
+  // 鼠标拖动窗口边缘或双击标题栏唤起系统最大化时，按钮图标需随之切换；
+  // resize 高频触发，rAF 合并为每帧一次 IPC，尾帧补齐保证图标终态
   $effect(() => {
     let disposed = false;
     let unlisten: (() => void) | null = null;
+    let rafId = 0;
+    let trailing = false;
+
+    async function refreshMaximized(): Promise<void> {
+      maximized = await isWindowMaximized();
+    }
 
     void (async () => {
       alwaysOnTop = await isWindowAlwaysOnTop();
       maximized = await isWindowMaximized();
-      const off = await onWindowResized(async () => {
-        maximized = await isWindowMaximized();
+      const off = await onWindowResized(() => {
+        if (rafId !== 0) {
+          trailing = true;
+          return;
+        }
+        void refreshMaximized();
+        rafId = requestAnimationFrame(() => {
+          rafId = 0;
+          if (trailing) {
+            trailing = false;
+            void refreshMaximized();
+          }
+        });
       });
       if (disposed) {
         off?.();
@@ -70,6 +88,9 @@
 
     return () => {
       disposed = true;
+      if (rafId !== 0) {
+        cancelAnimationFrame(rafId);
+      }
       unlisten?.();
     };
   });

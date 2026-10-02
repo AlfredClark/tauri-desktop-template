@@ -4,11 +4,9 @@
 // 布局组件禁止反向导入本模块，否则形成容器到布局的循环依赖。
 // 布局名用语义名（如 tabs / sidebar），禁用 default 之类只表达"被选中"的占位名——该值会落盘。
 import type { Component, Snippet } from "svelte";
-import Dashboard from "$components/layout/dashboard.svelte";
 import Tabs from "$components/layout/tabs.svelte";
-import Sidebar from "$components/layout/sidebar.svelte";
 
-/** 可选布局取值：新增布局时同步扩展该元组与下方映射（元组即真值来源，避免 `Object.keys` 断言） */
+/** 可选布局取值：新增布局时同步扩展该元组与下方加载器（元组即真值来源，避免 `Object.keys` 断言） */
 const LAYOUT_NAME_TUPLE = ["tabs", "sidebar", "dashboard"] as const;
 
 /** 可选布局取值，新增布局时同步扩展该联合类型与下方映射 */
@@ -17,11 +15,11 @@ export type LayoutName = (typeof LAYOUT_NAME_TUPLE)[number];
 /** 布局组件形态：仅接收子内容片段 */
 export type LayoutComponent = Component<{ children: Snippet }>;
 
-/** 布局名到组件的映射，容器据此动态渲染 */
-export const LAYOUTS: Record<LayoutName, LayoutComponent> = {
-  tabs: Tabs,
-  sidebar: Sidebar,
-  dashboard: Dashboard,
+/** 布局名到加载器的映射：tabs 同步兜底保证首帧，其余懒加载，首屏不下非当前布局代码 */
+export const LAYOUTS: Record<LayoutName, () => Promise<LayoutComponent>> = {
+  tabs: () => Promise.resolve(Tabs),
+  sidebar: () => import("$components/layout/sidebar.svelte").then((module) => module.default),
+  dashboard: () => import("$components/layout/dashboard.svelte").then((module) => module.default),
 };
 
 /** 持久化键名，改名即视为放弃老用户存量 */
@@ -281,14 +279,16 @@ export function setFontFamily(next: string): void {
 }
 
 /** 切换字重，先落盘再改内存并即时应用，非法取值直接拒绝 */
-export function setFontWeight(next: number): void {
+export function setFontWeight(next: number, persist = true): void {
   if (!isFontWeight(next)) {
     return;
   }
-  try {
-    localStorage.setItem(FONT_WEIGHT_STORAGE_KEY, String(next));
-  } catch {
-    // 落盘失败仍切换内存状态，保证本次会话可用
+  if (persist) {
+    try {
+      localStorage.setItem(FONT_WEIGHT_STORAGE_KEY, String(next));
+    } catch {
+      // 落盘失败仍切换内存状态，保证本次会话可用
+    }
   }
   fontState.weight = next;
   applyAppearance();

@@ -3,7 +3,7 @@
   // 订阅失败（浏览器预览 / 单测无 Tauri 运行时）即标不可用；移动端无拖放能力，整卡隐藏。
   import type { UnlistenFn } from "@tauri-apps/api/event";
   import type { DropFileInfo } from "$libs/commands/types";
-  import { IsMobile } from "$hooks/is-mobile.svelte";
+  import { getSharedIsMobile } from "$hooks/is-mobile.svelte";
   import { Button } from "$components/shadcn-svelte/button";
   import CardRow from "$components/common/card-row.svelte";
   import CardSection from "$components/common/card-section.svelte";
@@ -11,8 +11,8 @@
   import { m } from "$libs/i18n/paraglide/messages";
   import { toast } from "$libs/utils/toast";
 
-  /** 移动端无拖放能力，整卡隐藏（而非展示禁用态） */
-  const isMobile = new IsMobile();
+  /** 移动端无拖放能力，整卡隐藏（而非展示禁用态）；断点监听复用共享单例 */
+  const isMobile = getSharedIsMobile();
 
   /** 拖拽悬停中：高亮放置区；`leave` / `drop` 后复位 */
   let dragging = $state(false);
@@ -53,6 +53,8 @@
       unlisten = await getCurrentWindow().onDragDropEvent((event) => {
         const payload = event.payload;
         if (payload.type === "enter" || payload.type === "over") {
+          // over 悬停高频触发，状态未变直接短路，避免反复重算高亮
+          if (dragging) return;
           dragging = true;
         } else if (payload.type === "leave") {
           dragging = false;

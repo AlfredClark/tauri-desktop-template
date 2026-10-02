@@ -176,7 +176,7 @@ describe("外观设置分组", () => {
     (slider as HTMLElement).focus();
     await user.keyboard("{ArrowRight}");
 
-    expect(setFontWeightMock).toHaveBeenCalledWith(500);
+    expect(setFontWeightMock).toHaveBeenCalledWith(500, false);
   });
 
   it("字号下拉切换调用 setFontSize，不经过后端", async () => {

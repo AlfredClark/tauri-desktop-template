@@ -28,11 +28,15 @@ function nowIso(): string {
   return new Date().toISOString();
 }
 
-/** 全部笔记，按更新时间倒序 */
-export async function listNotes(): Promise<Note[]> {
+/** 单页条数：列表分页读取，避免几百条一次全取 */
+export const NOTES_PAGE_SIZE = 50;
+
+/** 分页列出笔记，按更新时间倒序；默认首屏一页 */
+export async function listNotes(limit: number = NOTES_PAGE_SIZE, offset = 0): Promise<Note[]> {
   const db = await getDb();
   return db.select<Note[]>(
-    "SELECT id, title, body, created_at, updated_at FROM notes ORDER BY updated_at DESC",
+    "SELECT id, title, body, created_at, updated_at FROM notes ORDER BY updated_at DESC LIMIT $1 OFFSET $2",
+    [limit, offset],
   );
 }
 

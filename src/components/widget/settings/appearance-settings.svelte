@@ -79,7 +79,13 @@
   }
 
   /** 字重即时生效，同上；单值滑块直接给数值。 */
+  // 拖动中只预览（落盘延后到松手提交），避免逐 tick 同步 IO
   function handleFontWeightChange(value: number): void {
+    setFontWeight(value, false);
+  }
+
+  /** 字重松手提交：预览值落盘，刷新不丢失。 */
+  function handleFontWeightCommit(value: number): void {
     setFontWeight(value);
   }
 
@@ -172,6 +178,7 @@
           max={MAX_FONT_WEIGHT}
           step={FONT_WEIGHT_STEP}
           onValueChange={handleFontWeightChange}
+          onValueCommit={handleFontWeightCommit}
         />
         <span class="w-8 shrink-0 text-right text-sm text-muted-foreground tabular-nums">
           {fontState.weight}

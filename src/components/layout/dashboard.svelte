@@ -5,7 +5,7 @@
   import { mergeProps } from "bits-ui";
   import PanelLeftCloseIcon from "@lucide/svelte/icons/panel-left-close";
   import PanelLeftOpenIcon from "@lucide/svelte/icons/panel-left-open";
-  import { IsMobile } from "$hooks/is-mobile.svelte";
+  import { getSharedIsMobile } from "$hooks/is-mobile.svelte";
   import { buttonVariants } from "$components/shadcn-svelte/button";
   import * as Tooltip from "$components/shadcn-svelte/tooltip/index.js";
   import Copyright from "$components/layout/parts/copyright.svelte";
@@ -16,8 +16,9 @@
 
   let { children }: { children: Snippet } = $props();
 
-  // 窄屏强制图标栏；桌面端由把手控制，会话级状态，切换布局重挂载后回默认展开
-  const isMobile = new IsMobile();
+  // 窄屏强制图标栏；桌面端由底部按钮控制，会话级状态，切换布局重挂载后回默认展开。
+  // 断点监听复用共享单例，同断点多处订阅不断重复注册。
+  const isMobile = getSharedIsMobile();
   let collapsed = $state(false);
   const compact = $derived(isMobile.current || collapsed);
 </script>

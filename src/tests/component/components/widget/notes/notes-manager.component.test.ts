@@ -11,7 +11,9 @@ const updateNoteMock = vi.hoisted(() => vi.fn());
 const deleteNoteMock = vi.hoisted(() => vi.fn());
 const toastMocks = vi.hoisted(() => ({ success: vi.fn(), error: vi.fn() }));
 
-vi.mock("$libs/notes/db", () => ({
+vi.mock("$libs/notes/db", async (importOriginal) => ({
+  // 真值（NOTES_PAGE_SIZE 等常量）走原模块，仅数据函数用替身
+  ...(await importOriginal<typeof import("$libs/notes/db")>()),
   listNotes: listNotesMock,
   createNote: createNoteMock,
   updateNote: updateNoteMock,
@@ -101,5 +103,28 @@ describe("笔记管理", () => {
 
     expect(deleteNoteMock).toHaveBeenCalledOnce();
     expect(deleteNoteMock.mock.calls[0][0]).toBe(1);
+  });
+
+  it("满页时加载更多追加，不满页隐藏按钮", async () => {
+    const page = Array.from({ length: 50 }, (_, index) => ({
+      ...row,
+      id: index + 1,
+      title: `标题${index + 1}`,
+    }));
+    listNotesMock
+      .mockResolvedValueOnce(page)
+      .mockResolvedValueOnce([{ ...row, id: 51, title: "标题51" }]);
+    const user = userEvent.setup();
+    render(Component);
+    await screen.findByText("Load more");
+
+    await user.click(screen.getByRole("button", { name: "Load more" }));
+
+    expect(listNotesMock).toHaveBeenCalledTimes(2);
+    // 首屏 50 条（NOTES_PAGE_SIZE），第二页 offset 紧随其后
+    expect(listNotesMock.mock.calls[1]).toEqual([50, 50]);
+    // 第二页不足一页，追加行出现后按钮收起
+    expect(await screen.findByText("标题51")).not.toBeNull();
+    expect(screen.queryByRole("button", { name: "Load more" })).toBeNull();
   });
 });

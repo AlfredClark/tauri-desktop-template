@@ -226,6 +226,7 @@
   "notes_cancel_button": "Cancel",
   "notes_delete_button": "Delete",
   "notes_empty_hint": "No notes yet, add the first one above",
+  "notes_load_more_button": "Load more",
   "notes_delete_title": "Delete this note?",
   "notes_delete_description": "Deleted notes cannot be recovered",
   "notes_delete_ok": "Delete",

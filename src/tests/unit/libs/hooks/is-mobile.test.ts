@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { MediaQuery } from "svelte/reactivity";
-import { IsMobile } from "$hooks/is-mobile.svelte";
+import { getSharedIsMobile, IsMobile } from "$hooks/is-mobile.svelte";
 
 // 单测跑 node 环境，`svelte/reactivity` 解析到服务端实现：
 // 构造器不触碰 `window.matchMedia`，`current` 恒为回落值。
@@ -21,5 +21,9 @@ describe("IsMobile", () => {
 
     expect(custom).toBeInstanceOf(IsMobile);
     expect(custom.current).toBe(false);
+  });
+
+  it("共享单例复用同一实例", () => {
+    expect(getSharedIsMobile()).toBe(getSharedIsMobile());
   });
 });

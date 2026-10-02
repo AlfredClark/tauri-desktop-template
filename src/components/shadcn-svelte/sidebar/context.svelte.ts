@@ -1,5 +1,5 @@
 import { getContext, setContext } from "svelte";
-import { IsMobile } from "$hooks/is-mobile.svelte.js";
+import { IsMobile, getSharedIsMobile } from "$hooks/is-mobile.svelte.js";
 import { SIDEBAR_KEYBOARD_SHORTCUT } from "./constants.js";
 
 type Getter<T> = () => T;
@@ -30,7 +30,7 @@ class SidebarState {
 
   constructor(props: SidebarStateProps) {
     this.setOpen = props.setOpen;
-    this.#isMobile = new IsMobile();
+    this.#isMobile = getSharedIsMobile();
     this.props = props;
   }
 

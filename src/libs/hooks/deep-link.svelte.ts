@@ -24,6 +24,9 @@ const DEDUPE_WINDOW_MS = 2000;
 /** 已处理的 URL 及时间：防冷启动与运行时事件重复投递（模块级缓存，非组件状态） */
 const handledAt = new SvelteMap<string, number>();
 
+/** 去重表上限：超限先清过期条目，同窗突发仍超限则按插入序淘汰最旧，保证有界 */
+const MAX_HANDLED_URLS = 100;
+
 /** 是否为本应用协议链接 */
 export function isDeepLink(url: string): boolean {
   return url.startsWith(`${DEEP_LINK_SCHEME}://`);
@@ -57,6 +60,20 @@ export function handleDeepLinkUrl(url: string): void {
     return;
   }
   handledAt.set(url, now);
+  // 有界去重表：超限清过期条目，同窗突发仍超限则淘汰最旧（去重尽力而为，淘汰伴随重复处理风险）
+  if (handledAt.size > MAX_HANDLED_URLS) {
+    for (const [seen, at] of handledAt) {
+      if (now - at >= DEDUPE_WINDOW_MS) {
+        handledAt.delete(seen);
+      }
+    }
+    for (const seen of handledAt.keys()) {
+      if (handledAt.size <= MAX_HANDLED_URLS) {
+        break;
+      }
+      handledAt.delete(seen);
+    }
+  }
   const route = routeForUrl(url);
   if (route === null) {
     // 非法深链 toast 提醒用户，同时上报便于排障（不跳转、不抛错）

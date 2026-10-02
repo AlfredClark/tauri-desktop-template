@@ -226,6 +226,7 @@
   "notes_cancel_button": "取消",
   "notes_delete_button": "删除",
   "notes_empty_hint": "还没有笔记，在上方新增第一条",
+  "notes_load_more_button": "加载更多",
   "notes_delete_title": "删除这条笔记？",
   "notes_delete_description": "删除后无法恢复",
   "notes_delete_ok": "删除",

@@ -137,10 +137,10 @@ describe("initLayout", () => {
 });
 
 describe("LAYOUTS", () => {
-  it("合法取值均有对应组件", () => {
+  it("合法取值均有对应组件", async () => {
     for (const name of ["tabs", "sidebar", "dashboard"] as const) {
       expect(isLayoutName(name)).toBe(true);
-      expect(LAYOUTS[name]).toBeDefined();
+      await expect(LAYOUTS[name]()).resolves.toBeDefined();
     }
   });
 });
@@ -222,6 +222,12 @@ describe("setFontWeight", () => {
   it("先落盘再切换内存状态", () => {
     setFontWeight(700);
     expect(localStorage.getItem(FONT_WEIGHT_STORAGE_KEY)).toBe("700");
+    expect(fontState.weight).toBe(700);
+  });
+
+  it("预览模式只改内存不落盘", () => {
+    setFontWeight(700, false);
+    expect(localStorage.getItem(FONT_WEIGHT_STORAGE_KEY)).toBeNull();
     expect(fontState.weight).toBe(700);
   });
 

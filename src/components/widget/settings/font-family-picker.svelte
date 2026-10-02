@@ -29,7 +29,9 @@
 
   /** 系统字体族候选：插件变体数组按族名去重排序，失败时为空并禁用下拉。 */
   let systemFontFamilies = $state<string[]>([]);
-  let loadingFonts = $state(true);
+  let loadingFonts = $state(false);
+  // 是否已拉取过：首次打开弹窗前不付全量 IPC，触发器保持可用
+  let fontsLoaded = $state(false);
 
   /** 懒加载窗口：每页挂载数，搜索或打开弹窗时重置，避免几百项一次挂载。 */
   const FONT_LIST_PAGE_SIZE = 80;
@@ -48,11 +50,12 @@
       .sort((a, b) => a.localeCompare(b)),
   );
 
+  // 查询串归一化一次，多族名复用，避免循环内重复计算
+  const normalizedQuery = $derived(normalizeFontQuery(fontQuery));
+
   /** 搜索过滤：归一化后子串匹配族名，空格不影响查询。 */
   const filteredFontFamilies = $derived(
-    orderedFontFamilies.filter((family) =>
-      normalizeFontQuery(family).includes(normalizeFontQuery(fontQuery)),
-    ),
+    orderedFontFamilies.filter((family) => normalizeFontQuery(family).includes(normalizedQuery)),
   );
 
   /** 懒加载当前页：常驻 DOM 封顶，触底哨兵再追加。 */
@@ -65,9 +68,10 @@
       : fontState.family,
   );
 
-  // 插件不可用（浏览器预览等无 Tauri 环境）时回落空列表，不阻断页面
+  // 插件不可用（浏览器预览等无 Tauri 环境）时回落空列表，不阻断页面；
+  // 未拉取前按正常描述展示，拉取后为空才提示不可用
   const fontFamilyDescription = $derived(
-    !loadingFonts && systemFontFamilies.length === 0
+    fontsLoaded && !loadingFonts && systemFontFamilies.length === 0
       ? m.settings_font_family_unavailable()
       : m.settings_font_family_description(),
   );
@@ -99,23 +103,23 @@
     return families.sort((a, b) => a.localeCompare(b));
   }
 
-  // 挂载时拉取系统字体一次并缓存，失败即回落空列表
-  $effect(() => {
-    let cancelled = false;
-    (async () => {
+  // 首次打开弹窗才拉取系统字体：进设置页不付全量 IPC；失败回落空列表并禁用
+  function handleFontPopoverOpenChange(open: boolean): void {
+    if (!open || fontsLoaded) {
+      return;
+    }
+    fontsLoaded = true;
+    loadingFonts = true;
+    void (async () => {
       try {
-        const fonts = await getSystemFonts();
-        if (!cancelled) systemFontFamilies = extractFontFamilies(fonts);
+        systemFontFamilies = extractFontFamilies(await getSystemFonts());
       } catch {
-        if (!cancelled) systemFontFamilies = [];
+        systemFontFamilies = [];
       } finally {
-        if (!cancelled) loadingFonts = false;
+        loadingFonts = false;
       }
     })();
-    return () => {
-      cancelled = true;
-    };
-  });
+  }
 
   // 搜索变化时重置窗口，避免过滤后出现空洞
   $effect(() => {
@@ -152,7 +156,7 @@
 
 <CardRow label={m.settings_font_family_label()} description={fontFamilyDescription}>
   {#snippet control()}
-    <PopoverRoot bind:open={fontPopoverOpen}>
+    <PopoverRoot bind:open={fontPopoverOpen} onOpenChange={handleFontPopoverOpenChange}>
       <PopoverTrigger bind:ref={fontTriggerRef}>
         {#snippet child({ props })}
           <Button
@@ -161,7 +165,7 @@
             role="combobox"
             aria-expanded={fontPopoverOpen}
             aria-label={m.settings_font_family_label()}
-            disabled={loadingFonts || systemFontFamilies.length === 0}
+            disabled={loadingFonts || (fontsLoaded && systemFontFamilies.length === 0)}
             class="w-44 justify-between"
           >
             <span class="truncate">

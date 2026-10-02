@@ -80,13 +80,10 @@ beforeEach(() => {
 });
 
 describe("字体选择器", () => {
-  /** 等待字体候选加载完成：触发器恢复可用。 */
-  async function waitFontComboboxReady(): Promise<void> {
-    await waitFor(() => {
-      expect(
-        screen.getByRole("combobox", { name: "Interface font" }).hasAttribute("disabled"),
-      ).toBe(false);
-    });
+  /** 打开字体弹窗并等待首个选项：拉取发生在首次打开时。 */
+  async function openFontPopover(user: ReturnType<typeof userEvent.setup>): Promise<void> {
+    await user.click(screen.getByRole("combobox", { name: "Interface font" }));
+    await waitFontOption("Alpha");
   }
 
   /** 按文本查找字体选项：选项内联的勾选图标无 `aria-hidden`，可访问名计算不可靠，按文本匹配。 */
@@ -107,22 +104,35 @@ describe("字体选择器", () => {
   }
 
   it("渲染字体行及当前取值", async () => {
+    const user = userEvent.setup();
     render(Component);
 
     expect(screen.getByText("Interface font")).not.toBeNull();
-    // 字体候选异步加载，触发器就绪后展示已存取值
-    await waitFontComboboxReady();
+    // 触发器挂载即用，候选在首次打开时加载
+    await openFontPopover(user);
     expect(screen.getByRole("combobox", { name: "Interface font" }).textContent).toContain(
       "System default",
     );
+  });
+
+  it("挂载时不拉取字体，首次打开拉取一次", async () => {
+    const user = userEvent.setup();
+    render(Component);
+
+    expect(getSystemFontsMock).not.toHaveBeenCalled();
+    await openFontPopover(user);
+    expect(getSystemFontsMock).toHaveBeenCalledTimes(1);
+    // 关闭重开不重复拉取
+    await user.click(screen.getByRole("combobox", { name: "Interface font" }));
+    await openFontPopover(user);
+    expect(getSystemFontsMock).toHaveBeenCalledTimes(1);
   });
 
   it("字体搜索过滤并切换调用 setFontFamily，不经过后端", async () => {
     const user = userEvent.setup();
     render(Component);
 
-    await waitFontComboboxReady();
-    await user.click(screen.getByRole("combobox", { name: "Interface font" }));
+    await openFontPopover(user);
     // 弹窗内容异步挂载，选项就绪后再点选
     await user.click(await waitFontOption("Alpha"));
 
@@ -133,8 +143,7 @@ describe("字体选择器", () => {
     const user = userEvent.setup();
     render(Component);
 
-    await waitFontComboboxReady();
-    await user.click(screen.getByRole("combobox", { name: "Interface font" }));
+    await openFontPopover(user);
     const searchbox = await screen.findByPlaceholderText("Search fonts…");
     // jsdom 内逐字键入首字符后焦点漂移（生产环境无此问题），单次 input 事件直达过滤逻辑
     await fireEvent.input(searchbox, { target: { value: "alp" } });
@@ -149,8 +158,7 @@ describe("字体选择器", () => {
     const user = userEvent.setup();
     render(Component);
 
-    await waitFontComboboxReady();
-    await user.click(screen.getByRole("combobox", { name: "Interface font" }));
+    await openFontPopover(user);
     const searchbox = await screen.findByPlaceholderText("Search fonts…");
     // 关键词与族名的空格差异不影响匹配
     await fireEvent.input(searchbox, { target: { value: "gammadelta" } });
@@ -176,7 +184,6 @@ describe("字体选择器", () => {
     );
     render(Component);
 
-    await waitFontComboboxReady();
     await user.click(screen.getByRole("combobox", { name: "Interface font" }));
     // 系统默认 + 首屏 80，弹窗内容异步挂载
     // jsdom 零布局下浮动定位给弹窗加 `visibility: hidden`（真机定位后移除），查询放宽隐藏过滤
@@ -193,13 +200,15 @@ describe("字体选择器", () => {
     fontStateMock.family = "Beta";
     render(Component);
 
-    await waitFontComboboxReady();
     expect(screen.getByRole("combobox", { name: "Interface font" }).textContent).toContain("Beta");
   });
 
   it("插件不可用时字体下拉禁用并提示仅桌面端可用", async () => {
     getSystemFontsMock.mockRejectedValueOnce(new Error("no tauri runtime"));
     render(Component);
+    const user = userEvent.setup();
+    // 拉取发生在首次打开，失败后禁用并提示
+    await user.click(screen.getByRole("combobox", { name: "Interface font" }));
 
     await waitFor(() => {
       expect(
