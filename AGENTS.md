@@ -62,16 +62,18 @@ tauri-desktop-template/
 │   │   ├── +layout.ts              # ssr = false（SPA 模式）+ 首帧前对齐界面语言的 load()
 │   │   ├── (main)/                 # 分组路由（括号不进 URL）：常规页面分组，独享布局容器
 │   │   │   ├── +layout.svelte      # 分组布局：LayoutContainer 包裹，特殊页另起分组即可绕开布局
-│   │   │   └── +page.svelte        # 占位首页：布局骨架验证起点，业务在此开发；about 为导航标签示例页，settings 为完整设置页（通用 + 外观两分组）
-│   │   │   └── notes/                # 业务示例页：SQLite 笔记增删改查（文案全 `notes_` 开头），移除流程见第 10 章第 7 条
-│   │   │   └── demo/                 # 演示页：每插件一卡片分组 + 文件拖放分组 + 网络请求分组（文案全 `demo_` 开头），移除流程见第 10 章第 6 条
+│   │   │   ├── +page.svelte        # 占位首页：布局骨架验证起点，业务在此开发
+│   │   │   ├── about/              # 导航标签示例页（应用 / 项目 / 平台分组 + 更新面板）
+│   │   │   ├── settings/           # 完整设置页（通用 + 外观两分组）
+│   │   │   ├── notes/              # 业务示例页：SQLite 笔记增删改查（文案全 `notes_` 开头），移除流程见第 10 章第 7 条
+│   │   │   └── demo/               # 演示页：八卡片（目录解析 + fs / dialog / clipboard / notification / shortcut / drop + http 网络请求，文案全 `demo_` 开头），移除流程见第 10 章第 6 条
 │   │   └── layout.css              # Tailwind v4 入口与 shadcn-svelte 主题令牌（含 .dark 暗色变体与 --app-font-* 外观变量）
 │   │   └── themes.css              # 配色主题令牌（blue/green/violet/rose 的浅色 + :root.dark 暗色块，neutral 回落 layout.css）
 │   ├── components/
 │   │   ├── common/                 # 手写共享组件（error-boundary.svelte 全局渲染兜底，card-section/row.svelte 通用卡片分组与行，confirm-dialog.svelte 通用确认弹窗，icons/ 内联品牌图标如 github-logo）
 │   │   ├── layout/                 # 布局子系统：layout-container.svelte 容器 + tabs（标题栏/标签栏/内容/底边）与 sidebar（侧边栏 + 标题栏/内容/底边）实现，新增布局需在 libs/hooks/appearance.svelte.ts 中映射
 │   │   │   └── parts/              # 布局配套部件（title-bar / nav-tabs-bar / side-nav-bar / copyright）
-│   │   ├── widget/                 # 手写页面小组件（settings/：设置页通用/外观分组与字体选择器；about/：关于页应用/项目/平台分组与更新面板；demo/：演示页六插件分组 + 文件拖放分组 + 网络请求分组；notes/：笔记管理〈新增表单 + 行内编辑 + 删除确认〉）
+│   │   ├── widget/                 # 手写页面小组件（settings/：设置页通用/外观分组与字体选择器；about/：关于页应用/项目/平台分组与更新面板；demo/：演示页八卡片〈目录解析 + fs / dialog / clipboard / notification / shortcut / drop + http 网络请求〉；notes/：笔记管理〈新增表单 + 行内编辑 + 删除确认〉）
 │   │   └── shadcn-svelte/          # CLI 生成的 UI 组件（nova / neutral / lucide），新增走 CLI 添加，勿手动重组
 │   ├── tests/                      # 前端测试集中目录，按源路径镜像：unit/ 纯逻辑（node）+ component/ 组件（jsdom）
 │   └── libs/
@@ -80,6 +82,7 @@ tauri-desktop-template/
 │       ├── notes/                  # 笔记数据层：db.ts 最小 CRUD（`notes.db` 直连，全参数化）+ validate.ts 纯校验 + types.ts 共享类型
 │       ├── i18n/                   # Paraglide：messages/ 文案、project.inlang/ 配置、paraglide/ 生成物
 │       ├── navigation/             # 导航等应用级注册表（nav-tabs.ts：路径 / 图标 / 顺序，顶部标签栏与侧边栏导航同源）
+│       ├── shortcuts/              # 快捷键领域：shortcuts.ts 自定义槽位 + validate.ts 纯校验（演示页 shortcut 卡片调用方，删演示页时同步清理）
 │       ├── utils/                  # 前端通用工具（shadcn-svelte.ts 的 cn()、window-controls.ts、toast.ts、opener.ts）
 │       └── hooks/                  # 前端共享状态（统一经 $hooks 引用），如 appearance.svelte.ts（布局注册表 + 字体偏好）、config.svelte.ts（后端配置内存态）、updater.svelte.ts（更新状态）、is-mobile.svelte.ts（响应式断点）、deep-link.svelte.ts（三路深链入口）
 ├── src-tauri/                      # 后端：Rust（edition 2024）
@@ -119,7 +122,7 @@ tauri-desktop-template/
 ## 4. 常用命令
 
 > 所有命令以仓库根目录为基准执行。优先使用以下命令，禁止另起等效命令。
-> 包管理器为 `pnpm@11.25.0`，Node `>=24`；Rust 工具链锁定 `1.98.0`（见 `rust-toolchain.toml`）。
+> 包管理器为 `pnpm@12.6.0`，Node `>=24`；Rust 工具链锁定 `1.98.0`（见 `rust-toolchain.toml`）。
 
 ```bash
 # ---- 环境初始化 ----
@@ -210,7 +213,7 @@ const msg = await invoke<string>("greet", { name });
 ### 6.3 后端
 
 - 命令层：薄封装 + `#[tauri::command]` + `#[specta::specta]` + `collect_commands!` 注册，返回 `CommandResult`；`features/` 保持纯函数，不依赖 Tauri 运行时。
-- 格式：`cargo fmt`（行宽 100、4 空格、`use_field_init_shorthand`、`use_try_shorthand`）+ Clippy `pedantic` / `nursery` / `cargo` 组记为 `warn`，CI 中 `-D warnings`。`main.rs` 豁免 `clippy::module_name_repetitions`；`commands/mod.rs` 豁免 `unnecessary_wraps`；`lib.rs:57` 的 `.expect()` 为 Tauri 官方模板惯用法（`run()` 已声明 `# Panics`），予以豁免；`lib.rs:run()` 豁免 `clippy::large_stack_frames`（`generate_context!` 生成闭包逐项装配各插件 JS API 与权限表，上游已单开 8MiB 栈线程，加插件即涨是预期行为）。
+- 格式：`cargo fmt`（行宽 100、4 空格、`use_field_init_shorthand`、`use_try_shorthand`）+ Clippy `pedantic` / `nursery` / `cargo` 组记为 `warn`，CI 中 `-D warnings`。`main.rs` 豁免 `clippy::module_name_repetitions`；`commands/mod.rs` 豁免 `unnecessary_wraps`；`lib.rs:55` 的 `.expect()` 为 Tauri 官方模板惯用法（`run()` 已声明 `# Panics`），予以豁免；`lib.rs:run()` 豁免 `clippy::large_stack_frames`（`generate_context!` 生成闭包逐项装配各插件 JS API 与权限表，上游已单开 8MiB 栈线程，加插件即涨是预期行为）。
 - 日志：关键分支打 `info`，异常打 `error`；崩溃走 `cores/system.rs` panic 钩子。禁止打印密钥 / Token / 完整 PII。
 - 注释：`//!` 写模块职责、`///` 写导出项契约与"为什么"、`//` 只解释非直观取舍；文档注释标识符必须加反引号（Clippy `doc_markdown` 会拦截 `WebKitGTK`、`AppImage` 类驼峰词）。
 - 示例：
@@ -312,18 +315,18 @@ CI（`.github/workflows/ci.yml`）在 `main` 分支上按变更路径触发：
    - CI backend 的 `changes` 路径过滤器 ↔ 新增的后端配置文件
 5. **构建与忽略：** 构建产物（`target/`、`build/`、`.svelte-kit/`、`src-tauri/gen/`、`node_modules/`、`src/libs/i18n/paraglide/`）均已忽略；`bindings.ts` 虽是生成物但**需要提交**；`Cargo.lock` 需要提交；`static/icon.png` 为图标源文件（`pnpm tauri:icon` 生成各平台图标）。Vite 固定端口 `1420`，忽略监听 `src-tauri/**`，`clearScreen: false` 以保留 Rust 日志。主窗口初始 `visible: false`（防恢复闪烁），由 `cores/config.rs` 的 `setup` 按记住窗口配置恢复后统一 `show`，任何提前返回前必须显示，否则永久黑屏；仅恢复 `main` 窗口。
 6. **演示页移除流程：** `/demo` 及配套代码是模板脚手架，派生项目按以下清单删除即初始化（`greet` 最小契约示例保留，`locales/demo.yml` 后端文案随之保留；`http` 网络层〈插件 / CSP / capability / `libs/http/`〉为常驻能力，仅删演示卡片与 `demo_http_*` 文案，不动网络层）：
-   - 删目录：`src/routes/(main)/demo/`、`src/components/widget/demo/`、`src-tauri/src/cores/demo.rs`、`src-tauri/src/plugins/{fs,dialog,clipboard,notification,global_shortcut}.rs`
+   - 删目录：`src/routes/(main)/demo/`、`src/components/widget/demo/`、`src/libs/shortcuts/`（演示页 shortcut 卡片调用方，含 `demo_` 残留）、`src-tauri/src/cores/demo.rs`、`src-tauri/src/plugins/{fs,dialog,clipboard,notification,global_shortcut}.rs`
    - 删导航：`nav-tabs.ts` 的 `/demo` 项（含 `FlaskConicalIcon` 导入）
    - 删文案：`src/libs/i18n/messages/*.json` 中全部 `demo_` 开头键 → `pnpm i18n:compile`
-   - 删测试：`src/tests/` 下 `widget/demo/` 整组用例（不删则 import 悬空导致 vitest 变红）
+   - 删测试：`src/tests/component/components/widget/demo/` 整组用例 + `src/tests/unit/libs/shortcuts/` 两组用例（不删则 import 悬空导致 vitest 变红）
    - 瘦身后端：`features/demo.rs` 删校验常量与函数及对应单测（保留 `greet` 及其单测）；`commands/demo.rs` 删全部 `demo_*` 命令（保留 `greet`）并重写文件头为最小契约说明；`collect_commands!` 同步删项；`cores/mod.rs` 删 `pub mod demo`
-   - 摘注册：`plugins/mod.rs` 删五模块声明与 `with_global_shortcut`（含移动端空实现）；`lib.rs` 删四个 `.plugin(...)` 与 `.with_global_shortcut()`；`capabilities/plugins.json` 删 11 项演示权限（clipboard-manager 读写×2、`dialog:default`、fs×4、`global-shortcut`×3、`notification:default`），保留 6 项基线（`deep-link` / `log` / `opener` / `os:allow-locale` / `system-fonts` / `updater`，其中 `log` 系错误上报通道、`opener` 系项目外链通道，勿误删）；`Cargo.toml` 删五个插件依赖；`libs/commands/types.ts` 删 `DemoAppPaths` / `DropFileInfo` 的导入与透出
+   - 摘注册：`plugins/mod.rs` 删五模块声明与 `with_global_shortcut`（含移动端空实现）；`lib.rs` 删四个 `.plugin(...)` 与 `.with_global_shortcut()`；`capabilities/plugins.json` 删 11 项演示权限（clipboard-manager 读写×2、`dialog:default`、fs×4、`global-shortcut`×3、`notification:default`），保留 6 项基线（`deep-link` / `log` / `opener` / `os:allow-locale` / `system-fonts` / `updater`，其中 `log` 系错误上报通道、`opener` 系项目外链通道，勿误删）+ `http` 常驻 1 项 + `sql` 常驻 3 项（共剩 10 项）；`Cargo.toml` 删五个插件依赖（`fs` / `dialog` / `clipboard-manager` / `notification` / `global-shortcut`，保留 `http` 常驻）；`libs/commands/types.ts` 删 `DemoAppPaths` / `DropFileInfo` 的导入与透出
    - 收尾：`cargo test` 重生成 `bindings.ts` → `pnpm format` + `pnpm validate`；`rg "demo_" src src-tauri` 应无残留（`demo.rs` 文件名与注释除外）；`lib.rs` 的 `large_stack_frames` 豁免若不再触发则同步删除（`allow` 与 6.3 对应半句）；更新 `README.md` / `docs/` / 本文件 / `TODO.md` 中的 demo 描述；可选将 `locales/demo.yml` 改名为中性文件名（仅剩 `greet` + `tray` 文案时原名误导，改名后 `cargo test` 验证 `t!` 解析）
 7. **业务示例移除流程：** `/notes` 及配套代码是最小业务样板间，抄完即删（与演示页不同：`sql` 插件常驻，仅摘示例）：
    - 删目录：`src/routes/(main)/notes/`、`src/components/widget/notes/`、`src/libs/notes/`
    - 删导航：`nav-tabs.ts` 的 `/notes` 项（含 `NotebookPenIcon` 导入）
    - 删文案：`src/libs/i18n/messages/*.json` 中全部 `notes_` 开头键 → `pnpm i18n:compile`
-   - 删测试：`src/tests/` 下 `widget/notes/` 与 `unit/libs/notes/` 两组用例
+   - 删测试：`src/tests/component/components/widget/notes/` 与 `src/tests/unit/libs/notes/` 两组用例
    - 摘示例：`plugins/sql.rs` 删 `migrations()` 内笔记建表（保留插件空注册供业务复用）；`capabilities/plugins.json` 与双端 `sql` 依赖**保留**（常驻决议）
    - 收尾：`pnpm format` + `pnpm validate`；`rg "notes_|note_" src src-tauri` 应无残留；更新 `README.md` / `docs/` / 本文件 / `TODO.md` 中的 notes 描述
 
