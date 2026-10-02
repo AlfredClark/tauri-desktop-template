@@ -67,6 +67,8 @@
   "settings_layout_option_tabs": "标签页",
   "settings_layout_option_sidebar": "侧边栏",
   "settings_layout_option_dashboard": "仪表盘",
+  "dashboard_toggle_collapse": "收起侧边栏",
+  "dashboard_toggle_expand": "展开侧边栏",
   "settings_font_family_label": "界面字体",
   "settings_font_family_description": "从系统已安装字体中选择",
   "settings_font_family_option_system": "系统默认",

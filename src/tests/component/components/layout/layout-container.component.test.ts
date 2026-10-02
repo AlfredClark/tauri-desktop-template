@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { cleanup, render, screen } from "@testing-library/svelte";
+import userEvent from "@testing-library/user-event";
 import { tick } from "svelte";
 import { createRawSnippet } from "svelte";
 import { layoutState } from "$hooks/appearance.svelte";
@@ -107,6 +108,24 @@ describe("布局容器", () => {
 
     expect(document.querySelector('[data-layout="dashboard"]')).not.toBeNull();
     expect(screen.getByText("probe-content")).not.toBeNull();
+  });
+
+  it("dashboard 把手切换侧栏收起与展开", async () => {
+    const user = userEvent.setup();
+    localStorage.setItem("layout-name", "dashboard");
+    layoutState.name = "dashboard";
+    renderWithProbe();
+
+    const aside = document.querySelector("aside");
+    // 展开态导航标签文本可见
+    expect(aside?.querySelectorAll("span").length).toBeGreaterThan(0);
+
+    await user.click(screen.getByRole("button", { name: "Collapse sidebar" }));
+    // 收起态仅剩图标，标签走悬浮 tooltip
+    expect(aside?.querySelectorAll("span").length).toBe(0);
+
+    await user.click(screen.getByRole("button", { name: "Expand sidebar" }));
+    expect(aside?.querySelectorAll("span").length).toBeGreaterThan(0);
   });
 
   it("注册表缺 key 时回落 tabs 而非白屏", async () => {
