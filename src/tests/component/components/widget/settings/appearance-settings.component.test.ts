@@ -123,6 +123,16 @@ describe("外观设置分组", () => {
     expect(setModeMock).not.toHaveBeenCalled();
   });
 
+  it("切换到 dashboard 布局同样调用 setLayoutName", async () => {
+    const user = userEvent.setup();
+    render(Component);
+
+    await chooseOption(user, "Layout", "dashboard");
+
+    expect(setLayoutNameMock).toHaveBeenCalledWith("dashboard");
+    expect(setModeMock).not.toHaveBeenCalled();
+  });
+
   it("布局下拉渲染持久化的当前取值", () => {
     layoutStateMock.name = "sidebar";
     render(Component);

@@ -138,7 +138,7 @@ describe("initLayout", () => {
 
 describe("LAYOUTS", () => {
   it("合法取值均有对应组件", () => {
-    for (const name of ["tabs", "sidebar"] as const) {
+    for (const name of ["tabs", "sidebar", "dashboard"] as const) {
       expect(isLayoutName(name)).toBe(true);
       expect(LAYOUTS[name]).toBeDefined();
     }

@@ -100,6 +100,15 @@ describe("布局容器", () => {
     expect(screen.getByText("probe-content")).not.toBeNull();
   });
 
+  it("dashboard 布局渲染固定侧栏骨架与子内容", () => {
+    localStorage.setItem("layout-name", "dashboard");
+    layoutState.name = "dashboard";
+    renderWithProbe();
+
+    expect(document.querySelector('[data-layout="dashboard"]')).not.toBeNull();
+    expect(screen.getByText("probe-content")).not.toBeNull();
+  });
+
   it("注册表缺 key 时回落 tabs 而非白屏", async () => {
     layoutState.name = "tabs";
     renderWithProbe();

@@ -40,6 +40,7 @@
   const layoutItems: { value: LayoutName; label: string }[] = [
     { value: "tabs", label: m.settings_layout_option_tabs() },
     { value: "sidebar", label: m.settings_layout_option_sidebar() },
+    { value: "dashboard", label: m.settings_layout_option_dashboard() },
   ];
 
   /** 配色下拉的候选项，同上；顺序与取值元组一致。 */
@@ -148,6 +149,7 @@
         <SelectContent>
           <SelectItem value="tabs">{m.settings_layout_option_tabs()}</SelectItem>
           <SelectItem value="sidebar">{m.settings_layout_option_sidebar()}</SelectItem>
+          <SelectItem value="dashboard">{m.settings_layout_option_dashboard()}</SelectItem>
         </SelectContent>
       </Select>
     {/snippet}
