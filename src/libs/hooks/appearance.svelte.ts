@@ -71,12 +71,26 @@ export function setLayoutName(next: LayoutName): void {
 }
 
 // ---- 配色主题：与布局同为纯前端 UI 偏好，读写模式与上节保持一致 ----
-// 明暗（light/dark/system）由 mode-watcher 管 `.dark` 类，此处只管配色（`neutral/blue/green/violet/rose`），
+// 明暗（light/dark/system）由 mode-watcher 管 `.dark` 类，此处只管配色
+// （鲜艳系 ocean/teal/emerald/amber/tangerine/rose/amethyst + 暗色美学 nord/dracula/tokyo-night），
 // 经根元素 `data-theme` 属性生效（`themes.css` 的 `[data-theme]` 块），两者正交组合。
 // 新增配色时同步扩展该元组、`themes.css` 的两块令牌（浅色 + `:root.dark` 暗色）与设置页下拉候选。
+// 旧取值（blue/green/violet）已更名，存量经 `isColorTheme` 校验自动回落默认值，无需迁移逻辑。
 
 /** 可选配色取值：新增配色时同步扩展该元组、联合类型与 `themes.css` 对应块（元组即真值来源） */
-const COLOR_THEME_TUPLE = ["neutral", "blue", "green", "violet", "rose"] as const;
+const COLOR_THEME_TUPLE = [
+  "neutral",
+  "ocean",
+  "teal",
+  "emerald",
+  "amber",
+  "tangerine",
+  "rose",
+  "amethyst",
+  "nord",
+  "dracula",
+  "tokyo-night",
+] as const;
 
 /** 可选配色取值，`neutral` 即 `layout.css` 的 `:root/.dark` 默认值，不写覆盖块 */
 export type ColorTheme = (typeof COLOR_THEME_TUPLE)[number];

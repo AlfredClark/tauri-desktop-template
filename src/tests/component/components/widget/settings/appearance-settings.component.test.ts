@@ -144,9 +144,9 @@ describe("外观设置分组", () => {
     const user = userEvent.setup();
     render(Component);
 
-    await chooseOption(user, "Color theme", "blue");
+    await chooseOption(user, "Color theme", "ocean");
 
-    expect(setColorThemeMock).toHaveBeenCalledWith("blue");
+    expect(setColorThemeMock).toHaveBeenCalledWith("ocean");
     expect(setModeMock).not.toHaveBeenCalled();
   });
 

@@ -338,21 +338,33 @@ describe("initAppearance", () => {
     localStorage.setItem(FONT_FAMILY_STORAGE_KEY, "Serif");
     localStorage.setItem(FONT_WEIGHT_STORAGE_KEY, "700");
     localStorage.setItem(FONT_SIZE_STORAGE_KEY, "110");
-    localStorage.setItem(COLOR_THEME_STORAGE_KEY, "blue");
+    localStorage.setItem(COLOR_THEME_STORAGE_KEY, "ocean");
     initAppearance();
     expect(fontState.family).toBe("Serif");
     expect(fontState.weight).toBe(700);
     expect(fontState.size).toBe(110);
-    expect(colorThemeState.name).toBe("blue");
+    expect(colorThemeState.name).toBe("ocean");
   });
 });
 
 describe("isColorTheme", () => {
   it("只接受取值元组内的语义名", () => {
-    for (const name of ["neutral", "blue", "green", "violet", "rose"]) {
+    for (const name of [
+      "neutral",
+      "ocean",
+      "teal",
+      "emerald",
+      "amber",
+      "tangerine",
+      "rose",
+      "amethyst",
+      "nord",
+      "dracula",
+      "tokyo-night",
+    ]) {
       expect(isColorTheme(name)).toBe(true);
     }
-    for (const value of ["default", "dark", "", null, undefined, 0]) {
+    for (const value of ["default", "blue", "green", "violet", "dark", "", null, undefined, 0]) {
       expect(isColorTheme(value)).toBe(false);
     }
   });
@@ -364,8 +376,13 @@ describe("loadColorTheme", () => {
   });
 
   it("合法存量原样返回", () => {
-    localStorage.setItem(COLOR_THEME_STORAGE_KEY, "violet");
-    expect(loadColorTheme()).toBe("violet");
+    localStorage.setItem(COLOR_THEME_STORAGE_KEY, "amethyst");
+    expect(loadColorTheme()).toBe("amethyst");
+  });
+
+  it("更名前的旧取值视为脏数据回落默认配色", () => {
+    localStorage.setItem(COLOR_THEME_STORAGE_KEY, "blue");
+    expect(loadColorTheme()).toBe(DEFAULT_COLOR_THEME);
   });
 
   it("脏数据回落默认配色", () => {
@@ -440,10 +457,10 @@ describe("setColorTheme", () => {
       },
     });
     try {
-      setColorTheme("green");
-      expect(localStorage.getItem(COLOR_THEME_STORAGE_KEY)).toBe("green");
-      expect(colorThemeState.name).toBe("green");
-      expect(attrs.get("data-theme")).toBe("green");
+      setColorTheme("teal");
+      expect(localStorage.getItem(COLOR_THEME_STORAGE_KEY)).toBe("teal");
+      expect(colorThemeState.name).toBe("teal");
+      expect(attrs.get("data-theme")).toBe("teal");
     } finally {
       vi.unstubAllGlobals();
     }

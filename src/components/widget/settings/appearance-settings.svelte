@@ -46,10 +46,16 @@
   /** 配色下拉的候选项，同上；顺序与取值元组一致。 */
   const colorThemeItems: { value: ColorTheme; label: string }[] = [
     { value: "neutral", label: m.settings_color_theme_option_neutral() },
-    { value: "blue", label: m.settings_color_theme_option_blue() },
-    { value: "green", label: m.settings_color_theme_option_green() },
-    { value: "violet", label: m.settings_color_theme_option_violet() },
+    { value: "ocean", label: m.settings_color_theme_option_ocean() },
+    { value: "teal", label: m.settings_color_theme_option_teal() },
+    { value: "emerald", label: m.settings_color_theme_option_emerald() },
+    { value: "amber", label: m.settings_color_theme_option_amber() },
+    { value: "tangerine", label: m.settings_color_theme_option_tangerine() },
     { value: "rose", label: m.settings_color_theme_option_rose() },
+    { value: "amethyst", label: m.settings_color_theme_option_amethyst() },
+    { value: "nord", label: m.settings_color_theme_option_nord() },
+    { value: "dracula", label: m.settings_color_theme_option_dracula() },
+    { value: "tokyo-night", label: m.settings_color_theme_option_tokyo_night() },
   ];
 
   /** 字号下拉的候选项，同上；取值存字符串，提交时收窄为数值。 */
