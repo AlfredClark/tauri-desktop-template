@@ -40,9 +40,9 @@ mod tests {
     #[test]
     fn ignores_other_schemes_and_empty_args() {
         let args = ["TDT://settings".to_owned(), "myapp://x".to_owned()];
-        assert!(extract_deep_link_urls(&args).is_empty());
+        assert_eq!(extract_deep_link_urls(&args), Vec::<String>::new());
 
         let empty: [String; 0] = [];
-        assert!(extract_deep_link_urls(&empty).is_empty());
+        assert_eq!(extract_deep_link_urls(&empty), Vec::<String>::new());
     }
 }

@@ -1082,7 +1082,7 @@ mod tests {
         let mut map: Map<String, Value> = Map::new();
 
         assert!(!migrate_snapshot(&mut map), "全新安装不写入");
-        assert!(map.is_empty());
+        assert_eq!(map, Map::new());
     }
 
     #[test]
