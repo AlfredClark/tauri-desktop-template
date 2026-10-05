@@ -82,7 +82,7 @@ crash safety nets, and common desktop capabilities out of the box.
 
 ## Quickstart
 
-Prerequisites: Node `>= 24`, `pnpm@11.25.0`, Rust toolchain from `rust-toolchain.toml`.
+Prerequisites: Node `>= 24`, `pnpm@12.6.0`, Rust toolchain from `rust-toolchain.toml`.
 
 ```bash
 pnpm install --frozen-lockfile   # install deps (never npm / yarn)
@@ -145,12 +145,15 @@ hand-edit `bindings.ts`.
 **Edit copy:** frontend `src/libs/i18n/messages/*.json` → `pnpm i18n:compile` → use `m.<key>()`
 / `setLocale()`; backend `src-tauri/locales/*.yml` → `rust_i18n::t!(...)`.
 
-**Remove the demo** (bootstrap checklist, `greet` minimal contract stays): delete
+**Remove the demo** (bootstrap checklist, `greet` minimal contract stays; new projects start
+with the init checklist in `AGENTS.md` §10.8 — rename before deleting): delete
 `src/routes/(main)/demo/`, `src/components/widget/demo/`, `cores/demo.rs`,
-`plugins/{fs,dialog,clipboard,notification,global_shortcut}.rs`; drop the `/demo` nav entry;
+`plugins/{fs,dialog,notification,global_shortcut}.rs` (`clipboard` stays — the about page
+depends on write-text); drop the `/demo` nav entry;
 delete all `demo_`-prefixed message keys → `i18n:compile`; slim `features/demo.rs` and
 `commands/demo.rs` (keep `greet`), sync `collect_commands!`; unregister plugins in
-`plugins/mod.rs` + `lib.rs`, trim `capabilities/plugins.json`, drop the five plugin deps;
+`plugins/mod.rs` + `lib.rs`, trim `capabilities/plugins.json`, drop the four demo plugin deps
+(`clipboard-manager` stays);
 `cargo test` → `pnpm format` + `pnpm validate`. Full list: `AGENTS.md` §10.6.
 
 ## Project structure (condensed)

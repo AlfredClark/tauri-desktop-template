@@ -15,7 +15,7 @@
   2. 明暗主题跟随（`mode-watcher` system 跟随 + Tailwind v4 `.dark` 变体）与配色主题（鲜艳系 ocean/teal/emerald/amber/tangerine/rose/amethyst + 暗色美学 nord/dracula/tokyo-night，`data-theme` 属性切换，见 `themes.css`）
   3. 前后端双轨国际化（前端 Paraglide + 后端 rust-i18n，持久化于后端 `config.json`）
   4. 前后端崩溃兜底（前端 `ErrorBoundary` + 后端 panic 钩子写 `%TEMP%/my_app_crash.log`）
-  5. 桌面能力演示页（`/demo`：应用目录 / 沙盒文件 / 文件拖放 / 系统对话框 / 剪贴板 / 通知 / 全局快捷键 / 网络请求，每插件一卡片分组 + 拖放分组，删页即初始化）
+  5. 桌面能力演示页（`/demo`：应用目录 / 沙盒文件 / 文件拖放 / 系统对话框 / 剪贴板 / 通知 / 全局快捷键 / 网络请求，每插件一卡片分组 + 拖放分组，删页即初始化，完整清单见第 10 章第 8 条）
   6. 最小业务示例（`/notes`：SQLite 笔记增删改查，前端 `libs/notes` 直连 `notes.db`，后端只做建表迁移，删示例流程见第 10 章第 7 条）
 - **用户角色：** Tauri + Svelte 技术栈的桌面应用开发者
 
@@ -314,7 +314,7 @@ CI（`.github/workflows/ci.yml`）在 `main` 分支上按变更路径触发：
    - `.prettierignore` ↔ `.gitignore` 中的构建产物（Prettier 不读 `.gitignore`）
    - CI backend 的 `changes` 路径过滤器 ↔ 新增的后端配置文件
 5. **构建与忽略：** 构建产物（`target/`、`build/`、`.svelte-kit/`、`src-tauri/gen/`、`node_modules/`、`src/libs/i18n/paraglide/`）均已忽略；`bindings.ts` 虽是生成物但**需要提交**；`Cargo.lock` 需要提交；`static/icon.png` 为图标源文件（`pnpm tauri:icon` 生成各平台图标）。Vite 固定端口 `1420`，忽略监听 `src-tauri/**`，`clearScreen: false` 以保留 Rust 日志。主窗口初始 `visible: false`（防恢复闪烁），由 `cores/config.rs` 的 `setup` 按记住窗口配置恢复后统一 `show`，任何提前返回前必须显示，否则永久黑屏；仅恢复 `main` 窗口。
-6. **演示页移除流程：** `/demo` 及配套代码是模板脚手架，派生项目按以下清单删除即初始化（`greet` 最小契约示例保留，`locales/demo.yml` 后端文案随之保留；`http` 网络层〈插件 / CSP / capability / `libs/http/`〉为常驻能力，仅删演示卡片与 `demo_http_*` 文案，不动网络层）：
+6. **演示页移除流程：** `/demo` 及配套代码是模板脚手架，派生项目按以下清单删除即初始化（前置改名步骤见第 8 条；`greet` 最小契约示例保留，`locales/demo.yml` 后端文案随之保留；`http` 网络层〈插件 / CSP / capability / `libs/http/`〉为常驻能力，仅删演示卡片与 `demo_http_*` 文案，不动网络层）：
    - 删目录：`src/routes/(main)/demo/`、`src/components/widget/demo/`、`src/libs/shortcuts/`（演示页 shortcut 卡片调用方，含 `demo_` 残留）、`src-tauri/src/cores/demo.rs`、`src-tauri/src/plugins/{fs,dialog,notification,global_shortcut}.rs`（`clipboard` 保留：about 页 `copy_system_info` 依赖写剪贴板，见摘注册）
    - 删导航：`nav-tabs.ts` 的 `/demo` 项（含 `FlaskConicalIcon` 导入）
    - 删文案：`src/libs/i18n/messages/*.json` 中全部 `demo_` 开头键 → `pnpm i18n:compile`
@@ -329,6 +329,16 @@ CI（`.github/workflows/ci.yml`）在 `main` 分支上按变更路径触发：
    - 删测试：`src/tests/component/components/widget/notes/` 与 `src/tests/unit/libs/notes/` 两组用例
    - 摘示例：`plugins/sql.rs` 删笔记建表并收敛为空注册（删 `NOTES_DB_URL` 常量、`Migration` / `MigrationKind` 导入、`migrations()` 整个函数与 `add_migrations(...)` 调用，`init()` 收敛为 `Builder::default().build()`，同步更新提及 `notes.db` / `libs/notes` 的模块注释；空 `vec![]` 占位属残留，不保留）；已有用户 `notes.db` 文件与 `notes` 表成孤儿残留属预期，不写 `DROP TABLE` / 删库逻辑（`Migration` 不可变，清理另走手动删文件流程）；`capabilities/plugins.json` 与双端 `sql` 依赖**保留**（常驻决议）
    - 收尾：`pnpm format` + `pnpm validate`；`rg "notes|Note|NOTE|NotebookPen|sqlite|SQL" src src-tauri` 应无残留（`README.md` 的 `| Notes |` 表头与 about 页测试 mock 的 `body:"notes"` 系误报，勿删；`docs/` 无命中为空操作）；更新 `README.md` / 本文件 / `TODO.md` 中的 notes 描述
+8. **模板初始化清单：** 用本模板派生新项目的有序步骤（只做一次；顺序为先改名后删脚手架——about 测试与 `productName` 耦合，第 6 条收尾的 `rg` 会顺带验证改名无残留）：
+   - 起点：经 GitHub `Use this template` 建库（模板 git 历史保留溯源或 `git init` 另起干净历史，二选一即定）；`pnpm install --frozen-lockfile`
+   - 改标识（漏任一项即带着模板身份发布）：`package.json` 的 `name` / `homepage` / `repository.url` / `bugs.url`（about 页项目外链经 `__APP_PKG__` 注入）；`tauri.conf.json` 的 `productName` / `identifier`（反向域名全局唯一，同机安装与 store 路径隔离都认它）/ 窗口 `title` / `updater.endpoints`（默认指向模板仓库的 `latest.json`，不换则新应用去下载模板的更新包）；`src-tauri/Cargo.toml` 的包名 / `repository` / lib 名并同步 `main.rs` 的 `lib::run()` 引用；`cliff.toml` 的 `owner` / `repo`
+   - 换深链 scheme（三处同改，OS 级全局注册，撞名即串台）：`tauri.conf.json` 的 `deep-link.desktop.schemes` ↔ `cores/deep_link.rs` 的 `SCHEME_PREFIX` ↔ `libs/hooks/deep-link.svelte.ts` 的 `DEEP_LINK_SCHEME`，连带深链单测同步改
+   - 换崩溃日志名：`cores/system.rs` 落盘文件名（`%TEMP%` 根目录多应用共享，同名互覆盖）
+   - 轮换更新密钥：`tauri signer generate` 生成新密钥对 → 公钥回填 `tauri.conf.json` 的 `updater.pubkey` → 私钥配入新仓库的 `TAURI_SIGNING_PRIVATE_KEY` Secret（`release.yml` 引用名）；不换则验签失败，发版流水线必挂
+   - 换图标：替换 `static/icon.png` → `pnpm tauri:icon`
+   - 删脚手架：按需走第 6 条（删 `/demo`）/ 第 7 条（删 `/notes`）；about 页测试对应用名的硬编码期望同步改
+   - 收尾：更新 `README.md` / `docs/`（含截图去留）/ 本文件 / `TODO.md` 中的模板描述；`pnpm i18n:compile` → `pnpm format` + `pnpm validate` 全绿 → 首个提交 → 确认 CI 全绿（`store` 文件名 `config.json` 按 `identifier` 隔离，换标识即自动隔离，无需另改）
+   - 协议提示：本模板为 `GPL-3.0-only`，派生项目（含闭源分发）须先评估传染性义务
 
 ---
 

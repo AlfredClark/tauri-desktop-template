@@ -75,7 +75,7 @@
 
 ## 快速开始
 
-环境要求：Node `>= 24`、`pnpm@11.25.0`、Rust 工具链以 `rust-toolchain.toml` 为准。
+环境要求：Node `>= 24`、`pnpm@12.6.0`、Rust 工具链以 `rust-toolchain.toml` 为准。
 
 ```bash
 pnpm install --frozen-lockfile   # 按锁文件安装（不要用 npm / yarn）
@@ -138,12 +138,12 @@ pnpm release         # bumpp 联动三处版本：package.json + tauri.conf.json
 **改文案：** 前端改 `src/libs/i18n/messages/*.json` → `pnpm i18n:compile` → 用 `m.<键>()` 取值、
 `setLocale()` 切换；后端改 `src-tauri/locales/*.yml` → `rust_i18n::t!(...)` 取值。
 
-**移除演示页**（派生项目初始化清单，`greet` 最小契约示例保留）：删目录
+**移除演示页**（派生项目初始化清单，新项目先走 `AGENTS.md` 第 10 章第 8 条改名再删，`greet` 最小契约示例保留）：删目录
 `src/routes/(main)/demo/`、`src/components/widget/demo/`、`cores/demo.rs`、
-`plugins/{fs,dialog,clipboard,notification,global_shortcut}.rs`；删 `nav-tabs.ts` 的 `/demo`
+`plugins/{fs,dialog,notification,global_shortcut}.rs`（`clipboard` 保留：about 页依赖写剪贴板）；删 `nav-tabs.ts` 的 `/demo`
 项；删全部 `demo_` 开头文案键 → `i18n:compile`；瘦身 `features/demo.rs` 与
 `commands/demo.rs`（保留 `greet`）并同步 `collect_commands!`；在 `plugins/mod.rs` 与 `lib.rs`
-摘注册、裁 `capabilities/plugins.json`、删五个插件依赖；`cargo test` → `pnpm format` +
+摘注册、裁 `capabilities/plugins.json`、删四个演示插件依赖（`clipboard-manager` 保留）；`cargo test` → `pnpm format` +
 `pnpm validate`。完整清单见 `AGENTS.md` 第 10 章第 6 条。
 
 ## 项目结构（精简）
