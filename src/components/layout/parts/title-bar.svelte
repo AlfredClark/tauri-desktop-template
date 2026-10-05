@@ -8,6 +8,7 @@
   import SquareIcon from "@lucide/svelte/icons/square";
   import XIcon from "@lucide/svelte/icons/x";
   import type { Snippet } from "svelte";
+  import AppIcon from "$assets/icons/app-icon.svelte";
   import { Button } from "$components/shadcn-svelte/button";
   import { m } from "$libs/i18n/paraglide/messages";
   import { cn } from "$libs/utils/shadcn-svelte";
@@ -101,7 +102,7 @@
     {#if left}
       {@render left()}
     {:else}
-      <img src="icon.png" alt="icon" class={cn("ml-2 size-5")} />
+      <AppIcon class={cn("ml-2 size-5")} />
       <span class={cn("ml-2 truncate text-sm font-medium")} data-tauri-drag-region>{title}</span>
     {/if}
   </div>

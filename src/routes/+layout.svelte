@@ -1,6 +1,6 @@
 <script lang="ts">
   // 根布局只负责全局能力：注入全局样式，并用主题监听器、Toast 挂载点与错误边界包裹全部页面。
-  // 界面语言的对齐在 +layout.ts 的 load() 里完成，早于本组件首次渲染。
+  // 启动水合与界面语言对齐在此完成（挂载期后台执行，不阻断首帧）。
   // 布局容器下沉到 (main) 分组，特殊页面另起分组即可绕开布局。
   // 窗口关闭拦截也在此统一处理：按后端关闭行为分流（弹窗确认 / 藏窗口 / 真退出）。
   import { ModeWatcher } from "mode-watcher";
@@ -8,7 +8,7 @@
   import { getCurrentWindow } from "@tauri-apps/api/window";
   import type { Snippet } from "svelte";
   import { initAppearance } from "$hooks/appearance.svelte";
-  import { configState } from "$hooks/config.svelte";
+  import { configState, hydrateConfig } from "$hooks/config.svelte";
   import { initDeepLinks } from "$hooks/deep-link.svelte";
   import { maybeAutoCheckForUpdate } from "$hooks/updater.svelte";
   import ConfirmDialog from "$components/common/confirm-dialog.svelte";
@@ -17,6 +17,7 @@
   import commands from "$libs/commands";
   import { reportCommandFailure } from "$libs/commands/cores";
   import { m } from "$libs/i18n/paraglide/messages";
+  import { getLocale, setLocale } from "$libs/i18n/paraglide/runtime";
   import "./layout.css";
 
   const { children }: { children: Snippet } = $props();
@@ -30,6 +31,32 @@
   $effect.pre(() => {
     untrack(() => initAppearance());
   });
+
+  // 启动水合：以后端 config.json 为权威，水合完成后把前端语言对齐到它
+  // （不触发整页重载，否则会出现语言闪烁；水合失败则回落 Paraglide 本地策略，不阻断首帧；
+  // 刻意不在 +layout.ts 的 load() 里做：Tauri invoke 底层走 window.fetch，SvelteKit
+  // 会在 load 期间告警让用传给 load 的 fetch，而 invoke 接不进 event.fetch；
+  // 本项目是纯 SPA，挂载期后台执行与原来 load 里 fire-and-forget 时序等价）
+  // 本 effect 同步体内不读 configState（只在异步水合后读），不会订阅成跟踪回路
+  $effect(() => {
+    void hydrateInBackground();
+  });
+
+  /** 后台水合：与首帧渲染并发，完成后对齐语言；失败回落，不抛错 */
+  async function hydrateInBackground(): Promise<void> {
+    try {
+      await hydrateConfig();
+    } catch (error) {
+      // 链式 API 永不 reject，此处仅防命令构造期同步抛错导致水合中断
+      reportCommandFailure("[config] hydrate threw", error);
+      return;
+    }
+
+    const locale = configState.value?.locale;
+    if (locale && locale !== getLocale()) {
+      setLocale(locale, { reload: false });
+    }
+  }
 
   // 启动静默检查更新：开着开关才执行，单会话一次，非 Tauri 环境跳过
   $effect(() => {

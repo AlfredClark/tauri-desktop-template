@@ -1,29 +1,8 @@
-import { configState, hydrateConfig } from "$hooks/config.svelte";
-import { reportCommandFailure } from "$libs/commands/cores";
-import { getLocale, setLocale } from "$libs/i18n/paraglide/runtime";
-
 // Tauri 没有 Node.js 服务器来做 SSR，使用静态适配器并回退到 `index.html`，将网站置于 SPA 模式
 export const ssr = false;
 
-// 启动对齐：以后端 config.json 为权威，水合配置并把前端语言对齐到它
-// （不触发整页重载，否则会出现语言闪烁；水合失败则回落 Paraglide 本地策略，不阻断首帧）
-export const load = async () => {
-  // 首帧不等水合：先按本地策略渲染，水合在后台完成后用同一调用对齐语言
-  void hydrateInBackground();
-};
-
-/** 后台水合：与首帧渲染并发，完成后对齐语言；失败回落，不抛错 */
-async function hydrateInBackground(): Promise<void> {
-  try {
-    await hydrateConfig();
-  } catch (error) {
-    // 链式 API 永不 reject，此处仅防命令构造期同步抛错导致整页 load 失败
-    reportCommandFailure("[config] hydrate threw", error);
-    return;
-  }
-
-  const locale = configState.value?.locale;
-  if (locale && locale !== getLocale()) {
-    setLocale(locale, { reload: false });
-  }
-}
+// 注意：不在此文件的 `load()` 里调后端命令做配置水合——Tauri `invoke`
+// 底层走 `window.fetch("ipc://...")`，SvelteKit 会在 `load` 执行期间告警
+// “请用传给 `load` 的 `fetch`”，而 `invoke` 接不进 `event.fetch`。
+// 本项目本就是 SPA，`load` 相对首帧并无时序优势，水合搬到 `+layout.svelte`
+// 的挂载期后台执行，行为与原来一致（不阻塞首帧、失败回落）。

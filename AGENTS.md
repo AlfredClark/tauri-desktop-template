@@ -56,7 +56,7 @@ rustc --version && cat rust-toolchain.toml && cat src-tauri/Cargo.toml | grep -A
 tauri-desktop-template/
 ├── src/                            # 前端：SvelteKit 单页应用（adapter-static + fallback: index.html）
 │   ├── app.html                    # HTML 外壳，SvelteKit 在此注入脚本与样式
-│   ├── assets/                     # 需要经构建处理的资源（预留空目录占位，别名 $assets，见 svelte.config.ts）
+│   ├── assets/                     # 需要经构建处理的资源（别名 $assets，见 svelte.config.ts），icons/ 下为内联图标（github-icon / app-icon）
 │   ├── routes/                     # 页面与全局样式
 │   │   ├── +layout.svelte          # 根布局：ModeWatcher（主题）+ Toaster + ErrorBoundary（渲染异常）包裹全部分组，首帧前对齐外观变量（字体/字重/字号）
 │   │   ├── +layout.ts              # ssr = false（SPA 模式）+ 首帧前对齐界面语言的 load()
@@ -70,7 +70,7 @@ tauri-desktop-template/
 │   │   └── layout.css              # Tailwind v4 入口与 shadcn-svelte 主题令牌（含 .dark 暗色变体与 --app-font-* 外观变量）
 │   │   └── themes.css              # 配色主题令牌（鲜艳系 7 色 + 暗色美学 3 色的浅色 + :root.dark 暗色块，neutral 回落 layout.css）
 │   ├── components/
-│   │   ├── common/                 # 手写共享组件（error-boundary.svelte 全局渲染兜底，card-section/row.svelte 通用卡片分组与行，confirm-dialog.svelte 通用确认弹窗，icons/ 内联品牌图标如 github-logo）
+│   │   ├── common/                 # 手写共享组件（error-boundary.svelte 全局渲染兜底，card-section/row.svelte 通用卡片分组与行，confirm-dialog.svelte 通用确认弹窗）
 │   │   ├── layout/                 # 布局子系统：layout-container.svelte 容器 + tabs（标题栏/标签栏/内容/底边）与 sidebar（侧边栏 + 标题栏/内容/底边）实现，新增布局需在 libs/hooks/appearance.svelte.ts 中映射
 │   │   │   └── parts/              # 布局配套部件（title-bar / nav-tabs-bar / side-nav-bar / copyright）
 │   │   ├── widget/                 # 手写页面小组件（settings/：设置页通用/外观分组与字体选择器；about/：关于页应用/项目/平台分组与更新面板；demo/：演示页八卡片〈目录解析 + fs / dialog / clipboard / notification / shortcut / drop + http 网络请求〉；notes/：笔记管理〈新增表单 + 行内编辑 + 删除确认〉）
@@ -322,14 +322,14 @@ CI（`.github/workflows/ci.yml`）在 `main` 分支上按变更路径触发：
    - 删测试：`src/tests/component/components/widget/demo/` 整组用例 + `src/tests/unit/libs/shortcuts/` 两组用例（不删则 import 悬空导致 vitest 变红）
    - 瘦身后端：`features/demo.rs` 删校验常量与函数及对应单测（保留 `greet` 及其单测）；`commands/demo.rs` 删全部 `demo_*` 命令（保留 `greet`；`demo_pick_folder` 有桌面 / 移动双 `cfg` 实现，两段同删；`greet` 改为 `crate::features::demo::greet` 全路径调用并删 `demo_features` 别名导入，使收尾 `rg` 可清零）并重写文件头为最小契约说明；`collect_commands!` 同步删项；`cores/mod.rs` 删 `pub mod demo` 并同步第 5 行文档注释；`commands/mod.rs` 第 4 行分组注释删“演示”一项（`pub mod demo` 保留，`greet` 仍在）
    - 摘注册：`plugins/mod.rs` 删四模块声明与 `with_global_shortcut`（含移动端空实现，`BuilderExt` 本体与其余槽位保留）；`lib.rs` 删三个 `.plugin(...)`（`fs` / `dialog` / `notification`）与 `.with_global_shortcut()`；`capabilities/plugins.json` 删 10 项演示权限（`dialog:default`、fs×4、`global-shortcut`×3、`notification:default`、`clipboard-manager:allow-read-text`），保留 `clipboard-manager:allow-write-text`（about 页 `copy_system_info` 依赖写剪贴板，`plugins/clipboard.rs` + `lib.rs` 注册 + `Cargo.toml` 的 `clipboard-manager` 依赖同步保留）；其余保留 6 项基线（`deep-link` / `log` / `opener` / `os:allow-locale` / `system-fonts` / `updater`，其中 `log` 系错误上报通道、`opener` 系项目外链通道，勿误删）+ `http` 常驻 1 项 + `sql` 常驻 3 项（共剩 11 项）；`Cargo.toml` 删四个插件依赖（`fs` / `dialog` / `notification` / `global-shortcut`，保留 `http` 常驻与 `clipboard-manager`）；前端 `pnpm remove @tauri-apps/plugin-global-shortcut`（`libs/shortcuts` 删除后悬空，其余四插件本无 npm 包；删后跑 `pnpm check:sync` 确认双端对齐）；`libs/commands/types.ts` 删 `DemoAppPaths` / `DropFileInfo` 的导入与透出
-   - 收尾：`cargo test` 重生成 `bindings.ts`（确认 `DemoAppPaths` / `DropFileInfo` / `demo_*` 仅剩 `greet`）→ `pnpm i18n:compile`（`demo_*` 键清零）→ `pnpm format` + `pnpm validate`；`rg "demo_|DemoAppPaths|DropFileInfo|with_global_shortcut" src src-tauri` 应无残留（`demo.rs` 文件名与注释除外）；`tauri.conf.json` 的 CSP `https://timeapi.io` 与 capability `http:default` 属常驻网络层，禁止顺手清理；`lib.rs` 的 `large_stack_frames` 豁免若不再触发则同步删除（`allow` 与 6.3 对应半句）；更新 `README.md`（截图矩阵与目录结构行）/ `docs/`（含 `docs/images/demo.png` 去留）/ 本文件 / `TODO.md`（常驻说明与卡片编号）中的 demo 描述；可选将 `locales/demo.yml` 改名为中性文件名（仅剩 `greet` + `tray` 文案时原名误导，改名后 `cargo test` 验证 `t!` 解析）
+   - 收尾：`cargo test` 重生成 `bindings.ts`（确认 `DemoAppPaths` / `DropFileInfo` / `demo_*` 仅剩 `greet`）→ `pnpm i18n:compile`（`demo_*` 键清零）→ `pnpm format` + `pnpm validate`；`rg "demo_|DemoAppPaths|DropFileInfo|with_global_shortcut" src src-tauri` 应无残留（`demo.rs` 文件名与注释除外）；`tauri.conf.json` 的 CSP `https://timeapi.io` 与 capability `http:default` 属常驻网络层，禁止顺手清理；`lib.rs` 的 `large_stack_frames` 豁免若不再触发则同步删除（`allow` 与 6.3 对应半句）；更新 `README.md`（截图矩阵与目录结构行）/ `docs/`（含 `docs/images/demo.png` 去留）/ 本文件 中的 demo 描述；可选将 `locales/demo.yml` 改名为中性文件名（仅剩 `greet` + `tray` 文案时原名误导，改名后 `cargo test` 验证 `t!` 解析）
 7. **业务示例移除流程：** `/notes` 及配套代码是最小业务样板间，抄完即删（与演示页不同：`sql` 插件常驻，仅摘示例）：
    - 删目录：`src/routes/(main)/notes/`、`src/components/widget/notes/`、`src/libs/notes/`
    - 删导航：`nav-tabs.ts` 的 `/notes` 项（含 `NotebookPenIcon` 导入）
    - 删文案：`src/libs/i18n/messages/*.json` 中全部 `notes_` 开头键 → `pnpm i18n:compile`
    - 删测试：`src/tests/component/components/widget/notes/` 与 `src/tests/unit/libs/notes/` 两组用例
    - 摘示例：`plugins/sql.rs` 删笔记建表并收敛为空注册（删 `NOTES_DB_URL` 常量、`Migration` / `MigrationKind` 导入、`migrations()` 整个函数与 `add_migrations(...)` 调用，`init()` 收敛为 `Builder::default().build()`，同步更新提及 `notes.db` / `libs/notes` 的模块注释；空 `vec![]` 占位属残留，不保留）；已有用户 `notes.db` 文件与 `notes` 表成孤儿残留属预期，不写 `DROP TABLE` / 删库逻辑（`Migration` 不可变，清理另走手动删文件流程）；`capabilities/plugins.json` 与双端 `sql` 依赖**保留**（常驻决议）
-   - 收尾：`pnpm format` + `pnpm validate`；`rg "notes|Note|NOTE|NotebookPen|sqlite|SQL" src src-tauri` 应无残留（`README.md` 的 `| Notes |` 表头与 about 页测试 mock 的 `body:"notes"` 系误报，勿删；`docs/` 无命中为空操作）；更新 `README.md` / 本文件 / `TODO.md` 中的 notes 描述
+   - 收尾：`pnpm format` + `pnpm validate`；`rg "notes|Note|NOTE|NotebookPen|sqlite|SQL" src src-tauri` 应无残留（`README.md` 的 `| Notes |` 表头与 about 页测试 mock 的 `body:"notes"` 系误报，勿删；`docs/` 无命中为空操作）；更新 `README.md` / 本文件 中的 notes 描述
 8. **模板初始化清单：** 用本模板派生新项目的有序步骤（只做一次；顺序为先改名后删脚手架——about 测试与 `productName` 耦合，第 6 条收尾的 `rg` 会顺带验证改名无残留）：
    - 起点：经 GitHub `Use this template` 建库（模板 git 历史保留溯源或 `git init` 另起干净历史，二选一即定）；`pnpm install --frozen-lockfile`
    - 改标识（漏任一项即带着模板身份发布）：`package.json` 的 `name` / `homepage` / `repository.url` / `bugs.url`（about 页项目外链经 `__APP_PKG__` 注入）；`tauri.conf.json` 的 `productName` / `identifier`（反向域名全局唯一，同机安装与 store 路径隔离都认它）/ 窗口 `title` / `updater.endpoints`（默认指向模板仓库的 `latest.json`，不换则新应用去下载模板的更新包）；`src-tauri/Cargo.toml` 的包名 / `repository` / lib 名并同步 `main.rs` 的 `lib::run()` 引用；`cliff.toml` 的 `owner` / `repo`
@@ -338,7 +338,7 @@ CI（`.github/workflows/ci.yml`）在 `main` 分支上按变更路径触发：
    - 轮换更新密钥：`tauri signer generate` 生成新密钥对 → 公钥回填 `tauri.conf.json` 的 `updater.pubkey` → 私钥配入新仓库的 `TAURI_SIGNING_PRIVATE_KEY` Secret（`release.yml` 引用名）；不换则验签失败，发版流水线必挂
    - 换图标：替换 `static/icon.png` → `pnpm tauri:icon`
    - 删脚手架：按需走第 6 条（删 `/demo`）/ 第 7 条（删 `/notes`）；about 页测试对应用名的硬编码期望同步改
-   - 收尾：更新 `README.md` / `docs/`（含截图去留）/ 本文件 / `TODO.md` 中的模板描述；`pnpm i18n:compile` → `pnpm format` + `pnpm validate` 全绿 → 首个提交 → 确认 CI 全绿（`store` 文件名 `config.json` 按 `identifier` 隔离，换标识即自动隔离，无需另改）
+   - 收尾：更新 `README.md` / `docs/`（含截图去留）/ 本文件 中的模板描述；`pnpm i18n:compile` → `pnpm format` + `pnpm validate` 全绿 → 首个提交 → 确认 CI 全绿（`store` 文件名 `config.json` 按 `identifier` 隔离，换标识即自动隔离，无需另改）
    - 协议提示：本模板为 `GPL-3.0-only`，派生项目（含闭源分发）须先评估传染性义务
 
 ---

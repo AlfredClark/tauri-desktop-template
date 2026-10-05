@@ -1,6 +1,7 @@
 <script lang="ts">
   // 侧边栏布局：左侧全高侧边栏 + 右侧内容列（标题栏 / 内容 / 底边），窗口逻辑复用 TitleBar。
   import type { Snippet } from "svelte";
+  import AppIcon from "$assets/icons/app-icon.svelte";
   import {
     Sidebar,
     SidebarContent,
@@ -21,7 +22,7 @@
   <Sidebar>
     <SidebarHeader>
       <div class={cn("flex items-center gap-2 px-2 py-1 select-none")}>
-        <img src="icon.png" alt="icon" class={cn("size-5")} />
+        <AppIcon class={cn("size-5")} />
         <span class={cn("truncate text-sm font-medium")}>
           {__APP_TAURI_CONF__.app.windows[0].title}
         </span>

@@ -1,9 +1,9 @@
 <script lang="ts">
   // 项目信息分组：主页 / 仓库 / 反馈外链行（数据驱动），零 props。
+  import GithubIcon from "$assets/icons/github-icon.svelte";
   import { Button } from "$components/shadcn-svelte/button";
   import CardRow from "$components/common/card-row.svelte";
   import CardSection from "$components/common/card-section.svelte";
-  import GithubLogo from "$components/common/icons/github-logo.svelte";
   import { m } from "$libs/i18n/paraglide/messages";
   import { toast } from "$libs/utils/toast";
   import { openExternal } from "$libs/utils/opener";
@@ -26,7 +26,7 @@
     <CardRow label={link.label} description={link.url}>
       {#snippet control()}
         <Button size="sm" variant="outline" onclick={() => void handleOpenLink(link.url)}>
-          <GithubLogo />
+          <GithubIcon />
           {m.about_open()}
         </Button>
       {/snippet}
