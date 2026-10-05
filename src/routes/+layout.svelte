@@ -4,6 +4,7 @@
   // 布局容器下沉到 (main) 分组，特殊页面另起分组即可绕开布局。
   // 窗口关闭拦截也在此统一处理：按后端关闭行为分流（弹窗确认 / 藏窗口 / 真退出）。
   import { ModeWatcher } from "mode-watcher";
+  import { untrack } from "svelte";
   import { getCurrentWindow } from "@tauri-apps/api/window";
   import type { Snippet } from "svelte";
   import { initAppearance } from "$hooks/appearance.svelte";
@@ -24,8 +25,10 @@
   let confirmCloseOpen = $state(false);
 
   // 外观首帧前对齐：读本地偏好并写入根变量，缺失时样式表默认值兜底，不阻断首帧
+  // untrack 切断订阅：init 内读写同一批外观状态，被跟踪即形成“改动→重初始化”回路，
+  // 未落盘的拖拽预览会被存量覆盖导致控件冻住
   $effect.pre(() => {
-    initAppearance();
+    untrack(() => initAppearance());
   });
 
   // 启动静默检查更新：开着开关才执行，单会话一次，非 Tauri 环境跳过

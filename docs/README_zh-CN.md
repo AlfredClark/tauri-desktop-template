@@ -26,8 +26,10 @@
    - 事务写法：`commands.updateConfig({ locale }).success(onOk).failed(onFail)`
    - 未注册 `.failed()` 的失败会自动经 `plugin-log` 上报，不会静默丢失。
 2. **明暗主题 + 配色主题** — `mode-watcher` 跟随系统（`light` / `dark` / `system`），Tailwind
-   v4 `.dark` 变体；五种配色（`neutral` / `blue` / `green` / `violet` / `rose`）经 `data-theme`
-   属性切换（见 `themes.css`）。纯前端偏好，持久化于 `localStorage`，首帧前生效。
+   v4 `.dark` 变体；十种配色（鲜艳系 `ocean` / `teal` / `emerald` / `amber` / `tangerine` /
+   `rose` / `amethyst` + 暗色美学 `nord` / `dracula` / `tokyo-night`，`neutral` 回落默认值）
+   经 `data-color-theme` 属性切换（见 `themes.css`，刻意避开 mode-watcher 挂载即覆盖的
+   `data-theme`）。纯前端偏好，持久化于 `localStorage`，首帧前生效。
 3. **前后端双轨国际化（Paraglide + rust-i18n）** — 前端 `paraglide-js`（`en` / `zh-CN`），后端
    `rust-i18n`（`src-tauri/locales/*.yml`，`fallback = "en"`）。唯一持久化点是后端
    `config.json` 的 `locale` 键：后端先读持久化值、缺失则经 `tauri-plugin-os` 探测系统语言并
@@ -64,7 +66,7 @@
 | 层级        | 技术选型                                                                                                                                                                                                     | 说明                                                                                                    |
 | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------- |
 | 前端框架    | SvelteKit 2 + Svelte 5                                                                                                                                                                                       | SPA 模式（`adapter-static` + `fallback: index.html`，`ssr = false`），Vite 端口 1420                    |
-| UI / 样式   | shadcn-svelte（nova / neutral）+ Tailwind CSS v4，Lucide 图标，Geist 字体                                                                                                                                    | `cn()` 合并类名，`.dark` 变体 + `[data-theme]` 配色                                                     |
+| UI / 样式   | shadcn-svelte（nova / neutral）+ Tailwind CSS v4，Lucide 图标，Geist 字体                                                                                                                                    | `cn()` 合并类名，`.dark` 变体 + `[data-color-theme]` 配色                                               |
 | 前端插件    | `@tauri-apps/api`、`plugin-log` / `opener` / `updater`、`system-fonts`                                                                                                                                       | 日志经 `plugin-log` 上报，字体列表经 `system-fonts-api`                                                 |
 | 前后端契约  | tauri-specta + `specta` / `specta-typescript`                                                                                                                                                                | 生成物 `src/libs/commands/bindings.ts`，禁止手改                                                        |
 | 国际化      | Paraglide（前端）+ rust-i18n（后端）                                                                                                                                                                         | `src/libs/i18n/messages/*.json` + `src-tauri/locales/*.yml`                                             |

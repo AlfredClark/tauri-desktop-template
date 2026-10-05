@@ -30,9 +30,11 @@ crash safety nets, and common desktop capabilities out of the box.
    - Unregistered `.failed()` failures are reported via `plugin-log` instead of being
      silently dropped.
 2. **Dark/light mode + color themes** — `mode-watcher` follows the system (`light` / `dark` /
-   `system`) with a Tailwind v4 `.dark` variant; five palettes (`neutral` / `blue` / `green` /
-   `violet` / `rose`) switch via the `data-theme` attribute (`themes.css`). Pure frontend
-   preference, persisted in `localStorage`, applied before first paint.
+   `system`) with a Tailwind v4 `.dark` variant; ten palettes (vivid `ocean` / `teal` /
+   `emerald` / `amber` / `tangerine` / `rose` / `amethyst` + dark-aesthetic `nord` / `dracula` /
+   `tokyo-night`, `neutral` falling back to defaults) switch via the `data-color-theme`
+   attribute (`themes.css`, deliberately avoiding `data-theme` which mode-watcher overwrites
+   on mount). Pure frontend preference, persisted in `localStorage`, applied before first paint.
 3. **Dual-track i18n (Paraglide + rust-i18n)** — frontend `paraglide-js` (`en` / `zh-CN`),
    backend `rust-i18n` (`src-tauri/locales/*.yml`, fallback `en`). The single source of truth
    is the backend `config.json` `locale` key: backend reads persisted value (or probes the OS
@@ -71,7 +73,7 @@ crash safety nets, and common desktop capabilities out of the box.
 | Layer           | Choice                                                                                                                                                                                                       | Notes                                                                                                       |
 | --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------- |
 | Frontend        | SvelteKit 2 + Svelte 5                                                                                                                                                                                       | SPA mode (`adapter-static` + `fallback: index.html`, `ssr = false`), Vite port 1420                         |
-| UI              | shadcn-svelte (nova / neutral) + Tailwind CSS v4, Lucide icons, Geist font                                                                                                                                   | `cn()` class merge, `.dark` variant + `[data-theme]` palettes                                               |
+| UI              | shadcn-svelte (nova / neutral) + Tailwind CSS v4, Lucide icons, Geist font                                                                                                                                   | `cn()` class merge, `.dark` variant + `[data-color-theme]` palettes                                         |
 | Bridge          | `@tauri-apps/api`, `plugin-log` / `opener` / `updater`, `system-fonts`                                                                                                                                       | Logs via `plugin-log`, font list via `system-fonts-api`                                                     |
 | Contract        | tauri-specta + `specta` / `specta-typescript`                                                                                                                                                                | Generated `src/libs/commands/bindings.ts`, do not hand-edit                                                 |
 | i18n            | Paraglide (frontend) + rust-i18n (backend)                                                                                                                                                                   | `src/libs/i18n/messages/*.json` + `src-tauri/locales/*.yml`                                                 |

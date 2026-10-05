@@ -396,6 +396,29 @@ describe("applyColorTheme", () => {
     expect(() => applyColorTheme()).not.toThrow();
   });
 
+  it("配色属性避开 mode-watcher 占用的 data-theme", () => {
+    // mode-watcher 挂载即把 data-theme 置空，配色须经独立属性生效，否则重启即被覆盖
+    const attrs = new Map<string, string>();
+    vi.stubGlobal("document", {
+      documentElement: {
+        setAttribute: (key: string, value: string): void => {
+          attrs.set(key, value);
+        },
+        removeAttribute: (key: string): void => {
+          attrs.delete(key);
+        },
+      },
+    });
+    try {
+      colorThemeState.name = "ocean";
+      applyColorTheme();
+      expect(attrs.get("data-color-theme")).toBe("ocean");
+      expect(attrs.has("data-theme")).toBe(false);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
   it("默认配色删属性回落样式表，非默认写属性", () => {
     const attrs = new Map<string, string>();
     const root = {
@@ -411,10 +434,10 @@ describe("applyColorTheme", () => {
     try {
       colorThemeState.name = "rose";
       applyColorTheme();
-      expect(root.getAttribute("data-theme")).toBe("rose");
+      expect(root.getAttribute("data-color-theme")).toBe("rose");
       colorThemeState.name = DEFAULT_COLOR_THEME;
       applyColorTheme();
-      expect(root.getAttribute("data-theme")).toBeNull();
+      expect(root.getAttribute("data-color-theme")).toBeNull();
     } finally {
       vi.unstubAllGlobals();
     }
@@ -460,7 +483,7 @@ describe("setColorTheme", () => {
       setColorTheme("teal");
       expect(localStorage.getItem(COLOR_THEME_STORAGE_KEY)).toBe("teal");
       expect(colorThemeState.name).toBe("teal");
-      expect(attrs.get("data-theme")).toBe("teal");
+      expect(attrs.get("data-color-theme")).toBe("teal");
     } finally {
       vi.unstubAllGlobals();
     }

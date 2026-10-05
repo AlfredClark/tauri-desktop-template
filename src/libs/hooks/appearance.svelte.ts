@@ -73,7 +73,8 @@ export function setLayoutName(next: LayoutName): void {
 // ---- 配色主题：与布局同为纯前端 UI 偏好，读写模式与上节保持一致 ----
 // 明暗（light/dark/system）由 mode-watcher 管 `.dark` 类，此处只管配色
 // （鲜艳系 ocean/teal/emerald/amber/tangerine/rose/amethyst + 暗色美学 nord/dracula/tokyo-night），
-// 经根元素 `data-theme` 属性生效（`themes.css` 的 `[data-theme]` 块），两者正交组合。
+// 经根元素 `data-color-theme` 属性生效（`themes.css` 的 `[data-color-theme]` 块），两者正交组合。
+// 属性名刻意避开 `data-theme`：mode-watcher 的 custom theme 功能硬编码占用该属性，挂载即覆盖为空串。
 // 新增配色时同步扩展该元组、`themes.css` 的两块令牌（浅色 + `:root.dark` 暗色）与设置页下拉候选。
 // 旧取值（blue/green/violet）已更名，存量经 `isColorTheme` 校验自动回落默认值，无需迁移逻辑。
 
@@ -131,9 +132,9 @@ export function applyColorTheme(): void {
     return;
   }
   if (colorThemeState.name === DEFAULT_COLOR_THEME) {
-    document.documentElement.removeAttribute("data-theme");
+    document.documentElement.removeAttribute("data-color-theme");
   } else {
-    document.documentElement.setAttribute("data-theme", colorThemeState.name);
+    document.documentElement.setAttribute("data-color-theme", colorThemeState.name);
   }
 }
 

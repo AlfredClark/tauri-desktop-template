@@ -1,5 +1,6 @@
-/* 配色主题令牌：`html[data-theme]` 切换配色，明暗仍由 mode-watcher 的 `.dark` 类控制，两者正交组合。
-   `neutral` 无对应块（缺省即 `layout.css` 的 `:root/.dark`）；暗色块必须用 `:root.dark[data-theme]` 显式组合，
+/* 配色主题令牌：`html[data-color-theme]` 切换配色，明暗仍由 mode-watcher 的 `.dark` 类控制，两者正交组合。
+   属性名刻意避开 `data-theme`（mode-watcher 挂载即覆盖该属性为空串）。
+   `neutral` 无对应块（缺省即 `layout.css` 的 `:root/.dark`）；暗色块必须用 `:root.dark[data-color-theme]` 显式组合，
    因主题块特异性高于 `.dark`，只用后代选择器会在暗色下被浅色块覆盖。
    设计取向为中度鲜艳：`primary` 用高饱和品牌色实心填充（浅色配白字、暗色配深色字），
    `secondary/muted/accent` 为同色相淡彩，`ring/sidebar-primary` 与主色同色相。
@@ -8,7 +9,7 @@
    新增配色只需加两块（浅色 + `:root.dark` 暗色），并在外观 hook 的取值元组、
    设置页下拉与中英文案中登记。 */
 
-:root[data-theme="ocean"] {
+:root[data-color-theme="ocean"] {
   --background: oklch(0.99 0.008 256);
   --foreground: oklch(0.28 0.06 256);
   --card: oklch(1 0 0);
@@ -42,7 +43,7 @@
   --sidebar-ring: oklch(0.62 0.19 256);
 }
 
-:root.dark[data-theme="ocean"] {
+:root.dark[data-color-theme="ocean"] {
   --background: oklch(0.17 0.035 256);
   --foreground: oklch(0.96 0.01 256);
   --card: oklch(0.22 0.045 256);
@@ -76,7 +77,7 @@
   --sidebar-ring: oklch(0.55 0.15 256);
 }
 
-:root[data-theme="teal"] {
+:root[data-color-theme="teal"] {
   --background: oklch(0.99 0.008 192);
   --foreground: oklch(0.28 0.05 192);
   --card: oklch(1 0 0);
@@ -110,7 +111,7 @@
   --sidebar-ring: oklch(0.65 0.13 192);
 }
 
-:root.dark[data-theme="teal"] {
+:root.dark[data-color-theme="teal"] {
   --background: oklch(0.17 0.03 192);
   --foreground: oklch(0.96 0.01 192);
   --card: oklch(0.22 0.04 192);
@@ -144,7 +145,7 @@
   --sidebar-ring: oklch(0.58 0.11 192);
 }
 
-:root[data-theme="emerald"] {
+:root[data-color-theme="emerald"] {
   --background: oklch(0.99 0.008 150);
   --foreground: oklch(0.28 0.06 150);
   --card: oklch(1 0 0);
@@ -178,7 +179,7 @@
   --sidebar-ring: oklch(0.64 0.15 150);
 }
 
-:root.dark[data-theme="emerald"] {
+:root.dark[data-color-theme="emerald"] {
   --background: oklch(0.17 0.035 150);
   --foreground: oklch(0.96 0.01 150);
   --card: oklch(0.22 0.045 150);
@@ -212,7 +213,7 @@
   --sidebar-ring: oklch(0.56 0.12 150);
 }
 
-:root[data-theme="amber"] {
+:root[data-color-theme="amber"] {
   --background: oklch(0.99 0.01 85);
   --foreground: oklch(0.3 0.05 80);
   --card: oklch(1 0 0);
@@ -246,7 +247,7 @@
   --sidebar-ring: oklch(0.68 0.14 80);
 }
 
-:root.dark[data-theme="amber"] {
+:root.dark[data-color-theme="amber"] {
   --background: oklch(0.18 0.03 80);
   --foreground: oklch(0.96 0.012 90);
   --card: oklch(0.23 0.038 80);
@@ -280,7 +281,7 @@
   --sidebar-ring: oklch(0.62 0.12 82);
 }
 
-:root[data-theme="tangerine"] {
+:root[data-color-theme="tangerine"] {
   --background: oklch(0.99 0.01 55);
   --foreground: oklch(0.3 0.06 50);
   --card: oklch(1 0 0);
@@ -314,7 +315,7 @@
   --sidebar-ring: oklch(0.66 0.17 52);
 }
 
-:root.dark[data-theme="tangerine"] {
+:root.dark[data-color-theme="tangerine"] {
   --background: oklch(0.18 0.035 50);
   --foreground: oklch(0.96 0.012 60);
   --card: oklch(0.23 0.045 50);
@@ -348,7 +349,7 @@
   --sidebar-ring: oklch(0.58 0.14 52);
 }
 
-:root[data-theme="rose"] {
+:root[data-color-theme="rose"] {
   --background: oklch(0.99 0.008 350);
   --foreground: oklch(0.29 0.06 350);
   --card: oklch(1 0 0);
@@ -382,7 +383,7 @@
   --sidebar-ring: oklch(0.64 0.19 350);
 }
 
-:root.dark[data-theme="rose"] {
+:root.dark[data-color-theme="rose"] {
   --background: oklch(0.175 0.035 350);
   --foreground: oklch(0.96 0.01 350);
   --card: oklch(0.225 0.045 350);
@@ -416,7 +417,7 @@
   --sidebar-ring: oklch(0.56 0.14 350);
 }
 
-:root[data-theme="amethyst"] {
+:root[data-color-theme="amethyst"] {
   --background: oklch(0.99 0.008 295);
   --foreground: oklch(0.29 0.06 295);
   --card: oklch(1 0 0);
@@ -450,7 +451,7 @@
   --sidebar-ring: oklch(0.62 0.19 293);
 }
 
-:root.dark[data-theme="amethyst"] {
+:root.dark[data-color-theme="amethyst"] {
   --background: oklch(0.175 0.035 295);
   --foreground: oklch(0.96 0.01 295);
   --card: oklch(0.225 0.045 293);
@@ -484,7 +485,7 @@
   --sidebar-ring: oklch(0.56 0.14 292);
 }
 
-:root[data-theme="nord"] {
+:root[data-color-theme="nord"] {
   --background: oklch(0.945 0.008 250);
   --foreground: oklch(0.3 0.03 262);
   --card: oklch(0.995 0.004 250);
@@ -518,7 +519,7 @@
   --sidebar-ring: oklch(0.6 0.1 245);
 }
 
-:root.dark[data-theme="nord"] {
+:root.dark[data-color-theme="nord"] {
   --background: oklch(0.27 0.03 262);
   --foreground: oklch(0.93 0.01 250);
   --card: oklch(0.33 0.035 262);
@@ -552,7 +553,7 @@
   --sidebar-ring: oklch(0.65 0.08 220);
 }
 
-:root[data-theme="dracula"] {
+:root[data-color-theme="dracula"] {
   --background: oklch(0.965 0.012 310);
   --foreground: oklch(0.26 0.035 290);
   --card: oklch(1 0 0);
@@ -586,7 +587,7 @@
   --sidebar-ring: oklch(0.58 0.2 305);
 }
 
-:root.dark[data-theme="dracula"] {
+:root.dark[data-color-theme="dracula"] {
   --background: oklch(0.235 0.03 288);
   --foreground: oklch(0.95 0.01 300);
   --card: oklch(0.3 0.035 288);
@@ -620,7 +621,7 @@
   --sidebar-ring: oklch(0.62 0.14 305);
 }
 
-:root[data-theme="tokyo-night"] {
+:root[data-color-theme="tokyo-night"] {
   --background: oklch(0.955 0.015 270);
   --foreground: oklch(0.24 0.045 275);
   --card: oklch(1 0 0);
@@ -654,7 +655,7 @@
   --sidebar-ring: oklch(0.58 0.19 268);
 }
 
-:root.dark[data-theme="tokyo-night"] {
+:root.dark[data-color-theme="tokyo-night"] {
   --background: oklch(0.205 0.035 272);
   --foreground: oklch(0.85 0.05 270);
   --card: oklch(0.26 0.045 272);
