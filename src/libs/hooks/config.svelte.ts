@@ -34,16 +34,19 @@ export async function hydrateConfig(): Promise<void> {
   }
 }
 
-/** 局部更新：只提交传入的字段，写后用命令返回的最新配置回写状态（失败不乐观更新） */
-export async function updateConfig(patch: ConfigPatch): Promise<void> {
+/** 局部更新：只提交传入的字段，写后用命令返回的最新配置回写状态（失败不乐观更新）；返回是否落盘成功，调用方按此分支而非用状态相等代理推断 */
+export async function updateConfig(patch: ConfigPatch): Promise<boolean> {
+  let succeeded = false;
   await commands
     .updateConfig(patch)
     .success((config) => {
       configState.value = config;
+      succeeded = true;
     })
     .failed((failure) => {
       reportCommandFailure("[config] failed to update backend config", failure);
     });
+  return succeeded;
 }
 
 /** 重置全部后端配置为默认值，返回写后配置；失败返回空，由调用方提示 */

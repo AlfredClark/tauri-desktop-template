@@ -38,8 +38,10 @@ crash safety nets, and common desktop capabilities out of the box.
 3. **Dual-track i18n (Paraglide + rust-i18n)** — frontend `paraglide-js` (`en` / `zh-CN`),
    backend `rust-i18n` (`src-tauri/locales/*.yml`, fallback `en`). The single source of truth
    is the backend `config.json` `locale` key: backend reads persisted value (or probes the OS
-   locale via `tauri-plugin-os` on first run), frontend hydrates it in `+layout.ts` `load()`
-   before first paint and aligns with `setLocale(locale, { reload: false })`.
+   locale via `tauri-plugin-os` on first run), frontend hydrates it in the background on
+   `+layout.svelte` mount (deliberately not in `+layout.ts` `load()` — Tauri `invoke` can't
+   plug into the `fetch` SvelteKit hands to `load`) and aligns with
+   `setLocale(locale, { reload: false })`.
 4. **Crash safety nets, frontend + backend** — frontend `ErrorBoundary` (reports via
    `@tauri-apps/plugin-log`, stack trace in dev only, 2s throttle); backend panic hook in
    `cores/system.rs` (normal log first, `%TEMP%/my_app_crash.log` fallback with 512KB rotation).
@@ -52,14 +54,19 @@ crash safety nets, and common desktop capabilities out of the box.
    - Plain-text clipboard (length-checked read/write)
    - Local notification (sent from backend)
    - Global shortcut (one fixed demo key, desktop only)
-6. **Settings page (`/settings`)** — General group (language, autostart, remember window,
+   - Network request (frontend `fetch` via `plugin-http`, capability domain + CSP
+     `connect-src` allowlisted; resident capability — keep it when removing the demo)
+6. **Minimal notes sample (`/notes`)** — SQLite CRUD over `notes.db` (frontend `libs/notes`
+   talks to the DB directly with fully parameterized queries, backend only runs the table
+   migration). Copy the pattern, then delete it (see `AGENTS.md` §10.7).
+7. **Settings page (`/settings`)** — General group (language, autostart, remember window,
    auto-check updates, tray, close behavior with `prompt` / `exit` / `minimize_to_tray`) backed
    by `config.json` via `updateConfig`; Appearance group (theme, color theme, `tabs` / `sidebar`
    layout, system-font picker, weight, size) is frontend-only; one-click reset to defaults.
-7. **About page (`/about`)** — app info, project links (`opener`, `http(s)` only), platform
+8. **About page (`/about`)** — app info, project links (`opener`, `http(s)` only), platform
    info, diagnostics (open log/config dirs, copy system info), and an updater panel
    (check → download with progress → restart; desktop only, 120s check timeout).
-8. **Desktop shell** — frameless window with custom title bar (pin / minimize / maximize /
+9. **Desktop shell** — frameless window with custom title bar (pin / minimize / maximize /
    close), system tray with localized menu (show/hide, quit), close-behavior interception,
    autostart, window-state restore (window starts `visible: false`, shown after restore),
    single-instance focus + deep-link arg forwarding (`tdt://` scheme), updater wired to GitHub
@@ -113,12 +120,13 @@ pnpm release         # bumpp linked versions: package.json + tauri.conf.json + C
 
 ## Pages
 
-| Route       | Screenshot                 | Contents                                                                                           |
-| ----------- | -------------------------- | -------------------------------------------------------------------------------------------------- |
-| `/`         | `docs/images/home.png`     | Hero: stack icons + app name + intro. Layout-skeleton starting point, build your business here.    |
-| `/demo`     | `docs/images/demo.png`     | Six plugin cards (paths / sandbox fs / dialogs / clipboard / notification / shortcut) + file drop. |
-| `/settings` | `docs/images/settings.png` | General (backend-persisted) + Appearance (frontend-only) groups + reset button.                    |
-| `/about`    | `docs/images/about.png`    | App / project / platform / diagnostics groups + updater panel.                                     |
+| Route       | Screenshot                 | Contents                                                                                                |
+| ----------- | -------------------------- | ------------------------------------------------------------------------------------------------------- |
+| `/`         | `docs/images/home.png`     | Hero: stack icons + app name + intro. Layout-skeleton starting point, build your business here.         |
+| `/demo`     | `docs/images/demo.png`     | Eight cards (paths / sandbox fs / dialogs / clipboard / notification / shortcut / network) + file drop. |
+| `/notes`    | —                          | SQLite notes CRUD sample (`libs/notes` + migration in `plugins/sql.rs`); no screenshot yet.             |
+| `/settings` | `docs/images/settings.png` | General (backend-persisted) + Appearance (frontend-only) groups + reset button.                         |
+| `/about`    | `docs/images/about.png`    | App / project / platform / diagnostics groups + updater panel.                                          |
 
 Navigation tabs are registered once in `src/libs/navigation/nav-tabs.ts` and shared by the
 `tabs` and `sidebar` layouts (`src/components/layout/`); add a page by adding one entry there.
@@ -147,7 +155,8 @@ hand-edit `bindings.ts`.
 **Edit copy:** frontend `src/libs/i18n/messages/*.json` → `pnpm i18n:compile` → use `m.<key>()`
 / `setLocale()`; backend `src-tauri/locales/*.yml` → `rust_i18n::t!(...)`.
 
-**Remove the demo** (bootstrap checklist, `greet` minimal contract stays; new projects start
+**Remove the demo** (bootstrap checklist, `greet` minimal contract stays — its `demo.greet`
+copy in `src-tauri/locales/demo.yml` stays with it, `tray.yml` untouched; new projects start
 with the init checklist in `AGENTS.md` §10.8 — rename before deleting): delete
 `src/routes/(main)/demo/`, `src/components/widget/demo/`, `cores/demo.rs`,
 `plugins/{fs,dialog,notification,global_shortcut}.rs` (`clipboard` stays — the about page
@@ -161,8 +170,8 @@ delete all `demo_`-prefixed message keys → `i18n:compile`; slim `features/demo
 ## Project structure (condensed)
 
 ```text
-src/routes/(main)/         # /, /demo, /settings, /about pages (+layout per group)
-src/components/widget/    # settings/, about/, demo/ page widgets
+src/routes/(main)/         # /, /demo, /notes, /settings, /about pages (+layout per group)
+src/components/widget/    # settings/, about/, demo/, notes/ page widgets
 src/components/layout/    # tabs / sidebar shells + title-bar / nav parts
 src/libs/commands/        # bindings.ts (generated) + chained-API wrapper
 src/libs/i18n/            # messages/ copy + project.inlang/ config
@@ -171,6 +180,7 @@ src-tauri/src/commands/   # thin wrappers + collect_commands!
 src-tauri/src/features/   # pure business logic (no Tauri runtime)
 src-tauri/src/cores/      # config / locale / system / tray / updater / ...
 src-tauri/src/plugins/    # per-plugin init
+src-tauri/locales/         # demo.yml (`demo.*`) / tray.yml (`tray.*`), en + zh-CN per file
 ```
 
 See `AGENTS.md` for layering rules, security red lines, and the full structure.

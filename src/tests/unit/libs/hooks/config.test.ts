@@ -128,6 +128,12 @@ describe("updateConfig", () => {
     expect(configState.value).toEqual(saved);
   });
 
+  it("成功时返回真", async () => {
+    stubUpdateConfig({ status: "ok", data: saved });
+
+    await expect(updateConfig({ locale: "zh-CN" })).resolves.toBe(true);
+  });
+
   it("失败时不乐观更新并上报", async () => {
     const previous: Config_Serialize = {
       locale: "en",
@@ -141,7 +147,7 @@ describe("updateConfig", () => {
     configState.value = previous;
     stubUpdateConfig({ status: "error", error: { kind: "Internal", message: "boom" } });
 
-    await updateConfig({ locale: "zh-CN" });
+    await expect(updateConfig({ locale: "zh-CN" })).resolves.toBe(false);
 
     expect(configState.value).toEqual(previous);
     expect(console.error).toHaveBeenCalledWith(

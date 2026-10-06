@@ -3,9 +3,10 @@ import type { AnyFn, AnyResult, CommandFailure, FnResult, OkData, WrappedFn } fr
 
 /** 命令调用的链式封装：取值、分支、副作用三条路都收敛到同一个结算结果上。 */
 ///
-/// 回调内不得做关键状态变更：`success` / `failed` 回调抛错只上报不扩散，
-/// `await` 仍得原结果。关键逻辑（如语言切换的 `setLocale`）应在 `await result()`
-/// 按 `status` 分支后执行，或确保回调自身不抛错。
+/// 回调内只做幂等赋值 / toast 且保证不抛错：`success` / `failed` 回调抛错只上报不扩散，
+/// `await` 仍得原结果，关键分支若放回调内会形成"状态未落但结果为 ok"的不一致。
+/// 多步分支 / 跨状态机流转（如语言切换的 `setLocale`）应在 `await result()`
+/// 按 `status` 分支后执行。
 
 // 取值（失败或数据为 null/undefined 时回落默认值，默认值可省略）：
 //   const name = await commands.greet(input).value("陌生人");

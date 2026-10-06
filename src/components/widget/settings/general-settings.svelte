@@ -75,8 +75,7 @@
     // 加载提示不自动消失（后端慢于默认 3s 时仍有反馈），结算后必定关闭
     const toastId = toast.loading(m.settings_language_switching(), { duration: Infinity });
     try {
-      await updateConfig({ locale });
-      if (configState.value?.locale === locale) {
+      if (await updateConfig({ locale })) {
         toast.success(m.settings_language_updated());
         setLocale(locale);
       } else {
@@ -93,8 +92,7 @@
     if (checked === autoStart || switchingAutostart) return;
     switchingAutostart = true;
     try {
-      await updateConfig({ auto_start: checked });
-      if (configState.value?.auto_start === checked) {
+      if (await updateConfig({ auto_start: checked })) {
         toast.success(m.settings_autostart_updated());
       } else {
         toast.error(m.settings_autostart_update_failed());
@@ -109,8 +107,7 @@
     if (checked === rememberWindow || switchingRememberWindow) return;
     switchingRememberWindow = true;
     try {
-      await updateConfig({ remember_window: checked });
-      if (configState.value?.remember_window === checked) {
+      if (await updateConfig({ remember_window: checked })) {
         toast.success(m.settings_remember_window_updated());
       } else {
         toast.error(m.settings_remember_window_update_failed());
@@ -125,8 +122,7 @@
     if (checked === autoCheckUpdate || switchingAutoCheckUpdate) return;
     switchingAutoCheckUpdate = true;
     try {
-      await updateConfig({ auto_check_update: checked });
-      if (configState.value?.auto_check_update === checked) {
+      if (await updateConfig({ auto_check_update: checked })) {
         toast.success(m.settings_auto_check_update_updated());
       } else {
         toast.error(m.settings_auto_check_update_failed());
@@ -142,8 +138,7 @@
     if (checked === trayEnabled || switchingTray) return;
     switchingTray = true;
     try {
-      await updateConfig({ tray_enabled: checked });
-      if (configState.value?.tray_enabled === checked) {
+      if (await updateConfig({ tray_enabled: checked })) {
         toast.success(m.settings_tray_updated());
       } else {
         toast.error(m.settings_tray_update_failed());
@@ -158,8 +153,7 @@
   async function handleCloseBehaviorChange(value: string): Promise<void> {
     const behavior = closeBehaviorItems.find((item) => item.value === value)?.value;
     if (!behavior || behavior === closeBehavior) return;
-    await updateConfig({ close_behavior: behavior });
-    if (configState.value?.close_behavior === behavior) {
+    if (await updateConfig({ close_behavior: behavior })) {
       toast.success(m.settings_close_behavior_updated());
     } else {
       toast.error(m.settings_close_behavior_update_failed());

@@ -34,7 +34,7 @@ pub fn greet(name: &str) -> anyhow::Result<String> {
     if name == "123" {
         anyhow::bail!("Invalid argument");
     }
-    Ok(t!("greet", name = name).to_string())
+    Ok(t!("demo.greet", name = name).to_string())
 }
 
 /// 校验演示文件名：去首尾空白后非空、无路径分隔符、无 `..`、长度受限；

@@ -77,7 +77,7 @@ beforeEach(() => {
     close_behavior: "prompt",
     schema_version: 1,
   };
-  // 成功路径：写后回填配置状态，与真实 `updateConfig` 的回写行为一致。
+  // 成功路径：写后回填配置状态并返回真，与真实 `updateConfig` 的回写行为一致。
   updateConfigMock.mockImplementation(
     async (patch: {
       locale?: Locale;
@@ -96,6 +96,7 @@ beforeEach(() => {
         close_behavior: patch.close_behavior ?? configStateMock.value.close_behavior,
         schema_version: 1,
       };
+      return true;
     },
   );
 });
@@ -147,7 +148,7 @@ describe("通用设置分组", () => {
 
   it("语言落盘失败时不重载并报错", async () => {
     const user = userEvent.setup();
-    updateConfigMock.mockImplementation(async () => {});
+    updateConfigMock.mockImplementation(async () => false);
     render(Component);
 
     await chooseOption(user, "Language", "zh-CN");
@@ -160,8 +161,8 @@ describe("通用设置分组", () => {
 
   it("语言落盘失败时加载提示关闭且下拉恢复可用", async () => {
     const user = userEvent.setup();
-    // 生产真实失败路径：命令结算为失败（ resolve 但不回写状态），而非抛错
-    updateConfigMock.mockImplementationOnce(async () => {});
+    // 生产真实失败路径：命令结算为失败（resolve 为 false 且不回写状态），而非抛错
+    updateConfigMock.mockImplementationOnce(async () => false);
     render(Component);
 
     await chooseOption(user, "Language", "zh-CN");
@@ -182,7 +183,7 @@ describe("通用设置分组", () => {
 
   it("自启落盘失败时开关恢复可用", async () => {
     const user = userEvent.setup();
-    updateConfigMock.mockImplementationOnce(async () => {});
+    updateConfigMock.mockImplementationOnce(async () => false);
     render(Component);
 
     await user.click(screen.getByRole("switch", { name: "Autostart" }));
@@ -226,7 +227,7 @@ describe("通用设置分组", () => {
 
   it("自启落盘失败时报错且不改语言", async () => {
     const user = userEvent.setup();
-    updateConfigMock.mockImplementation(async () => {});
+    updateConfigMock.mockImplementation(async () => false);
     render(Component);
 
     await user.click(screen.getByRole("switch", { name: "Autostart" }));
@@ -270,7 +271,7 @@ describe("通用设置分组", () => {
 
   it("窗口落盘失败时报错且不改语言", async () => {
     const user = userEvent.setup();
-    updateConfigMock.mockImplementation(async () => {});
+    updateConfigMock.mockImplementation(async () => false);
     render(Component);
 
     await user.click(screen.getByRole("switch", { name: "Remember window" }));
@@ -314,7 +315,7 @@ describe("通用设置分组", () => {
 
   it("更新检查落盘失败时报错且不改语言", async () => {
     const user = userEvent.setup();
-    updateConfigMock.mockImplementation(async () => {});
+    updateConfigMock.mockImplementation(async () => false);
     render(Component);
 
     await user.click(screen.getByRole("switch", { name: "Auto check for updates" }));
@@ -398,7 +399,7 @@ describe("通用设置分组", () => {
 
   it("关闭行为落盘失败时报错且不改语言", async () => {
     const user = userEvent.setup();
-    updateConfigMock.mockImplementation(async () => {});
+    updateConfigMock.mockImplementation(async () => false);
     render(Component);
 
     await chooseOption(user, "Close behavior", "exit");

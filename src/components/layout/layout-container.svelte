@@ -2,6 +2,7 @@
   // 布局容器：按注册表动态渲染，新增布局只需加文件并扩展映射，无需改动本文件。
   // 错误兜底由根布局的全局错误边界负责，此处不再嵌套，避免双重捕获。
   // 非默认布局懒加载：pending 期间继续渲染旧布局，settled 才翻转，不白屏不闪烁。
+  import { untrack } from "svelte";
   import type { Snippet } from "svelte";
   import type { LayoutComponent, LayoutName } from "$hooks/appearance.svelte";
   import { LAYOUTS, initLayout, layoutState } from "$hooks/appearance.svelte";
@@ -12,8 +13,9 @@
   let Layout = $state<LayoutComponent | undefined>(undefined);
   let shownName = $state<LayoutName>("tabs");
 
+  // init 只写布局状态：包 untrack 切断订阅，避免"改动→重初始化"回路（对标根布局的 initAppearance）
   $effect.pre(() => {
-    initLayout();
+    untrack(() => initLayout());
   });
 
   $effect(() => {

@@ -59,7 +59,7 @@ tauri-desktop-template/
 │   ├── assets/                     # 需要经构建处理的资源（别名 $assets，见 svelte.config.ts），icons/ 下为内联图标（github-icon / app-icon）
 │   ├── routes/                     # 页面与全局样式
 │   │   ├── +layout.svelte          # 根布局：ModeWatcher（主题）+ Toaster + ErrorBoundary（渲染异常）包裹全部分组，首帧前对齐外观变量（字体/字重/字号）
-│   │   ├── +layout.ts              # ssr = false（SPA 模式）+ 首帧前对齐界面语言的 load()
+│   │   ├── +layout.ts              # ssr = false（SPA 模式）；配置水合不在 load()（invoke 接不进 event.fetch），见 +layout.svelte 挂载期后台水合
 │   │   ├── (main)/                 # 分组路由（括号不进 URL）：常规页面分组，独享布局容器
 │   │   │   ├── +layout.svelte      # 分组布局：LayoutContainer 包裹，特殊页另起分组即可绕开布局
 │   │   │   ├── +page.svelte        # 占位首页：布局骨架验证起点，业务在此开发
@@ -93,7 +93,7 @@ tauri-desktop-template/
 │   │   ├── cores/                  # 通用能力与跨层共享类型（types / locale / config / deep_link / specta / system / tray / updater / demo）
 │   │   ├── features/               # 业务逻辑（纯函数，不依赖 Tauri 运行时；demo 含演示输入校验）
 │   │   └── plugins/                # 各 Tauri 插件的初始化（log / store / opener / os / updater / autostart / window-state / system-fonts / single-instance / deep-link / fs / dialog / clipboard / notification / global-shortcut / http / sql）
-│   ├── locales/                    # rust-i18n 后端文案（*.yml，单文件可内含多 locale，如 demo.yml 的 en/zh-CN 双写）
+│   ├── locales/                    # rust-i18n 后端文案（按功能分文件，一文件一命名空间：demo.yml 的 demo.* / tray.yml 的 tray.*，单文件可内含多 locale 的 en/zh-CN 双写）
 │   ├── capabilities/               # 权限配置（default.json / plugins.json），外部 URL 需同步更新
 │   ├── icons/                      # 应用图标（由 pnpm tauri:icon 生成）
 │   ├── build.rs                    # tauri-build 构建脚本
@@ -122,7 +122,7 @@ tauri-desktop-template/
 ## 4. 常用命令
 
 > 所有命令以仓库根目录为基准执行。优先使用以下命令，禁止另起等效命令。
-> 包管理器为 `pnpm@12.6.0`，Node `>=24`；Rust 工具链锁定 `1.98.0`（见 `rust-toolchain.toml`）。
+> 包管理器为 `pnpm@12.6.0`，Node `>=24`；Rust 工具链锁定 `1.99.0`（见 `rust-toolchain.toml`）。
 
 ```bash
 # ---- 环境初始化 ----
@@ -174,8 +174,8 @@ pnpm release                       # bumpp 联动升级三处版本号（package
 4. **错误处理分层：** `features/` 返回业务错误 → `commands/` 转为 `CommandResult`（错误统一 `CommandError::Internal(...)`，`anyhow::Error` 经已有 `From` 自动转换）→ 前端经 `.result() / .value() / .success() / .failed()` 处理。前端 `.failed()` 回调形状为 `{ kind, message }`；未注册 `.failed()` 的失败会自动经 plugin-log 上报，不会静默丢失。禁止在 `features/` 内直接耦合 Tauri 运行时。
 5. **配置外置与同步：** Paraglide 编译选项唯一来源是 `src/libs/i18n/project.inlang/paraglide.config.ts`（CLI 与 vite 插件都读它，禁止往 `package.json` / `vite.config.ts` 各写一份）；路径别名唯一来源是 `svelte.config.ts` 的 `kit.alias`。新增外部 URL 必须同步更新 `capabilities/*.json` 与 `tauri.conf.json` 的 CSP（`updater` 下载端点由 Rust 侧发起，不受 WebView CSP 约束，无需同步 CSP，见第 8 章第 2 条）。新增配置必须检查第 10 章第 4 条成对维护表。路径别名共四个（`$assets` / `$components` / `$hooks` / `$libs`），均由该处定义；其中 hooks 一律经 `$hooks` 引用，禁止写 `$libs/hooks`（两者都能解析）——`components.json` 的 `aliases.hooks` 即 `$hooks`，CLI 生成的组件也走 `$hooks`，保持唯一写法才能避免漂移。新增 / 变更配置项必须同步 `cores/config.rs` 的 `CURRENT_SCHEMA_VERSION` 与 `MIGRATIONS` 迁移链（仅改动已有字段语义时才递增版本），否则老用户配置会静默失效。配置写锁三入口（`update` / `save_locale` / `migrate`，内部函数不加锁，新增写入路径必须走其一）；`update` 内幂等 `migrate`，存储不可用直接失败（不基于回落默认值决策），自启落盘失败回滚操作系统状态。
 6. **崩溃边界：** 前端 `ErrorBoundary`（经 `@tauri-apps/plugin-log` 上报，堆栈仅 dev 显示；同步 `console.error` 留底 + 2s 节流防刷屏）+ 后端 `cores/system.rs` panic 钩子（先走常规日志，日志不可用时落盘到 `%TEMP%/my_app_crash.log` 兜底，二选一而非双写；超 512KB 轮转为 `.1` 仅保留一份）。两者互不替代，禁止另加并行机制。
-7. **语言数据流：** 唯一持久化点是后端 `config.json` 的 `locale` 键（`cores/config.rs`），类型为 `cores/locale.rs` 的 `Locale` 枚举（经 specta 导出为 `"en" | "zh-CN"` 联合类型，禁止裸 `string` 或类型断言；`Locale::parse` 仅支持这两项，繁体一律归 `zh-CN`，加语言时同步改解析、`locales/*.yml` 与前端文案）。启动时后端先读持久化值、缺失则 `tauri_plugin_os::locale()` 探测并落库，再 `rust_i18n::set_locale`；前端在 `+layout.ts` 的 `load()` 首帧前经 `commands.getConfig` 水合配置（失败重试一次，不阻断首帧），再用 `config.locale` 调 Paraglide 的 `setLocale(locale, { reload: false })` 对齐（否则整页重载 + 语言闪烁）；用户切换时 `commands.updateConfig({ locale })` 先落盘再改内存，运行时 `rust_i18n` 由 `config::apply_runtime_effects` 统一同步，前端随后用 Paraglide 默认 `setLocale` 重载。更新命令 `restart` 桌面端永不结算（勿 `await`）、移动端返回错误走 `.failed()`；检查 120s 超时兜底，待重启态不被新检查覆盖。完整流程见第 10 章第 1 条。
-8. **初始化与订阅：** `initAppearance` 类“读存储 → 写内存 → 应用到 DOM”的初始化只允许跑一次，禁止进入跟踪型 `$effect`（init 读写同一批状态，被跟踪即形成“改动→重初始化”回路：未落盘的预览会被存量覆盖，字重滑块冻住即此因；必须包 `untrack`）。`app.html` 的首帧内联脚本是 init 在 JS 就绪前的同步镜像，两处键名与分支逻辑必须同步改。`localStorage` 存量键名即契约（改名即视为放弃老用户存量），新增键统一加 `app.` 前缀，禁止裸通用名。
+7. **语言数据流：** 唯一持久化点是后端 `config.json` 的 `locale` 键（`cores/config.rs`），类型为 `cores/locale.rs` 的 `Locale` 枚举（经 specta 导出为 `"en" | "zh-CN"` 联合类型，禁止裸 `string` 或类型断言；`Locale::parse` 仅支持这两项，繁体一律归 `zh-CN`，加语言时同步改解析、`locales/*.yml` 与前端文案）。启动时后端先读持久化值、缺失则 `tauri_plugin_os::locale()` 探测并落库，再 `rust_i18n::set_locale`；前端在 `+layout.svelte` 挂载期后台经 `commands.getConfig` 水合配置（失败重试一次，不阻断首帧；刻意不在 `+layout.ts` 的 `load()` 里做——Tauri `invoke` 走 `window.fetch("ipc://...")`，接不进 SvelteKit 传给 `load` 的 `fetch`，且纯 SPA 下 `load` 相对首帧并无时序优势），再用 `config.locale` 调 Paraglide 的 `setLocale(locale, { reload: false })` 对齐（否则整页重载 + 语言闪烁）；用户切换时 `commands.updateConfig({ locale })` 先落盘再改内存（返回是否成功，调用方按返回值分支，禁止用状态相等代理推断），运行时 `rust_i18n` 由 `config::apply_runtime_effects` 统一同步，前端随后用 Paraglide 默认 `setLocale` 重载。更新命令 `restart` 桌面端永不结算（勿 `await`）、移动端返回错误走 `.failed()`；检查 120s 超时兜底，待重启态不被新检查覆盖。完整流程见第 10 章第 1 条。
+8. **初始化与订阅：** `initAppearance` 类“读存储 → 写内存 → 应用到 DOM”的初始化只允许跑一次，禁止进入跟踪型 `$effect`（init 读写同一批状态，被跟踪即形成“改动→重初始化”回路：未落盘的预览会被存量覆盖，字重滑块冻住即此因；必须包 `untrack`）。`app.html` 的首帧内联脚本是 init 在 JS 就绪前的同步镜像，两处键名与分支逻辑必须同步改。`localStorage` 存量键名即契约（改名即视为放弃老用户存量）：已发布的存量键冻结豁免，仅新增键统一加 `app.` 前缀，禁止裸通用名。
 
 ---
 
@@ -192,10 +192,10 @@ pnpm release                       # bumpp 联动升级三处版本号（package
 ### 6.2 前端
 
 - 组件：只用 Svelte 5 runes 写法（`$state` / `$props` / `$effect`），新代码禁用旧式 store；Props 必须显式定义类型，禁止 `any` 透传。
-- shadcn-svelte 组件在引用时尽可能使用全名引用如： `AlertDialogTrigger` 避免使用 `AlertDialog.Trigger`
+- shadcn-svelte 组件在引用时尽可能使用全名引用如： `AlertDialogTrigger` 避免使用 `AlertDialog.Trigger`（仅命名空间导出的原语如 `Tooltip` 无全名可引，予以豁免）
 - 数据请求：统一经 `src/libs/commands` 链式 API（`.value() / .result() / .success() / .failed()`，回调在 `await / value()` 之前链式注册）；禁止在组件内手写裸 `invoke`。
-- 样式：Tailwind v4 + `cn()` 合并类名，优先主题变量（`src/routes/layout.css`，Geist Variable 字体，`.dark` 暗色变体）；禁止散落硬编码色值。Prettier（`double` 双引号、分号、2 空格缩进、行宽 100、LF）+ ESLint（`js recommended`、`typescript-eslint recommended`、`svelte flat/recommended` + `flat/prettier`）。
-- 导入顺序强制：内建模块 → 第三方 → 类型 → `$assets` / `$hooks` → `$components` → `$libs` → 相对路径。
+- 样式：Tailwind v4 + `cn()` 合并类名，优先主题变量（`src/routes/layout.css`，Geist Variable 字体，`.dark` 暗色变体）；禁止散落硬编码色值（品牌 / 图标资产的多色静态色除外，主题变量不适用于多色 logo）。Prettier（`double` 双引号、分号、2 空格缩进、行宽 100、LF）+ ESLint（`js recommended`、`typescript-eslint recommended`、`svelte flat/recommended` + `flat/prettier`）。
+- 导入顺序强制：内建模块 → 第三方 → 类型 → `$assets` / `$hooks` → `$components` → `$libs` → 相对路径（SvelteKit 内建别名 `$app/*` 按第三方对待；顺序以 `prettier --check` 为准，机器通过即合规）。
 - TSDoc（`/** */`，短句保持单行）只写契约与非直观处；**不要在 TSDoc 里写代码示例**（prettier-jsdoc 会重排成散文，示例用 `//` 注释块）；描述别用英文小写标识符开头（`jsdocCapitalizeDescription` 会首字母大写，中文开头可规避）。
 - 示例：
 
@@ -231,7 +231,7 @@ pub fn greet(name: String) -> CommandResult<String> {
 
 ### 6.4 前后端交互约定
 
-- 调用：一律 `libs/commands` 链式 API，禁止裸 `invoke`；`EnhancedCommand` 三种用法见 6.2 示例（取值 `.value()` / 分支 `.result()` / 事务 `.success()/.failed()`）。关键取值用 `.result()` 按 `status` 分支，`.value()` 的回落会把失败与空数据压成同一个值。回调内不得做关键状态变更（回调抛错只上报不扩散，`await` 仍得原结果）。
+- 调用：一律 `libs/commands` 链式 API，禁止裸 `invoke`；`EnhancedCommand` 三种用法见 6.2 示例（取值 `.value()` / 分支 `.result()` / 事务 `.success()/.failed()`）。关键取值用 `.result()` 按 `status` 分支，`.value()` 的回落会把失败与空数据压成同一个值。回调内只做幂等赋值 / toast 且保证不抛错（回调抛错只上报不扩散，`await` 仍得原结果，关键分支若放回调内会形成"状态未落但结果为 ok"的不一致）；多步分支 / 跨状态机流转必须用 `result()` 后置分支。
 - 错误体：后端 `CommandError::Internal(...)`，前端 `.failed()` 收到 `{ kind, message }`；`anyhow::Error` 经 `From` 自动转换。
 - 语言类型：前后端共用 specta 导出的 `"en" | "zh-CN"` 联合类型，禁止裸 `string` 或类型断言。
 - 时间：后端 `chrono`；业务时间全链路 UTC，展示层转本地时区；崩溃日志时间戳使用本地时间字符串（`chrono::Local`，RFC3339 带时区偏移）；禁止无时区信息的本地时间与 UTC 解析混用。
@@ -309,20 +309,20 @@ CI（`.github/workflows/ci.yml`）在 `main` 分支上按变更路径触发：
 2. **命令契约流程：** `features/<name>.rs` 实现业务（`features/mod.rs` 声明 `pub mod <name>;`）→ `commands/<name>.rs` 薄封装（`CommandResult` + 双注解 + 进 `collect_commands!`）→ `cargo test` 重生成 `bindings.ts` → 前端链式 API 调用 → 联调。禁止跳过文档 / 生成步骤直接改代码。
 3. **发版流程：** 必须由开发者手动发版，`main` 受保护 → 提 PR → CI 全绿 → Code Review → Squash 合并 → `pnpm release` 联动三处版本号 → 打 tag `vX.Y.Z`（须与 `tauri.conf.json` 一致）→ `release.yml` 自动打包 → `pnpm changelog` 生成日志。
 4. **必须成对维护的配置：**
-   - 两个 workflow 里 `dtolnay/rust-toolchain` 的 `toolchain: 1.98.0` ↔ `rust-toolchain.toml`
+   - 两个 workflow 里 `dtolnay/rust-toolchain` 的 `toolchain: 1.99.0` ↔ `rust-toolchain.toml`
    - `.prettierrc` 的 `importOrderTypeScriptVersion` ↔ `package.json` 的 `typescript`
    - Tauri 插件前后端版本：`pnpm-lock.yaml` 的 npm 包 ↔ `Cargo.lock` 的 cargo 包（major.minor 一致，升级入口为 `pnpm update:all`，由 `scripts/check-version-sync.ts` 在 `pnpm check` 中校验）
    - `.prettierignore` ↔ `.gitignore` 中的构建产物（Prettier 不读 `.gitignore`）
    - CI backend 的 `changes` 路径过滤器 ↔ 新增的后端配置文件
 5. **构建与忽略：** 构建产物（`target/`、`build/`、`.svelte-kit/`、`src-tauri/gen/`、`node_modules/`、`src/libs/i18n/paraglide/`）均已忽略；`bindings.ts` 虽是生成物但**需要提交**；`Cargo.lock` 需要提交；`static/icon.png` 为图标源文件（`pnpm tauri:icon` 生成各平台图标）。Vite 固定端口 `1420`，忽略监听 `src-tauri/**`，`clearScreen: false` 以保留 Rust 日志。主窗口初始 `visible: false`（防恢复闪烁），由 `cores/config.rs` 的 `setup` 按记住窗口配置恢复后统一 `show`，任何提前返回前必须显示，否则永久黑屏；仅恢复 `main` 窗口。
-6. **演示页移除流程：** `/demo` 及配套代码是模板脚手架，派生项目按以下清单删除即初始化（前置改名步骤见第 8 条；`greet` 最小契约示例保留，`locales/demo.yml` 后端文案随之保留；`http` 网络层〈插件 / CSP / capability / `libs/http/`〉为常驻能力，仅删演示卡片与 `demo_http_*` 文案，不动网络层）：
+6. **演示页移除流程：** `/demo` 及配套代码是模板脚手架，派生项目按以下清单删除即初始化（前置改名步骤见第 8 条；`greet` 最小契约示例保留（文案键 `demo.greet` 在 `locales/demo.yml` 中随之保留）；`http` 网络层〈插件 / CSP / capability / `libs/http/`〉为常驻能力，仅删演示卡片与 `demo_http_*` 文案，不动网络层）：
    - 删目录：`src/routes/(main)/demo/`、`src/components/widget/demo/`、`src/libs/shortcuts/`（演示页 shortcut 卡片调用方，含 `demo_` 残留）、`src-tauri/src/cores/demo.rs`、`src-tauri/src/plugins/{fs,dialog,notification,global_shortcut}.rs`（`clipboard` 保留：about 页 `copy_system_info` 依赖写剪贴板，见摘注册）
    - 删导航：`nav-tabs.ts` 的 `/demo` 项（含 `FlaskConicalIcon` 导入）
    - 删文案：`src/libs/i18n/messages/*.json` 中全部 `demo_` 开头键 → `pnpm i18n:compile`
    - 删测试：`src/tests/component/components/widget/demo/` 整组用例 + `src/tests/unit/libs/shortcuts/` 两组用例（不删则 import 悬空导致 vitest 变红）
    - 瘦身后端：`features/demo.rs` 删校验常量与函数及对应单测（保留 `greet` 及其单测）；`commands/demo.rs` 删全部 `demo_*` 命令（保留 `greet`；`demo_pick_folder` 有桌面 / 移动双 `cfg` 实现，两段同删；`greet` 改为 `crate::features::demo::greet` 全路径调用并删 `demo_features` 别名导入，使收尾 `rg` 可清零）并重写文件头为最小契约说明；`collect_commands!` 同步删项；`cores/mod.rs` 删 `pub mod demo` 并同步第 5 行文档注释；`commands/mod.rs` 第 4 行分组注释删“演示”一项（`pub mod demo` 保留，`greet` 仍在）
    - 摘注册：`plugins/mod.rs` 删四模块声明与 `with_global_shortcut`（含移动端空实现，`BuilderExt` 本体与其余槽位保留）；`lib.rs` 删三个 `.plugin(...)`（`fs` / `dialog` / `notification`）与 `.with_global_shortcut()`；`capabilities/plugins.json` 删 10 项演示权限（`dialog:default`、fs×4、`global-shortcut`×3、`notification:default`、`clipboard-manager:allow-read-text`），保留 `clipboard-manager:allow-write-text`（about 页 `copy_system_info` 依赖写剪贴板，`plugins/clipboard.rs` + `lib.rs` 注册 + `Cargo.toml` 的 `clipboard-manager` 依赖同步保留）；其余保留 6 项基线（`deep-link` / `log` / `opener` / `os:allow-locale` / `system-fonts` / `updater`，其中 `log` 系错误上报通道、`opener` 系项目外链通道，勿误删）+ `http` 常驻 1 项 + `sql` 常驻 3 项（共剩 11 项）；`Cargo.toml` 删四个插件依赖（`fs` / `dialog` / `notification` / `global-shortcut`，保留 `http` 常驻与 `clipboard-manager`）；前端 `pnpm remove @tauri-apps/plugin-global-shortcut`（`libs/shortcuts` 删除后悬空，其余四插件本无 npm 包；删后跑 `pnpm check:sync` 确认双端对齐）；`libs/commands/types.ts` 删 `DemoAppPaths` / `DropFileInfo` 的导入与透出
-   - 收尾：`cargo test` 重生成 `bindings.ts`（确认 `DemoAppPaths` / `DropFileInfo` / `demo_*` 仅剩 `greet`）→ `pnpm i18n:compile`（`demo_*` 键清零）→ `pnpm format` + `pnpm validate`；`rg "demo_|DemoAppPaths|DropFileInfo|with_global_shortcut" src src-tauri` 应无残留（`demo.rs` 文件名与注释除外）；`tauri.conf.json` 的 CSP `https://timeapi.io` 与 capability `http:default` 属常驻网络层，禁止顺手清理；`lib.rs` 的 `large_stack_frames` 豁免若不再触发则同步删除（`allow` 与 6.3 对应半句）；更新 `README.md`（截图矩阵与目录结构行）/ `docs/`（含 `docs/images/demo.png` 去留）/ 本文件 中的 demo 描述；可选将 `locales/demo.yml` 改名为中性文件名（仅剩 `greet` + `tray` 文案时原名误导，改名后 `cargo test` 验证 `t!` 解析）
+   - 收尾：`cargo test` 重生成 `bindings.ts`（确认 `DemoAppPaths` / `DropFileInfo` / `demo_*` 仅剩 `greet`）→ `pnpm i18n:compile`（`demo_*` 键清零）→ `pnpm format` + `pnpm validate`；`rg "demo_|DemoAppPaths|DropFileInfo|with_global_shortcut" src src-tauri` 应无残留（`demo.rs` 文件名与注释除外）；`tauri.conf.json` 的 CSP `https://timeapi.io` 与 capability `http:default` 属常驻网络层，禁止顺手清理；`lib.rs` 的 `large_stack_frames` 豁免若不再触发则同步删除（`allow` 与 6.3 对应半句）；更新 `README.md`（截图矩阵与目录结构行）/ `docs/`（含 `docs/images/demo.png` 去留）/ 本文件 中的 demo 描述；可选将 `locales/demo.yml` 改名为中性文件名并把 `demo.greet` 键同步改回中性命名（删演示页后 `demo.*` 前缀名不副实，改名后 `cargo test` 验证 `t!` 解析）
 7. **业务示例移除流程：** `/notes` 及配套代码是最小业务样板间，抄完即删（与演示页不同：`sql` 插件常驻，仅摘示例）：
    - 删目录：`src/routes/(main)/notes/`、`src/components/widget/notes/`、`src/libs/notes/`
    - 删导航：`nav-tabs.ts` 的 `/notes` 项（含 `NotebookPenIcon` 导入）

@@ -43,7 +43,7 @@ tauri-plugin-fs = "2"
 tauri-plugin-dialog = "2"
 tauri-plugin-clipboard-manager = "2"
 tauri-plugin-notification = "2"
-# 与 `@tauri-apps/plugin-http` 同 minor（npm 侧无 2.7，只有 2.6；`check-version-sync` 会校验）
+# 与 `@tauri-apps/plugin-http` 同 minor（当前双端锁定 2.8.x；`check-version-sync` 会校验）
 tauri-plugin-http = "2.6"
 
 [target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]

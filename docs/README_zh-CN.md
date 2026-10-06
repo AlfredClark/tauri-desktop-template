@@ -33,7 +33,8 @@
 3. **前后端双轨国际化（Paraglide + rust-i18n）** — 前端 `paraglide-js`（`en` / `zh-CN`），后端
    `rust-i18n`（`src-tauri/locales/*.yml`，`fallback = "en"`）。唯一持久化点是后端
    `config.json` 的 `locale` 键：后端先读持久化值、缺失则经 `tauri-plugin-os` 探测系统语言并
-   落库；前端在 `+layout.ts` 的 `load()` 中首帧前水合并用
+   落库；前端在 `+layout.svelte` 挂载期后台水合（刻意不在 `+layout.ts` 的 `load()` 里做——
+   Tauri `invoke` 接不进 SvelteKit 传给 `load` 的 `fetch`），再用
    `setLocale(locale, { reload: false })` 对齐。
 4. **前后端崩溃兜底** — 前端 `ErrorBoundary`（经 `@tauri-apps/plugin-log` 上报，堆栈仅 dev
    显示，2s 节流）；后端 `cores/system.rs` panic 钩子（先走常规日志，日志不可用时落盘到
@@ -45,15 +46,19 @@
    - 系统对话框（异步回调版文件 / 目录 / 保存框，取消返回 `None`）
    - 纯文本剪贴板（跨桥前先做长度校验的读写）
    - 本地通知（由后端发送）
-   - 全局快捷键（固定演示键，仅桌面端）
-6. **设置页（`/settings`）** — 通用分组（语言、开机自启、记住窗口、自动检查更新、托盘、
+     - 全局快捷键（固定演示键，仅桌面端）
+   - 网络请求（前端 `fetch` 经 `plugin-http` 出网，capability 域约束 + CSP `connect-src`
+     双放行；常驻能力，删演示页时保留）
+6. **最小业务示例（`/notes`）** — 基于 `notes.db` 的 SQLite 增删改查（前端 `libs/notes`
+   直连数据库且全参数化，后端只做建表迁移）。抄完模式即删（流程见 `AGENTS.md` 第 10 章第 7 条）。
+7. **设置页（`/settings`）** — 通用分组（语言、开机自启、记住窗口、自动检查更新、托盘、
    关闭行为 `prompt` / `exit` / `minimize_to_tray`）经 `updateConfig` 落盘后端
    `config.json`；外观分组（主题、配色、`tabs` / `sidebar` 布局、系统字体选择器、字重、
    字号）纯前端；一键恢复默认。
-7. **关于页（`/about`）** — 应用信息、项目链接（`opener`，仅放行 `http(s)`）、平台信息、
+8. **关于页（`/about`）** — 应用信息、项目链接（`opener`，仅放行 `http(s)`）、平台信息、
    诊断分组（打开日志 / 配置目录、复制系统信息）与更新面板（检查 → 带进度下载 → 重启，
    仅桌面端，检查 120s 超时兜底）。
-8. **桌面外壳** — 无边框窗口 + 自绘标题栏（置顶 / 最小化 / 最大化 / 关闭）、带本地化菜单
+9. **桌面外壳** — 无边框窗口 + 自绘标题栏（置顶 / 最小化 / 最大化 / 关闭）、带本地化菜单
    （显示/隐藏、退出）的系统托盘、关闭行为拦截、开机自启、窗口状态记忆（窗口初始
    `visible: false`，恢复后统一 `show`）、单实例聚焦 + 深链参数转发（`tdt://` 协议）、更新
    对接 GitHub Releases `latest.json`。
@@ -106,12 +111,13 @@ pnpm release         # bumpp 联动三处版本：package.json + tauri.conf.json
 
 ## 页面一览
 
-| 路由        | 截图                       | 内容说明                                                                        |
-| ----------- | -------------------------- | ------------------------------------------------------------------------------- |
-| `/`         | `docs/images/home.png`     | 首页英雄区：技术栈图标 + 应用名 + 简介；布局骨架验证起点，业务在此开发。        |
-| `/demo`     | `docs/images/demo.png`     | 六插件分组卡片（目录 / 沙盒文件 / 对话框 / 剪贴板 / 通知 / 快捷键）+ 文件拖放。 |
-| `/settings` | `docs/images/settings.png` | 通用（后端持久化）+ 外观（纯前端）两分组 + 恢复默认按钮。                       |
-| `/about`    | `docs/images/about.png`    | 应用 / 项目 / 平台 / 诊断四分组 + 更新面板。                                    |
+| 路由        | 截图                       | 内容说明                                                                           |
+| ----------- | -------------------------- | ---------------------------------------------------------------------------------- |
+| `/`         | `docs/images/home.png`     | 首页英雄区：技术栈图标 + 应用名 + 简介；布局骨架验证起点，业务在此开发。           |
+| `/demo`     | `docs/images/demo.png`     | 八卡片（目录 / 沙盒文件 / 对话框 / 剪贴板 / 通知 / 快捷键 / 网络请求）+ 文件拖放。 |
+| `/notes`    | —                          | SQLite 笔记增删改查示例（`libs/notes` + `plugins/sql.rs` 建表迁移），暂无截图。    |
+| `/settings` | `docs/images/settings.png` | 通用（后端持久化）+ 外观（纯前端）两分组 + 恢复默认按钮。                          |
+| `/about`    | `docs/images/about.png`    | 应用 / 项目 / 平台 / 诊断四分组 + 更新面板。                                       |
 
 导航标签在 `src/libs/navigation/nav-tabs.ts` 一处注册，供 `tabs` 与 `sidebar` 两套布局
 （`src/components/layout/`）同源使用；新增页面只需加一项。外观（布局注册表 + 字体偏好）
@@ -140,7 +146,7 @@ pnpm release         # bumpp 联动三处版本：package.json + tauri.conf.json
 **改文案：** 前端改 `src/libs/i18n/messages/*.json` → `pnpm i18n:compile` → 用 `m.<键>()` 取值、
 `setLocale()` 切换；后端改 `src-tauri/locales/*.yml` → `rust_i18n::t!(...)` 取值。
 
-**移除演示页**（派生项目初始化清单，新项目先走 `AGENTS.md` 第 10 章第 8 条改名再删，`greet` 最小契约示例保留）：删目录
+**移除演示页**（派生项目初始化清单，新项目先走 `AGENTS.md` 第 10 章第 8 条改名再删，`greet` 最小契约示例保留——其 `demo.greet` 文案随 `locales/demo.yml` 保留，`tray.yml` 不动）：删目录
 `src/routes/(main)/demo/`、`src/components/widget/demo/`、`cores/demo.rs`、
 `plugins/{fs,dialog,notification,global_shortcut}.rs`（`clipboard` 保留：about 页依赖写剪贴板）；删 `nav-tabs.ts` 的 `/demo`
 项；删全部 `demo_` 开头文案键 → `i18n:compile`；瘦身 `features/demo.rs` 与
@@ -151,8 +157,8 @@ pnpm release         # bumpp 联动三处版本：package.json + tauri.conf.json
 ## 项目结构（精简）
 
 ```text
-src/routes/(main)/         # /、/demo、/settings、/about 页面（分组独享布局）
-src/components/widget/    # settings/、about/、demo/ 页面小组件
+src/routes/(main)/         # /、/demo、/notes、/settings、/about 页面（分组独享布局）
+src/components/widget/    # settings/、about/、demo/、notes/ 页面小组件
 src/components/layout/    # tabs / sidebar 布局壳 + 标题栏 / 导航部件
 src/libs/commands/        # bindings.ts（生成物）+ 链式 API 封装
 src/libs/i18n/            # messages/ 文案 + project.inlang/ 配置
@@ -161,6 +167,7 @@ src-tauri/src/commands/   # 薄封装 + collect_commands! 注册
 src-tauri/src/features/   # 纯业务逻辑（不依赖 Tauri 运行时）
 src-tauri/src/cores/      # config / locale / system / tray / updater 等共享能力
 src-tauri/src/plugins/    # 各插件初始化
+src-tauri/locales/         # demo.yml（`demo.*`）/ tray.yml（`tray.*`），一文件内含 en + zh-CN 双写
 ```
 
 分层、边界与完整结构见 `AGENTS.md`。

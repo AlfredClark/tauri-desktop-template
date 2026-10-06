@@ -5,8 +5,8 @@ use tauri::Runtime;
 
 #[cfg(not(any(target_os = "android", target_os = "ios")))]
 pub mod autostart;
-#[cfg(not(any(target_os = "android", target_os = "ios")))]
 pub mod clipboard;
+#[cfg(not(any(target_os = "android", target_os = "ios")))]
 pub mod deep_link;
 pub mod dialog;
 pub mod fs;

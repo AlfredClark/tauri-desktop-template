@@ -5,9 +5,10 @@
 // 后端 `cores/deep_link.rs` 的 `SCHEME_PREFIX`、此处的 `DEEP_LINK_SCHEME`。
 import { goto } from "$app/navigation";
 import { resolve } from "$app/paths";
-import { listen, type UnlistenFn } from "@tauri-apps/api/event";
+import { listen } from "@tauri-apps/api/event";
 import { getCurrent, onOpenUrl } from "@tauri-apps/plugin-deep-link";
 import { SvelteMap } from "svelte/reactivity";
+import type { UnlistenFn } from "@tauri-apps/api/event";
 import { reportCommandFailure } from "$libs/commands/cores";
 import { m } from "$libs/i18n/paraglide/messages";
 import { toast } from "$libs/utils/toast";
