@@ -122,7 +122,7 @@ tauri-desktop-template/
 ## 4. 常用命令
 
 > 所有命令以仓库根目录为基准执行。优先使用以下命令，禁止另起等效命令。
-> 包管理器为 `pnpm@12.6.0`，Node `>=24`；Rust 工具链锁定 `1.99.0`（见 `rust-toolchain.toml`）。
+> 包管理器为 `pnpm@12.13.0`（以 `package.json` 的 `packageManager` 为准），Node `>=24`；Rust 工具链锁定 `1.99.0`（见 `rust-toolchain.toml`）。
 
 ```bash
 # ---- 环境初始化 ----
