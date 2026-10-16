@@ -82,7 +82,7 @@
 
 ## 快速开始
 
-环境要求：Node `>= 24`、`pnpm@12.6.0`、Rust 工具链以 `rust-toolchain.toml` 为准。
+环境要求：Node `>= 24`、`pnpm@12.13.0`、Rust 工具链以 `rust-toolchain.toml` 为准。
 
 ```bash
 pnpm install --frozen-lockfile   # 按锁文件安装（不要用 npm / yarn）
