@@ -39,7 +39,7 @@
 4. **前后端崩溃兜底** — 前端 `ErrorBoundary`（经 `@tauri-apps/plugin-log` 上报，堆栈仅 dev
    显示，2s 节流）；后端 `cores/system.rs` panic 钩子（先走常规日志，日志不可用时落盘到
    `%TEMP%/my_app_crash.log`，超 512KB 轮转保留一份）。
-5. **桌面能力演示页（`/demo`）** — 每插件一卡片分组 + 文件拖放分组，删页即初始化（流程见下文“移除演示页”）：
+5. **桌面能力演示页（`/demo`）** — 每插件一卡片分组 + 文件拖放分组，删页即初始化（流程见 `docs/INIT.md`）：
    - 应用目录（后端解析 `appData` / `appCache` / `temp`，前端无硬编码路径）
    - 沙盒文件（`$APPDATA/demo/*` 域约束 + 后端路径收敛校验）
    - 文件拖放（窗口拖放事件，后端鉴别元信息并可存入沙盒）
@@ -50,7 +50,7 @@
    - 网络请求（前端 `fetch` 经 `plugin-http` 出网，capability 域约束 + CSP `connect-src`
      双放行；常驻能力，删演示页时保留）
 6. **最小业务示例（`/notes`）** — 基于 `notes.db` 的 SQLite 增删改查（前端 `libs/notes`
-   直连数据库且全参数化，后端只做建表迁移）。抄完模式即删（流程见 `AGENTS.md` 第 10 章第 7 条）。
+   直连数据库且全参数化，后端只做建表迁移）。抄完模式即删（流程见 `docs/INIT.md`）。
 7. **设置页（`/settings`）** — 通用分组（语言、开机自启、记住窗口、自动检查更新、托盘、
    关闭行为 `prompt` / `exit` / `minimize_to_tray`）经 `updateConfig` 落盘后端
    `config.json`；外观分组（主题、配色、`tabs` / `sidebar` 布局、系统字体选择器、字重、
@@ -146,13 +146,8 @@ pnpm release         # bumpp 联动三处版本：package.json + tauri.conf.json
 **改文案：** 前端改 `src/libs/i18n/messages/*.json` → `pnpm i18n:compile` → 用 `m.<键>()` 取值、
 `setLocale()` 切换；后端改 `src-tauri/locales/*.yml` → `rust_i18n::t!(...)` 取值。
 
-**移除演示页**（派生项目初始化清单，新项目先走 `AGENTS.md` 第 10 章第 8 条改名再删，`greet` 最小契约示例保留——其 `demo.greet` 文案随 `locales/demo.yml` 保留，`tray.yml` 不动）：删目录
-`src/routes/(main)/demo/`、`src/components/widget/demo/`、`cores/demo.rs`、
-`plugins/{fs,dialog,notification,global_shortcut}.rs`（`clipboard` 保留：about 页依赖写剪贴板）；删 `nav-tabs.ts` 的 `/demo`
-项；删全部 `demo_` 开头文案键 → `i18n:compile`；瘦身 `features/demo.rs` 与
-`commands/demo.rs`（保留 `greet`）并同步 `collect_commands!`；在 `plugins/mod.rs` 与 `lib.rs`
-摘注册、裁 `capabilities/plugins.json`、删四个演示插件依赖（`clipboard-manager` 保留）；`cargo test` → `pnpm format` +
-`pnpm validate`。完整清单见 `AGENTS.md` 第 10 章第 6 条。
+**模板派生新项目：** 改名换标、深链协议与更新密钥轮换、图标替换、删演示页 / 业务示例脚手架、
+文档收尾与验收矩阵的完整清单见 `docs/INIT.md`，照单执行即完成初始化。
 
 ## 项目结构（精简）
 

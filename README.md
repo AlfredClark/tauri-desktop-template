@@ -46,7 +46,7 @@ crash safety nets, and common desktop capabilities out of the box.
    `@tauri-apps/plugin-log`, stack trace in dev only, 2s throttle); backend panic hook in
    `cores/system.rs` (normal log first, `%TEMP%/my_app_crash.log` fallback with 512KB rotation).
 5. **Desktop capability demo page (`/demo`)** — one card per plugin plus a file-drop card,
-   deletable to bootstrap your own app (see “Remove the demo” below):
+   deletable to bootstrap your own app (see `docs/INIT.md`):
    - App directories (backend-resolved `appData` / `appCache` / `temp`)
    - Sandbox file (`$APPDATA/demo/*` scope + backend path-convergence check)
    - File drop (window drag-drop events; backend inspects metadata and imports into the sandbox)
@@ -58,7 +58,7 @@ crash safety nets, and common desktop capabilities out of the box.
      `connect-src` allowlisted; resident capability — keep it when removing the demo)
 6. **Minimal notes sample (`/notes`)** — SQLite CRUD over `notes.db` (frontend `libs/notes`
    talks to the DB directly with fully parameterized queries, backend only runs the table
-   migration). Copy the pattern, then delete it (see `AGENTS.md` §10.7).
+   migration). Copy the pattern, then delete it (see `docs/INIT.md`).
 7. **Settings page (`/settings`)** — General group (language, autostart, remember window,
    auto-check updates, tray, close behavior with `prompt` / `exit` / `minimize_to_tray`) backed
    by `config.json` via `updateConfig`; Appearance group (theme, color theme, `tabs` / `sidebar`
@@ -155,17 +155,9 @@ hand-edit `bindings.ts`.
 **Edit copy:** frontend `src/libs/i18n/messages/*.json` → `pnpm i18n:compile` → use `m.<key>()`
 / `setLocale()`; backend `src-tauri/locales/*.yml` → `rust_i18n::t!(...)`.
 
-**Remove the demo** (bootstrap checklist, `greet` minimal contract stays — its `demo.greet`
-copy in `src-tauri/locales/demo.yml` stays with it, `tray.yml` untouched; new projects start
-with the init checklist in `AGENTS.md` §10.8 — rename before deleting): delete
-`src/routes/(main)/demo/`, `src/components/widget/demo/`, `cores/demo.rs`,
-`plugins/{fs,dialog,notification,global_shortcut}.rs` (`clipboard` stays — the about page
-depends on write-text); drop the `/demo` nav entry;
-delete all `demo_`-prefixed message keys → `i18n:compile`; slim `features/demo.rs` and
-`commands/demo.rs` (keep `greet`), sync `collect_commands!`; unregister plugins in
-`plugins/mod.rs` + `lib.rs`, trim `capabilities/plugins.json`, drop the four demo plugin deps
-(`clipboard-manager` stays);
-`cargo test` → `pnpm format` + `pnpm validate`. Full list: `AGENTS.md` §10.6.
+**Bootstrap a new project:** deriving a project from this template (rebranding, deep-link
+scheme and signing-key rotation, scaffolding removal, doc cleanup, acceptance matrix) is
+described end to end in `docs/INIT.md`.
 
 ## Project structure (condensed)
 
