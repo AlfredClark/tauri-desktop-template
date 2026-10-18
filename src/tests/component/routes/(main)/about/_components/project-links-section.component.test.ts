@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { cleanup, render, screen } from "@testing-library/svelte";
 import userEvent from "@testing-library/user-event";
-import Component from "../../../../../components/widget/about/project-links-section.svelte";
+import Component from "../../../../../../routes/(main)/about/_components/project-links-section.svelte";
 
 // 纯替身：外链打开与提示全部 mock，只验证项目外链分组的接线——三行渲染与打开分支。
 const openExternalMock = vi.hoisted(() => vi.fn());

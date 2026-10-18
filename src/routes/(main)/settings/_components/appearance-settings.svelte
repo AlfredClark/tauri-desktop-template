@@ -19,7 +19,6 @@
   import { Slider } from "#components/shadcn-svelte/slider";
   import CardRow from "#components/common/card-row.svelte";
   import CardSection from "#components/common/card-section.svelte";
-  import FontFamilyPicker from "#components/widget/settings/font-family-picker.svelte";
   import {
     Select,
     SelectContent,
@@ -28,6 +27,7 @@
     SelectValue,
   } from "#components/shadcn-svelte/select";
   import { m } from "#libs/i18n/paraglide/messages";
+  import FontFamilyPicker from "./font-family-picker.svelte";
 
   /** 主题下拉的候选项：`items` 让触发器在下拉关闭时也能解析出展示文案。 */
   const themeItems: { value: "light" | "dark" | "system"; label: string }[] = [

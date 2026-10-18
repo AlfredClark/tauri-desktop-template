@@ -118,18 +118,18 @@ git remote get-url origin 2>/dev/null | sed -E 's#\.git$##' # REPO_OWNER / PROJE
 
 > 下表 `PROJECT_SLUG` 等均指 §1 已确认值。
 
-| 序号 | 文件                                 | 改动                                                                                                                                 |
-| ---- | ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------ |
-| B1   | `package.json`                       | `name` → `PROJECT_SLUG`；`version` → `INIT_VERSION`；`description`；`homepage`；`repository.url`；`bugs.url`；`keywords`             |
-| B2   | `src-tauri/Cargo.toml`               | `[package]` 的 `name` / `version` / `description` / `repository` / `keywords`；`[lib].name` → `LIB_NAME`                             |
-| B3   | `src-tauri/src/main.rs`              | `tauri_desktop_template_lib::run()` → `LIB_NAME::run()`（B2 改名的连带引用，漏改即编译失败）                                         |
-| B4   | `src-tauri/tauri.conf.json`          | `productName` / `identifier` / `version` / `app.windows[0].title`                                                                    |
-| B5   | `cliff.toml`                         | `[remote.github]` 的 `owner` / `repo`                                                                                                |
-| B6   | `src/app.html`                       | `<title>`（首帧标题，SvelteKit 之后不再覆盖）                                                                                        |
-| B7   | `src/libs/i18n/messages/*.json`      | `page_home_intro`（含模板自述，改为本产品一句话介绍，en + zh-CN 两份）                                                               |
-| B8   | `src/tests/component/...`            | `components/widget/about/app-info-section.component.test.ts` 与 `routes/(main)/about/page.component.test.ts` 的 `productName` 期望值 |
-| B9   | `README.md` / `docs/README_zh-CN.md` | 标题与简介（两文件同改，避免漂移）；删除对上游模板仓库与 `v0.3.0` 示例标签的引用；其余章节不在此处修补，Phase E 会整体瘦身           |
-| B10  | `AGENTS.md`                          | §1 项目概述（项目名称 / 一句话描述 / 核心功能第 5 条里的上游 `v0.3.0` 指引）、§3 目录树首行目录名                                    |
+| 序号 | 文件                                 | 改动                                                                                                                                         |
+| ---- | ------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| B1   | `package.json`                       | `name` → `PROJECT_SLUG`；`version` → `INIT_VERSION`；`description`；`homepage`；`repository.url`；`bugs.url`；`keywords`                     |
+| B2   | `src-tauri/Cargo.toml`               | `[package]` 的 `name` / `version` / `description` / `repository` / `keywords`；`[lib].name` → `LIB_NAME`                                     |
+| B3   | `src-tauri/src/main.rs`              | `tauri_desktop_template_lib::run()` → `LIB_NAME::run()`（B2 改名的连带引用，漏改即编译失败）                                                 |
+| B4   | `src-tauri/tauri.conf.json`          | `productName` / `identifier` / `version` / `app.windows[0].title`                                                                            |
+| B5   | `cliff.toml`                         | `[remote.github]` 的 `owner` / `repo`                                                                                                        |
+| B6   | `src/app.html`                       | `<title>`（首帧标题，SvelteKit 之后不再覆盖）                                                                                                |
+| B7   | `src/libs/i18n/messages/*.json`      | `page_home_intro`（含模板自述，改为本产品一句话介绍，en + zh-CN 两份）                                                                       |
+| B8   | `src/tests/component/...`            | `routes/(main)/about/_components/app-info-section.component.test.ts` 与 `routes/(main)/about/page.component.test.ts` 的 `productName` 期望值 |
+| B9   | `README.md` / `docs/README_zh-CN.md` | 标题与简介（两文件同改，避免漂移）；删除对上游模板仓库与 `v0.3.0` 示例标签的引用；其余章节不在此处修补，Phase E 会整体瘦身                   |
+| B10  | `AGENTS.md`                          | §1 项目概述（项目名称 / 一句话描述 / 核心功能第 5 条里的上游 `v0.3.0` 指引）、§3 目录树首行目录名                                            |
 
 **DoD：**
 
@@ -187,22 +187,24 @@ pnpm check:sync && pnpm validate
 
 ## 5. Phase D — 品牌与图标
 
-1. **替换图标源**：准备本项目标识，替换 `static/icon.png` 或新增 `static/icon.svg`；**换格式时同步
-   `package.json` 的 `tauri:icon` 脚本源路径**（模板脚本指向 `static/icon.png`）。
+1. **替换图标源**：准备本项目标识，替换 `src-tauri/app-icon.png` 或新增 `src-tauri/app-icon.svg`；**换格式时同步
+   `package.json` 的 `tauri:icon` 脚本源路径**（模板脚本指向 `src-tauri/app-icon.png`）。
 2. **重生成平台图标**：`pnpm tauri:icon`（脚本自带 `rimraf src-tauri/icons/{ios,android}`；
    `src-tauri/icons/` 下十余个二进制文件会被整体覆盖，属预期变更）。**随后同步托盘图标**：
    `src-tauri/icons/tray.png` 不随该命令重生成（`cores/tray.rs` 以 `include_bytes!` 独立引用），
    必须手动换上本产品的 64×64 图标——最简做法是复制刚生成的 64×64 图：
    `cp src-tauri/icons/64x64.png src-tauri/icons/tray.png`（托盘图标也可独立设计，保持 64×64 PNG 即可）。
-3. **同步 favicon**：`static/favicon.png`（`src/app.html` 经 `/favicon.png` 引用，CSP 只放行 self）。
+3. **同步 favicon**：`src/app.html` 经 `/favicon.png` 引用（CSP 只放行 self），同样从刚生成的
+   图标集复制，保证全局图标同源：`cp src-tauri/icons/64x64.png static/favicon.png`
+   （64×64 兼顾高 DPI 标签页；想省体积也可用 `32x32.png`）。
 4. **内联图标组件**：`src/assets/icons/app-icon.svelte` 换成本产品标识（单色 + `currentColor`，
    明暗主题自适应；`aria-hidden`，纯装饰）。
 5. **清掉模板技术栈图标**：删除 `src/assets/icons/{svelte,tauri,vite}-icon.svelte`，并把
    `src/routes/(main)/+page.svelte` 英雄区改为只用 `AppIcon`（模板技术栈 logo 不应出现在产品里）。
-6. **截图**：模板截图已删除（`docs/images/` 不存在）；项目有真实界面后再按路由名放回
-   `docs/images/<route>.png`，需要时在 README 补截图段。
+6. **截图**：`docs/images/` 现有三张模板截图（`home` / `settings` / `about`，标题栏与导航均为模板
+   身份）；初始化时删除整目录并移除 README 的截图段，产品有真实界面后按路由名重拍。
 
-**DoD：** `pnpm dev` 目视首页（英雄区只剩 `AppIcon` + 应用名 + 简介）与标题栏正常；
+**DoD：** `pnpm dev` 目视首页（英雄区只剩 `AppIcon` + 应用名 + 简介）、标题栏与浏览器标签页图标正常；
 `pnpm tauri:dev` 目视托盘图标为新图；`rg "svelte-icon|tauri-icon|vite-icon|svelte\.svg|tauri\.svg|vite\.svg" src static` 无命中。
 
 ---
@@ -214,7 +216,7 @@ pnpm check:sync && pnpm validate
 | `README.md`            | **只保留三段：语言跳转、标题、简介**（外加一行 TODO 注释标记待补章节）。模板版长文——Features / Tech stack / Quickstart / Pages / Configuration / Workflows / Structure——整体删除，项目落地后再补，避免带着模板自述发布                |
 | `docs/README_zh-CN.md` | 与 README 同源的对应改动（两文件必须同时改）                                                                                                                                                                                          |
 | `AGENTS.md`            | §1 项目概述（项目名 / 描述 / 核心功能清单按需精简）；§3 目录树首行；§5.6 崩溃日志名；§10 图标源文件路径（换格式时）；第 13 章（如调整过门禁）；**凡是引用 `docs/INIT.md` 的文字：本文件删除后即悬空引用，须一并清理**；选择留档则保留 |
-| `docs/images/`         | 模板截图已删除；真实界面截图按路由名放回                                                                                                                                                                                              |
+| `docs/images/`         | 三张模板截图（`home` / `settings` / `about`）属模板身份，初始化时删除；产品有真实界面后按路由名重拍并恢复 README 截图段                                                                                                               |
 | `INIT.md`（本文件）    | 执行完成后删除，或在文件头标注「已于 <日期> 执行，结果见 commit <hash>」留档（留档时上文悬空引用可豁免）                                                                                                                              |
 
 > Agent 提示：Phase E 是最容易被跳过的一步。若只允许做一件事，也要保证
@@ -237,19 +239,17 @@ English | [简体中文](docs/README_zh-CN.md)
 
 ## 7. 常驻能力白名单（初始化后仍须存活）
 
-| 能力                                                            | 存活理由                                                                              |
-| --------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
-| `log`（plugin-log / capability `log:default`）                  | 未注册 `.failed()` 的失败上报通道，删除即静默丢错                                     |
-| `opener`                                                        | about 页项目外链（前端 `openExternal` 仅放行 `http(s)`）                              |
-| `http` + `https://timeapi.io`（capability + CSP `connect-src`） | 网络层常驻（前端 `libs/http` 为随附封装），改外部 URL 需同时改 capability 与 CSP 两处 |
-| `sql`（`sql:allow-load/select/execute`）                        | 结构化存储常驻空注册（`plugins/sql.rs`），业务表由各功能自行迁移                      |
-| `clipboard-manager` 写权限                                      | about 页复制系统信息                                                                  |
-| `deep-link` / `single-instance`                                 | 深链与二次启动聚焦，改 scheme 见 §4 C1                                                |
-| `updater` / `autostart` / `window-state`                        | 桌面外壳三大件，仅非移动端启用                                                        |
-| `store`                                                         | `config.json` 持久化（语言 / 通用设置）                                               |
+| 能力                                                     | 存活理由                                                 |
+| -------------------------------------------------------- | -------------------------------------------------------- |
+| `log`（plugin-log / capability `log:default`）           | 未注册 `.failed()` 的失败上报通道，删除即静默丢错        |
+| `opener`                                                 | about 页项目外链（前端 `openExternal` 仅放行 `http(s)`） |
+| `clipboard-manager`（仅 Rust 侧使用，不声明 capability） | about 页复制系统信息经后端命令走 Rust API                |
+| `deep-link` / `single-instance`                          | 深链与二次启动聚焦，改 scheme 见 §4 C1                   |
+| `updater` / `autostart` / `window-state`                 | 桌面外壳三大件，仅非移动端启用                           |
+| `store`                                                  | `config.json` 持久化（语言 / 通用设置）                  |
 
-**禁止**「顺手清理」上表任一项；也禁止把 `store` / `autostart` / `window-state` / `single-instance`
-补进 `capabilities/plugins.json`（它们仅 Rust 侧注册，无前端 JS 直调，属刻意最小授权）。
+**禁止**「顺手清理」上表任一项；也禁止把 `store` / `autostart` / `window-state` / `single-instance` / `clipboard-manager`
+补进 `capabilities/plugins.json`（它们仅 Rust 侧注册使用，无前端 JS 直调，属刻意最小授权）。
 
 ---
 
@@ -268,18 +268,18 @@ rg -n "docs/INIT.md" AGENTS.md README.md docs 2>/dev/null                 # 本�
 
 ### 8.2 计数基线（模板现值 → 定制后，实测参考）
 
-| 指标                                     | 模板现值               | 定制后                            |
-| ---------------------------------------- | ---------------------- | --------------------------------- |
-| `collect_commands!` 注册命令数           | 11                     | 不变（新增业务命令时增加）        |
-| `capabilities/plugins.json` 权限项       | 11                     | 不变                              |
-| 后端 `tauri-plugin-*` 依赖               | 13                     | 不变                              |
-| 前端 `@tauri-apps/plugin-*` 依赖         | 6                      | 不变                              |
-| 前端测试文件（`src/tests/**/*.test.ts`） | 28                     | 不变                              |
-| 前端文案键（`en.json`）                  | 137                    | 不变                              |
-| `src-tauri/locales/*.yml`                | 1（`tray.yml`）        | 不变                              |
-| 导航标签（`nav-tabs.ts`）                | 3                      | 不变（新增页面时增加）            |
-| `README.md` 行数                         | 约 160                 | ≤ 10（跳转 + 标题 + 简介 + TODO） |
-| `docs/images/`                           | 不存在（模板截图已删） | 只含真实界面截图（可选）          |
+| 指标                                     | 模板现值                                | 定制后                            |
+| ---------------------------------------- | --------------------------------------- | --------------------------------- |
+| `collect_commands!` 注册命令数           | 11                                      | 不变（新增业务命令时增加）        |
+| `capabilities/plugins.json` 权限项       | 4                                       | 不变                              |
+| 后端 `tauri-plugin-*` 依赖               | 11                                      | 不变                              |
+| 前端 `@tauri-apps/plugin-*` 依赖         | 3                                       | 不变                              |
+| 前端测试文件（`src/tests/**/*.test.ts`） | 27                                      | 不变                              |
+| 前端文案键（`en.json`）                  | 137                                     | 不变                              |
+| `src-tauri/locales/*.yml`                | 1（`tray.yml`）                         | 不变                              |
+| 导航标签（`nav-tabs.ts`）                | 3                                       | 不变（新增页面时增加）            |
+| `README.md` 行数                         | 约 180                                  | ≤ 10（跳转 + 标题 + 简介 + TODO） |
+| `docs/images/`                           | 3 张模板截图（home / settings / about） | 删除或重拍（只含真实界面）        |
 
 ### 8.3 质量门禁
 

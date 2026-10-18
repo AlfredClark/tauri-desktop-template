@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { cleanup, render, screen } from "@testing-library/svelte";
 import userEvent from "@testing-library/user-event";
-import DiagnosticsSection from "../../../../../components/widget/about/diagnostics-section.svelte";
+import DiagnosticsSection from "../../../../../../routes/(main)/about/_components/diagnostics-section.svelte";
 
 const openLogDirMock = vi.hoisted(() => vi.fn());
 const openConfigDirMock = vi.hoisted(() => vi.fn());

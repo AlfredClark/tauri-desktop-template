@@ -6,8 +6,8 @@
   import { Button } from "#components/shadcn-svelte/button";
   import CardRow from "#components/common/card-row.svelte";
   import CardSection from "#components/common/card-section.svelte";
-  import UpdaterPanel from "#components/widget/about/updater-panel.svelte";
   import { m } from "#libs/i18n/paraglide/messages";
+  import UpdaterPanel from "./updater-panel.svelte";
 
   const appName = __APP_TAURI_CONF__.productName;
   const appVersion = __APP_TAURI_CONF__.version;

@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { cleanup, render, screen, waitFor, within } from "@testing-library/svelte";
 import userEvent from "@testing-library/user-event";
-import Component from "#components/widget/settings/appearance-settings.svelte";
+import Component from "../../../../../../routes/(main)/settings/_components/appearance-settings.svelte";
 
 // jsdom 缺少指针捕获与滚动 API，bits-ui 下拉用得到，仅在本文件内就地补齐。
 if (!Element.prototype.hasPointerCapture) {

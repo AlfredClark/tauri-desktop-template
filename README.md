@@ -13,6 +13,14 @@ updater) out of the box.
 > (sandbox fs, native dialogs, notifications, global shortcuts, network requests, file drop)
 > lives in the [`v0.3.0`](https://github.com/AlfredClark/tauri-desktop-template/tree/v0.3.0) tag.
 
+## Screenshots
+
+| Home (`/`)                    | Settings (`/settings`)                | About (`/about`)                |
+| ----------------------------- | ------------------------------------- | ------------------------------- |
+| ![Home](docs/images/home.png) | ![Settings](docs/images/settings.png) | ![About](docs/images/about.png) |
+
+> Screenshots live in `docs/images/` and are named after their route (`home` / `settings` / `about`).
+
 ## Features
 
 1. **Type-safe command chain (tauri-specta)** — Rust `#[tauri::command]` +
@@ -58,17 +66,17 @@ updater) out of the box.
 > Version source of truth: `package.json` (frontend) and `src-tauri/Cargo.toml` (backend).
 > Always code against the versions declared there.
 
-| Layer           | Choice                                                                                                                                                                 | Notes                                                                                   |
-| --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
-| Frontend        | SvelteKit 2 + Svelte 5                                                                                                                                                 | SPA mode (`adapter-static` + `fallback: index.html`, `ssr = false`), Vite port 1420     |
-| UI              | shadcn-svelte (nova / neutral) + Tailwind CSS v4, Lucide icons, Geist font                                                                                             | `cn()` class merge, `.dark` variant + `[data-color-theme]` palettes                     |
-| Bridge          | `@tauri-apps/api`, `plugin-log` / `opener` / `updater`, `system-fonts`                                                                                                 | Logs via `plugin-log`, font list via `system-fonts-api`                                 |
-| Contract        | tauri-specta + `specta` / `specta-typescript`                                                                                                                          | Generated `src/libs/commands/bindings.ts`, do not hand-edit                             |
-| i18n            | Paraglide (frontend) + rust-i18n (backend)                                                                                                                             | `src/libs/i18n/messages/*.json` + `src-tauri/locales/*.yml`                             |
-| Backend         | Tauri v2 + Rust (edition 2024, pinned toolchain in `rust-toolchain.toml`)                                                                                              | `commands/` thin wrappers, `features/` pure logic, `cores/` shared abilities            |
-| Backend plugins | `opener` / `store` / `log` / `os` / `updater` / `autostart` / `window-state` / `system-fonts` / `single-instance` / `deep-link` / `clipboard-manager` / `http` / `sql` | `updater` / `autostart` / `window-state` / `single-instance` / `deep-link` desktop only |
-| Quality         | TypeScript strict + `svelte-check`, ESLint + Prettier, vitest, pnpm                                                                                                    | Node `>= 24`, `pnpm-lock.yaml` + `Cargo.lock` committed                                 |
-| Release         | GitHub Actions (`ci.yml` / `release.yml`) + Tauri bundler                                                                                                              | Version triplet kept in sync (see below)                                                |
+| Layer           | Choice                                                                                                                                                | Notes                                                                                   |
+| --------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| Frontend        | SvelteKit 2 + Svelte 5                                                                                                                                | SPA mode (`adapter-static` + `fallback: index.html`, `ssr = false`), Vite port 1420     |
+| UI              | shadcn-svelte (nova / neutral) + Tailwind CSS v4, Lucide icons, Geist font                                                                            | `cn()` class merge, `.dark` variant + `[data-color-theme]` palettes                     |
+| Bridge          | `@tauri-apps/api`, `plugin-log` / `opener`, `system-fonts`                                                                                            | Logs via `plugin-log`, font list via `system-fonts-api`                                 |
+| Contract        | tauri-specta + `specta` / `specta-typescript`                                                                                                         | Generated `src/libs/commands/bindings.ts`, do not hand-edit                             |
+| i18n            | Paraglide (frontend) + rust-i18n (backend)                                                                                                            | `src/libs/i18n/messages/*.json` + `src-tauri/locales/*.yml`                             |
+| Backend         | Tauri v2 + Rust (edition 2024, pinned toolchain in `rust-toolchain.toml`)                                                                             | `commands/` thin wrappers, `features/` pure logic, `cores/` shared abilities            |
+| Backend plugins | `opener` / `store` / `log` / `os` / `updater` / `autostart` / `window-state` / `system-fonts` / `single-instance` / `deep-link` / `clipboard-manager` | `updater` / `autostart` / `window-state` / `single-instance` / `deep-link` desktop only |
+| Quality         | TypeScript strict + `svelte-check`, ESLint + Prettier, vitest, pnpm                                                                                   | Node `>= 24`, `pnpm-lock.yaml` + `Cargo.lock` committed                                 |
+| Release         | GitHub Actions (`ci.yml` / `release.yml`) + Tauri bundler                                                                                             | Version triplet kept in sync (see below)                                                |
 
 ## Quickstart
 
@@ -95,7 +103,7 @@ pnpm check           # svelte-kit sync + svelte-check (strict TS)
 pnpm test            # vitest + cargo test (single run)
 pnpm test:cargo      # backend tests + regenerate bindings.ts
 pnpm i18n:compile    # required after editing messages/
-pnpm tauri:icon      # regenerate icons from static/icon.png
+pnpm tauri:icon      # regenerate icons from src-tauri/app-icon.png
 pnpm release         # bumpp linked versions: package.json + tauri.conf.json + Cargo.toml
 ```
 
@@ -143,9 +151,9 @@ plugins (sandbox fs, dialogs, notifications, global shortcuts, network, file dro
 ## Project structure (condensed)
 
 ```text
-src/routes/(main)/         # /, /settings, /about pages (+layout per group)
-src/components/widget/    # settings/, about/ page widgets
-src/components/layout/    # tabs / sidebar shells + title-bar / nav parts
+src/routes/(main)/         # /, /settings, /about pages; page components in `_components/` per route
+src/components/layout/    # tabs / sidebar / dashboard shells + title-bar / nav parts
+src/components/common/    # shared hand-written components (card-section / card-row / confirm-dialog)
 src/libs/commands/        # bindings.ts (generated) + chained-API wrapper
 src/libs/i18n/            # messages/ copy + project.inlang/ config
 src/libs/navigation/      # nav-tabs.ts single-source nav registry

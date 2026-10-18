@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { cleanup, render, screen } from "@testing-library/svelte";
 import userEvent from "@testing-library/user-event";
 import type { Config_Serialize } from "#libs/commands/types";
-import Component from "#components/widget/settings/reset-settings.svelte";
+import Component from "../../../../../../routes/(main)/settings/_components/reset-settings.svelte";
 
 // bits-ui 组件在 jsdom 下缺失的浏览器 API，就地补齐（同设置页测试）。
 if (!Element.prototype.hasPointerCapture) {

@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { cleanup, render, screen } from "@testing-library/svelte";
 import userEvent from "@testing-library/user-event";
-import Component from "../../../../../components/widget/about/app-info-section.svelte";
+import Component from "../../../../../../routes/(main)/about/_components/app-info-section.svelte";
 
 // 纯替身：更新全局状态全部 mock（含内嵌更新面板的下载与重启），
 // 只验证应用信息分组的接线——元信息行、检查按钮与各阶段透传。

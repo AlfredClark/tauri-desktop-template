@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { cleanup, render, screen } from "@testing-library/svelte";
 import userEvent from "@testing-library/user-event";
-import Component from "../../../../../components/widget/about/updater-panel.svelte";
+import Component from "../../../../../../routes/(main)/about/_components/updater-panel.svelte";
 
 // 纯替身：更新全局状态全部 mock，只验证更新面板各阶段的展示与入口接线。
 const updaterStateMock = vi.hoisted(

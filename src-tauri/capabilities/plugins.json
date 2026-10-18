@@ -4,20 +4,5 @@
   "description": "Capability for the plugins",
   "platforms": ["linux", "macOS", "windows"],
   "windows": ["main"],
-  "permissions": [
-    "clipboard-manager:allow-write-text",
-    "deep-link:default",
-    {
-      "identifier": "http:default",
-      "allow": [{ "url": "https://timeapi.io/*" }]
-    },
-    "log:default",
-    "opener:default",
-    "os:allow-locale",
-    "sql:allow-load",
-    "sql:allow-select",
-    "sql:allow-execute",
-    "system-fonts:default",
-    "updater:default"
-  ]
+  "permissions": ["deep-link:default", "log:default", "opener:default", "system-fonts:default"]
 }

@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { cleanup, render, screen } from "@testing-library/svelte";
 import { toast } from "#libs/utils/toast";
-import PlatformInfoSection from "../../../../../components/widget/about/platform-info-section.svelte";
+import PlatformInfoSection from "../../../../../../routes/(main)/about/_components/platform-info-section.svelte";
 
 const getSystemInfoMock = vi.hoisted(() => vi.fn());
 const reportFailureMock = vi.hoisted(() => vi.fn());
