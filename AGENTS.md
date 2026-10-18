@@ -3,6 +3,7 @@
 > 本文档面向 AI 智能体与新加入开发者，请在开始任何代码修改前通读本文件。
 > 基于 Tauri v2 + SvelteKit 2 + Svelte 5 + Tailwind CSS v4 + shadcn-svelte + Paraglide + tauri-specta 的桌面应用模板。
 > 优先级：安全红线 > 架构规范 > 测试验证 > 代码风格。
+> 规范的效力分级（哪些由机器强制、哪些是默认约定）与派生项目定制方式见第 13 章。
 
 ---
 
@@ -10,13 +11,12 @@
 
 - **项目名称：** `tauri-desktop-template`
 - **一句话描述：** 基于 Tauri v2 和 Svelte 5 的桌面应用程序开发模板
-- **核心功能（6 条）：**
-  1. Tauri 类型安全命令链（tauri-specta 契约 + 前端链式 API，含 `greet` 示例命令）
+- **核心功能（5 条）：**
+  1. Tauri 类型安全命令链（tauri-specta 契约 + 前端链式 API，配置 / 系统 / 更新三组命令）
   2. 明暗主题跟随（`mode-watcher` system 跟随 + Tailwind v4 `.dark` 变体）与配色主题（鲜艳系 ocean/teal/emerald/amber/tangerine/rose/amethyst + 暗色美学 nord/dracula/tokyo-night，`data-color-theme` 属性切换〈刻意避开 mode-watcher 占用的 `data-theme`〉，见 `themes.css`）
   3. 前后端双轨国际化（前端 Paraglide + 后端 rust-i18n，持久化于后端 `config.json`）
   4. 前后端崩溃兜底（前端 `ErrorBoundary` + 后端 panic 钩子写 `%TEMP%/my_app_crash.log`）
-  5. 桌面能力演示页（`/demo`：应用目录 / 沙盒文件 / 文件拖放 / 系统对话框 / 剪贴板 / 通知 / 全局快捷键 / 网络请求，每插件一卡片分组 + 拖放分组，删页即初始化，完整清单见 `docs/INIT.md`）
-  6. 最小业务示例（`/notes`：SQLite 笔记增删改查，前端 `libs/notes` 直连 `notes.db`，后端只做建表迁移，删示例流程见 `docs/INIT.md`）
+  5. 桌面外壳与设置 / 关于页（`/settings` 与 `/about`：托盘 / 自启 / 窗口状态 / 单实例 / 深链 / 更新面板；沙盒文件 / 对话框 / 通知 / 全局快捷键 / 网络请求的完整接线示例见上游 `v0.3.0` 标签）
 - **用户角色：** Tauri + Svelte 技术栈的桌面应用开发者
 
 ---
@@ -26,18 +26,18 @@
 > 版本唯一来源是 `package.json`（前端）与 `src-tauri/Cargo.toml`（后端），下表不记录版本号。
 > 生成代码时必须使用这两个文件中实际声明版本对应的 API，禁止自行升级 / 降级依赖。
 
-| 层级        | 技术选型                                                                                                                                                                                                                      | 说明 / 用途                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
-| ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 前端框架    | SvelteKit + Svelte                                                                                                                                                                                                            | SPA 模式（`adapter-static` + `fallback: index.html`，`ssr = false`）；`@sveltejs/vite-plugin-svelte` 构建集成                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
-| UI / 样式   | shadcn-svelte + Tailwind CSS                                                                                                                                                                                                  | shadcn-svelte（nova / neutral），Tailwind（`@tailwindcss/vite` + `tailwind-merge` / `tailwind-variants` / `tw-animate-css`）；图标 `@lucide/svelte`，字体 `@fontsource-variable/geist`，主题 `mode-watcher` + `layout.css` 的 `.dark` 变体，配色 `themes.css` 的 `[data-color-theme]` 十色块（`neutral` 为默认回落，暗色须用 `:root.dark[data-color-theme]` 显式组合），`cn()` 合并类名                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
-| 前端插件    | `@tauri-apps/api` + `plugin-log` / `opener` / `updater` / `system-fonts`                                                                                                                                                      | Tauri JS 互操作与桌面能力；日志上报走 `plugin-log`，系统字体列表走 `tauri-plugin-system-fonts-api`，CLI 为 `@tauri-apps/cli`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
-| 前后端契约  | tauri-specta + `specta` / `specta-typescript`                                                                                                                                                                                 | Rust 侧 `#[tauri::command]` + `#[specta::specta]` 导出类型，生成物 `src/libs/commands/bindings.ts`，禁止手改                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
-| 国际化      | Paraglide（前端）+ rust-i18n（后端）                                                                                                                                                                                          | 前端 `paraglide-js` / `paraglide-js-svelte`（策略 `localStorage` + `baseLocale`，CLI 为 `@inlang/cli`）；后端 `rust-i18n`（`src-tauri/locales/*.yml`，`fallback = "en"`）                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
-| 后端框架    | Tauri + Rust                                                                                                                                                                                                                  | `edition = "2024"`，工具链由 `rust-toolchain.toml` 锁定；`tauri-build` 构建脚本                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
-| 后端插件    | `opener` / `store` / `log` / `os` / `updater` / `autostart` / `window-state` / `system-fonts` / `single-instance` / `deep-link` / `fs` / `dialog` / `clipboard-manager` / `notification` / `global-shortcut` / `http` / `sql` | 分别对应外部打开、持久化（`config.json` 存 `locale`）、日志、系统语言探测（已注册 `plugins/os.rs`）、自动更新 / 开机自启 / 窗口状态（后三者仅非移动端启用 `updater` / `autostart` / `window-state`）、系统字体探测（`plugins/system_fonts.rs`，capability 含 `os:allow-locale` 与 `system-fonts:default`）、单实例（二次启动聚焦 + 深链参数转发，仅桌面端）、深链协议（`plugins.deep-link.desktop.schemes`，capability `deep-link:default`）、沙盒文件（`$APPDATA/demo/*` 域约束 JS 直调 + 后端路径收敛校验，先门禁后落盘）、系统对话框（异步回调版，同步命令中禁 `blocking_*` 防主线程死锁，取消返 `None`）、剪贴板纯文本（显式放行读写）、本地通知、全局快捷键（后端固定演示键经命令 + 前端自定义槽位与关闭窗口预设键经插件 JS API 直调，仅桌面端）、网络请求（前端 `fetch` 出网，capability 域约束 + CSP `connect-src` 双门禁，桌面 / 移动通用）、结构化存储（`notes.db` 的 SQLite，`sqlite` 特性 + `Builder` 迁移建表，capability `sql:allow-load/select/execute`，桌面 / 移动通用） |
-| 后端支撑    | `serde` / `serde_json` + `chrono` + `log` + `thiserror` / `anyhow`                                                                                                                                                            | 序列化、UTC 时间、日志门面、统一错误（`CommandError` / `CommandResult`，见第 5 章第 4 条）                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
-| 构建 / 质量 | Vite + TypeScript + vitest + pnpm                                                                                                                                                                                             | Vite 固定端口 `1420`；`svelte-check` 严格 TS 检查；ESLint + Prettier；vitest 单测；包管理器 `pnpm`（`engines.node >= 24`，`pnpm-lock.yaml` 锁定；后端 `Cargo.lock` 需提交）                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
-| 部署        | GitHub Actions + Tauri bundler                                                                                                                                                                                                | CI 入口 `.github/workflows/ci.yml`，发布入口 `.github/workflows/release.yml`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| 层级        | 技术选型                                                                                                                                                               | 说明 / 用途                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 前端框架    | SvelteKit + Svelte                                                                                                                                                     | SPA 模式（`adapter-static` + `fallback: index.html`，`ssr = false`）；`@sveltejs/vite-plugin-svelte` 构建集成                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| UI / 样式   | shadcn-svelte + Tailwind CSS                                                                                                                                           | shadcn-svelte（nova / neutral），Tailwind（`@tailwindcss/vite` + `tailwind-merge` / `tailwind-variants` / `tw-animate-css`）；图标 `@lucide/svelte`，字体 `@fontsource-variable/geist`，主题 `mode-watcher` + `layout.css` 的 `.dark` 变体，配色 `themes.css` 的 `[data-color-theme]` 十色块（`neutral` 为默认回落，暗色须用 `:root.dark[data-color-theme]` 显式组合），`cn()` 合并类名                                                                                                                                                                                                                                                                                                                                 |
+| 前端插件    | `@tauri-apps/api` + `plugin-log` / `opener` / `updater` / `system-fonts`                                                                                               | Tauri JS 互操作与桌面能力；日志上报走 `plugin-log`，系统字体列表走 `tauri-plugin-system-fonts-api`，CLI 为 `@tauri-apps/cli`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| 前后端契约  | tauri-specta + `specta` / `specta-typescript`                                                                                                                          | Rust 侧 `#[tauri::command]` + `#[specta::specta]` 导出类型，生成物 `src/libs/commands/bindings.ts`，禁止手改                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| 国际化      | Paraglide（前端）+ rust-i18n（后端）                                                                                                                                   | 前端 `paraglide-js` / `paraglide-js-svelte`（策略 `localStorage` + `baseLocale`，CLI 为 `@inlang/cli`）；后端 `rust-i18n`（`src-tauri/locales/*.yml`，`fallback = "en"`）                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| 后端框架    | Tauri + Rust                                                                                                                                                           | `edition = "2024"`，工具链由 `rust-toolchain.toml` 锁定；`tauri-build` 构建脚本                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| 后端插件    | `opener` / `store` / `log` / `os` / `updater` / `autostart` / `window-state` / `system-fonts` / `single-instance` / `deep-link` / `clipboard-manager` / `http` / `sql` | 分别对应外部打开、持久化（`config.json` 存 `locale`）、日志、系统语言探测（已注册 `plugins/os.rs`）、自动更新 / 开机自启 / 窗口状态（后三者仅非移动端启用 `updater` / `autostart` / `window-state`）、系统字体探测（`plugins/system_fonts.rs`，capability 含 `os:allow-locale` 与 `system-fonts:default`）、单实例（二次启动聚焦 + 深链参数转发，仅桌面端）、深链协议（`plugins.deep-link.desktop.schemes`，capability `deep-link:default`）、剪贴板纯文本（显式放行写权限）、网络请求（前端 `fetch` 出网，capability 域约束 + CSP `connect-src` 双门禁，桌面 / 移动通用）、结构化存储（SQLite，`sqlite` 特性 + `Builder` 空注册，业务表由各功能自行迁移，capability `sql:allow-load/select/execute`，桌面 / 移动通用） |
+| 后端支撑    | `serde` / `serde_json` + `chrono` + `log` + `thiserror` / `anyhow`                                                                                                     | 序列化、UTC 时间、日志门面、统一错误（`CommandError` / `CommandResult`，见第 5 章第 4 条）                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| 构建 / 质量 | Vite + TypeScript + vitest + pnpm                                                                                                                                      | Vite 固定端口 `1420`；`svelte-check` 严格 TS 检查；ESLint + Prettier；vitest 单测；包管理器 `pnpm`（`engines.node >= 24`，`pnpm-lock.yaml` 锁定；后端 `Cargo.lock` 需提交）                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| 部署        | GitHub Actions + Tauri bundler                                                                                                                                         | CI 入口 `.github/workflows/ci.yml`，发布入口 `.github/workflows/release.yml`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
 
 **版本查询命令：**
 
@@ -56,33 +56,29 @@ rustc --version && cat rust-toolchain.toml && cat src-tauri/Cargo.toml | grep -A
 tauri-desktop-template/
 ├── src/                            # 前端：SvelteKit 单页应用（adapter-static + fallback: index.html）
 │   ├── app.html                    # HTML 外壳，SvelteKit 在此注入脚本与样式
-│   ├── assets/                     # 需要经构建处理的资源（别名 #assets，见 package.json 的 imports 字段），icons/ 下为内联图标（github-icon / app-icon）
+│   ├── assets/                     # 需要经构建处理的资源（别名 #assets，见 package.json 的 imports 字段），icons/ 下为内联图标（app-icon / github-icon / svelte-icon / tauri-icon / vite-icon）
 │   ├── routes/                     # 页面与全局样式
 │   │   ├── +layout.svelte          # 根布局：ModeWatcher（主题）+ Toaster + ErrorBoundary（渲染异常）包裹全部分组，首帧前对齐外观变量（字体/字重/字号）
 │   │   ├── +layout.ts              # ssr = false（SPA 模式）；配置水合不在 load()（invoke 接不进 event.fetch），见 +layout.svelte 挂载期后台水合
 │   │   ├── (main)/                 # 分组路由（括号不进 URL）：常规页面分组，独享布局容器
 │   │   │   ├── +layout.svelte      # 分组布局：LayoutContainer 包裹，特殊页另起分组即可绕开布局
 │   │   │   ├── +page.svelte        # 占位首页：布局骨架验证起点，业务在此开发
-│   │   │   ├── about/              # 导航标签示例页（应用 / 项目 / 平台分组 + 更新面板）
-│   │   │   ├── settings/           # 完整设置页（通用 + 外观两分组）
-│   │   │   ├── notes/              # 业务示例页：SQLite 笔记增删改查（文案全 `notes_` 开头），移除流程见 `docs/INIT.md`
-│   │   │   └── demo/               # 演示页：八卡片（目录解析 + fs / dialog / clipboard / notification / shortcut / drop + http 网络请求，文案全 `demo_` 开头），移除流程见 `docs/INIT.md`
+│   │   │   ├── about/              # 关于页（应用 / 项目 / 平台分组 + 更新面板）
+│   │   │   └── settings/           # 完整设置页（通用 + 外观两分组）
 │   │   └── layout.css              # Tailwind v4 入口与 shadcn-svelte 主题令牌（含 .dark 暗色变体与 --app-font-* 外观变量）
 │   │   └── themes.css              # 配色主题令牌（鲜艳系 7 色 + 暗色美学 3 色的浅色 + :root.dark 暗色块，neutral 回落 layout.css）
 │   ├── components/
 │   │   ├── common/                 # 手写共享组件（error-boundary.svelte 全局渲染兜底，card-section/row.svelte 通用卡片分组与行，confirm-dialog.svelte 通用确认弹窗）
 │   │   ├── layout/                 # 布局子系统：layout-container.svelte 容器 + tabs（标题栏/标签栏/内容/底边）与 sidebar（侧边栏 + 标题栏/内容/底边）实现，新增布局需在 libs/hooks/appearance.svelte.ts 中映射
 │   │   │   └── parts/              # 布局配套部件（title-bar / nav-tabs-bar / side-nav-bar / copyright）
-│   │   ├── widget/                 # 手写页面小组件（settings/：设置页通用/外观分组与字体选择器；about/：关于页应用/项目/平台分组与更新面板；demo/：演示页八卡片〈目录解析 + fs / dialog / clipboard / notification / shortcut / drop + http 网络请求〉；notes/：笔记管理〈新增表单 + 行内编辑 + 删除确认〉）
+│   │   ├── widget/                 # 手写页面小组件（settings/：设置页通用/外观分组与字体选择器；about/：关于页应用/项目/平台分组与更新面板）
 │   │   └── shadcn-svelte/          # CLI 生成的 UI 组件（nova / neutral / lucide），新增走 CLI 添加，勿手动重组
 │   ├── tests/                      # 前端测试集中目录，按源路径镜像：unit/ 纯逻辑（node）+ component/ 组件（jsdom）
 │   └── libs/
 │       ├── commands/               # tauri-specta 契约链（bindings.ts 生成物 + 链式 API 封装）
 │       ├── http/                   # 网络层：client.ts 通用请求封装 + time.ts 时间接口，错误统一 HttpError
-│       ├── notes/                  # 笔记数据层：db.ts 最小 CRUD（`notes.db` 直连，全参数化）+ validate.ts 纯校验 + types.ts 共享类型
 │       ├── i18n/                   # Paraglide：messages/ 文案、project.inlang/ 配置、paraglide/ 生成物
 │       ├── navigation/             # 导航等应用级注册表（nav-tabs.ts：路径 / 图标 / 顺序，顶部标签栏与侧边栏导航同源）
-│       ├── shortcuts/              # 快捷键领域：shortcuts.ts 自定义槽位 + validate.ts 纯校验（演示页 shortcut 卡片调用方，删演示页时同步清理）
 │       ├── utils/                  # 前端通用工具（shadcn-svelte.ts 的 cn()、window-controls.ts、toast.ts、opener.ts）
 │       └── hooks/                  # 前端共享状态（统一经 #hooks 引用），如 appearance.svelte.ts（布局注册表 + 字体偏好）、config.svelte.ts（后端配置内存态）、updater.svelte.ts（更新状态）、is-mobile.svelte.ts（响应式断点）、deep-link.svelte.ts（三路深链入口）
 ├── src-tauri/                      # 后端：Rust（edition 2024）
@@ -90,16 +86,17 @@ tauri-desktop-template/
 │   │   ├── main.rs                 # 二进制入口，仅转发到 lib::run()
 │   │   ├── lib.rs                  # 串联插件注册 → 命令处理器 → 核心初始化
 │   │   ├── commands/               # 命令封装层：薄封装 + collect_commands! 注册
-│   │   ├── cores/                  # 通用能力与跨层共享类型（types / locale / config / deep_link / specta / system / tray / updater / demo）
-│   │   ├── features/               # 业务逻辑（纯函数，不依赖 Tauri 运行时；demo 含演示输入校验）
-│   │   └── plugins/                # 各 Tauri 插件的初始化（log / store / opener / os / updater / autostart / window-state / system-fonts / single-instance / deep-link / fs / dialog / clipboard / notification / global-shortcut / http / sql）
-│   ├── locales/                    # rust-i18n 后端文案（按功能分文件，一文件一命名空间：demo.yml 的 demo.* / tray.yml 的 tray.*，单文件可内含多 locale 的 en/zh-CN 双写）
+│   │   ├── cores/                  # 通用能力与跨层共享类型（types / locale / config / deep_link / specta / system / tray / updater）
+│   │   ├── features/               # 业务逻辑（纯函数，不依赖 Tauri 运行时；当前为空，业务实现落在此层）
+│   │   └── plugins/                # 各 Tauri 插件的初始化（log / store / opener / os / updater / autostart / window-state / system-fonts / single-instance / deep-link / clipboard / http / sql）
+│   ├── locales/                    # rust-i18n 后端文案（按功能分文件，一文件一命名空间：当前 tray.yml 的 tray.*，单文件可内含多 locale 的 en/zh-CN 双写）
 │   ├── capabilities/               # 权限配置（default.json / plugins.json），外部 URL 需同步更新
 │   ├── icons/                      # 应用图标（由 pnpm tauri:icon 生成）
 │   ├── build.rs                    # tauri-build 构建脚本
 │   ├── tauri.conf.json             # 窗口 / CSP / 打包目标 / updater 配置
 │   └── Cargo.toml                  # 后端依赖与 crate 元信息
-├── static/                         # 原样拷贝到产物根目录的资源（favicon / 图标 / svg）
+├── docs/                           # INIT.md（派生项目定制与发布清单）、README_zh-CN.md
+├── static/                         # 原样拷贝到产物根目录的资源（favicon.png / icon.png 图标源）
 ├── .github/workflows/              # ci.yml（质量门禁）、release.yml（打包发布）
 ├── Cargo.toml                      # 虚拟工作区 + 全局 lints / profile
 ├── package.json                    # 脚本、前端依赖与路径别名（imports 字段）
@@ -172,7 +169,7 @@ pnpm release                       # bumpp 联动升级三处版本号（package
 
 ## 5. 架构规范
 
-> 优先级高于代码风格。违反以下任一条即视为不合格修改。
+> 优先级高于代码风格。以下为模板默认约定：机器可拦截的由 CI 与提交钩子执行，其余由评审与智能体默认遵循；派生项目可按第 13 章调整。
 
 1. **分层单向依赖：** `Svelte 组件 → libs/commands（链式 API）→ commands/（Rust 薄封装）→ features/ · cores/`，禁止反向调用与跨层跳跃（如组件裸 `invoke`、命令层写业务逻辑）。纯前端 UI 偏好（如布局 / 字体等外观偏好走 `localStorage`）是有意例外，不经 commands 链。
 2. **前后端契约优先：** 以 tauri-specta 为准（见第 10 章第 2 条）。改命令必须先改 `features/` + `commands/`（含 `#[tauri::command]` + `#[specta::specta]` + `collect_commands!`），再 `cargo test` 重生成 `bindings.ts`，最后改前端调用。禁止手改 `bindings.ts`、禁止跳过重生成直接改前端。
@@ -208,13 +205,13 @@ pnpm release                       # bumpp 联动升级三处版本号（package
 ```ts
 // ✅ 推荐：链式 API + 默认值回落
 import commands from "#libs/commands";
-const msg = await commands.greet(name).value("Default");
-const result = await commands.greet(name).result();
+const config = await commands.getConfig().value(fallback);
+const result = await commands.getConfig().result();
 await commands.updateConfig({ locale }).success(onOk).failed(onFail);
 
 // ❌ 禁止：裸 invoke + 手改绑定
 import { invoke } from "@tauri-apps/api/core";
-const msg = await invoke<string>("greet", { name });
+const config = await invoke<Config>("get_config");
 ```
 
 ### 6.3 后端
@@ -226,11 +223,11 @@ const msg = await invoke<string>("greet", { name });
 - 示例：
 
 ```rust
-// ✅ 推荐：commands 薄封装 + features 纯逻辑
+// ✅ 推荐：commands 薄封装（委托 cores；纯业务逻辑进 features）
 #[tauri::command]
 #[specta::specta]
-pub fn greet(name: String) -> CommandResult<String> {
-    Ok(features::demo::greet(&name))
+pub fn get_system_info() -> CommandResult<SystemInfo> {
+    Ok(cores::system::gather_system_info())
 }
 // ❌ 禁止：commands 内写业务逻辑 / features 内依赖 Tauri 运行时
 ```
@@ -310,7 +307,7 @@ CI（`.github/workflows/ci.yml`）在 `main` 分支上按变更路径触发：
 ## 10. 特殊流程
 
 > 正常 CRUD 之外的"坑"，做相关任务前必读。
-> 模板 → 新项目的初始化（改名 / 换协议 / 换密钥 / 删脚手架 / 文档收尾）由 `docs/INIT.md` 承载，本文档不复述。
+> 模板 → 新项目的收尾（改名 / 换协议 / 换密钥 / 品牌图标 / 文档收尾 / 验收）由 `docs/INIT.md` 承载，本文档不复述。
 
 1. **国际化流程：** 前端在 `src/libs/i18n/project.inlang/` 下改文案 → `pnpm i18n:compile` → 用 `m.<键>(...)` 按键取值、`setLocale(locale)` 切换（启动对齐传 `{ reload: false }`）；后端改 `src-tauri/locales/*.yml` → `rust_i18n::t!(...)` 取文案。`paraglide/` 生成物已忽略提交，禁止编辑。`project.inlang/paraglide.config.ts` 与 `settings.json` 已被该目录 `.gitignore` 放行，直接 `git add` 即可，无需 `git add -f`。
 2. **命令契约流程：** `features/<name>.rs` 实现业务（`features/mod.rs` 声明 `pub mod <name>;`）→ `commands/<name>.rs` 薄封装（`CommandResult` + 双注解 + 进 `collect_commands!`）→ `cargo test` 重生成 `bindings.ts` → 前端链式 API 调用 → 联调。禁止跳过文档 / 生成步骤直接改代码。
@@ -366,4 +363,22 @@ CI（`.github/workflows/ci.yml`）在 `main` 分支上按变更路径触发：
 
 ---
 
-<!-- 维护说明：模板占位已按本项目实际填充；技术选型或流程变更时，优先更新本文档再改代码；派生项目初始化流程见 docs/INIT.md，长期规范仍以本文档为准 -->
+## 13. 规范效力与定制
+
+> 面向派生项目：本规范中哪些条目由机器强制、哪些只是默认约定，以及想改时的落点。
+
+**效力分级：**
+
+1. **机器强制（违反即红）：** CI 步骤（`.github/workflows/ci.yml`：prettier / ESLint / svelte-check / vitest / build，`cargo fmt --check` / clippy `-D warnings` / `cargo test` / `bindings.ts` 同步校验）、提交钩子（`.husky/` 的 commitlint 与 lint-staged）、`pnpm i18n:compile` 生成物一致性、`check:sync` 三项对齐（TypeScript 版本 / 插件前后端版本 / 路径别名）。
+2. **默认约定（评审与智能体默认遵循，可改）：** 第 5 章分层与边界、第 6.1 节命名与函数规模、第 7 章提交流程、第 9 章测试范围。
+3. **不降级：** 第 8 章安全红线；`bindings.ts` / `paraglide/` 生成物禁手改；第 10 章第 2 条命令契约流程。
+
+**想改默认约定时：**
+
+- 改规则本体：直接编辑对应章节，并在同一提交里同步受影响的代码与门禁配置。
+- 关闭 / 放宽机器门禁：改 `.github/workflows/ci.yml`、`.husky/`、`commitlint.config.ts`、`lint-staged.config.ts`、`.prettierrc`、`eslint.config.ts`；改完跑 `pnpm validate` 确认本地与 CI 一致。
+- 改完把描述同步回本文件，避免文档与门禁不一致。
+
+---
+
+<!-- 维护说明：模板占位已按本项目实际填充；技术选型或流程变更时，优先更新本文档再改代码；派生项目定制与发布清单见 docs/INIT.md；规范效力分级见第 13 章 -->

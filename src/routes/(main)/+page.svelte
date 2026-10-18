@@ -1,21 +1,20 @@
 <script lang="ts">
   // 首页英雄区：技术栈图标 + 应用名 + 项目简介，在内容区内水平垂直居中，无业务逻辑。
+  import SvelteIcon from "#assets/icons/svelte-icon.svelte";
+  import TauriIcon from "#assets/icons/tauri-icon.svelte";
+  import ViteIcon from "#assets/icons/vite-icon.svelte";
   import { m } from "#libs/i18n/paraglide/messages";
 
   const appName = __APP_TAURI_CONF__.productName;
 
-  /** 技术栈图标：static 目录原样拷贝到产物根目录，经根路径引用（CSP 仅放行 self 源）。 */
-  const stackIcons: { src: string; alt: string }[] = [
-    { src: "/tauri.svg", alt: "Tauri" },
-    { src: "/svelte.svg", alt: "Svelte" },
-    { src: "/vite.svg", alt: "Vite" },
-  ];
+  /** 技术栈图标：内联组件随构建打包，不发静态图片请求；初始化时随模板品牌一并清除 */
+  const stackIcons = [TauriIcon, SvelteIcon, ViteIcon];
 </script>
 
 <div class="flex h-full w-full flex-col items-center justify-center gap-6 p-6 text-center">
   <div class="flex items-center justify-center gap-6">
-    {#each stackIcons as icon (icon.src)}
-      <img src={icon.src} alt={icon.alt} class="h-16 w-16 object-contain" />
+    {#each stackIcons as Icon (Icon)}
+      <Icon />
     {/each}
   </div>
   <h1 class="text-2xl font-medium">{appName}</h1>

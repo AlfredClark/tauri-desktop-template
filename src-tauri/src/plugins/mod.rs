@@ -8,13 +8,8 @@ pub mod autostart;
 pub mod clipboard;
 #[cfg(not(any(target_os = "android", target_os = "ios")))]
 pub mod deep_link;
-pub mod dialog;
-pub mod fs;
-#[cfg(not(any(target_os = "android", target_os = "ios")))]
-pub mod global_shortcut;
 pub mod http;
 pub mod log;
-pub mod notification;
 pub mod opener;
 pub mod os;
 #[cfg(not(any(target_os = "android", target_os = "ios")))]
@@ -45,9 +40,6 @@ pub trait BuilderExt<R: Runtime> {
     /// 注册深链插件；移动端为空操作（该平台未声明依赖）
     #[must_use]
     fn with_deep_link(self) -> Self;
-    /// 注册全局快捷键插件；移动端为空操作（该平台未声明 `global-shortcut` 依赖）
-    #[must_use]
-    fn with_global_shortcut(self) -> Self;
 }
 
 // 桌面端实现收窄到 `Wry`：单实例构造器是 `Wry` 具体的，泛型 `R` 调不动
@@ -73,10 +65,6 @@ impl BuilderExt<tauri::Wry> for tauri::Builder<tauri::Wry> {
     fn with_deep_link(self) -> Self {
         self.plugin(deep_link::init())
     }
-
-    fn with_global_shortcut(self) -> Self {
-        self.plugin(global_shortcut::init())
-    }
 }
 
 #[cfg(any(target_os = "android", target_os = "ios"))]
@@ -98,10 +86,6 @@ impl<R: Runtime> BuilderExt<R> for tauri::Builder<R> {
     }
 
     fn with_deep_link(self) -> Self {
-        self
-    }
-
-    fn with_global_shortcut(self) -> Self {
         self
     }
 }
