@@ -4,7 +4,8 @@
 [advisories]
 db-urls = ["https://github.com/rustsec/advisory-db"]
 # 以下忽略均为 tauri 生态传递依赖，公告本身注明无安全升级可用（unmaintained 非可利用漏洞），
-# 本仓无法直接升级，只能等上游（tauri / tauri-specta / gtk 系）迁移；每次升级 tauri 系依赖时重访本表。
+# 本仓无法直接升级，只能等上游（tauri / tauri-specta / gtk / zbus 系）迁移；每次升级 tauri 系依赖时重访本表。
+# zip 漏洞（RUSTSEC-2026-0367/0368/0369）刻意不列入忽略：修复需 zip ≥ 9，等 tauri-plugin-updater 放开 `zip = "4"` 后重访。
 ignore = [
   # paste：经 specta → tauri-specta 引入，过程宏仅构建期使用，不进运行时
   { id = "RUSTSEC-2024-0436", reason = "transitive via specta/tauri-specta, build-time proc-macro only, no safe upgrade per advisory" },
@@ -18,6 +19,11 @@ ignore = [
   { id = "RUSTSEC-2025-0080", reason = "transitive via urlpattern/tauri-utils, no safe upgrade per advisory" },
   { id = "RUSTSEC-2025-0098", reason = "transitive via urlpattern/tauri-utils, no safe upgrade per advisory" },
   { id = "RUSTSEC-2025-0100", reason = "transitive via urlpattern/tauri-utils, no safe upgrade per advisory" },
+  # zbus_names / zvariant / zvariant_derive：经 zbus 5（仅 Linux，tauri-plugin-opener / single-instance 的 D-Bus 依赖）引入，
+  # 公告注明已并入 zbus 6、无安全升级可用
+  { id = "RUSTSEC-2026-0370", reason = "transitive via zbus 5 (tauri-plugin-opener / single-instance), merged into zbus 6, no safe upgrade per advisory" },
+  { id = "RUSTSEC-2026-0371", reason = "transitive via zbus 5 (tauri-plugin-opener / single-instance), merged into zbus 6, no safe upgrade per advisory" },
+  { id = "RUSTSEC-2026-0372", reason = "transitive via zbus 5 (tauri-plugin-opener / single-instance), merged into zbus 6, no safe upgrade per advisory" },
 ]
 
 [bans]

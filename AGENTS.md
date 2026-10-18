@@ -152,7 +152,11 @@ pnpm test:cargo                    # 后端测试，同时重新生成 src/libs/
 # ---- 依赖升级（禁止裸 pnpm update / cargo update，必须经以下脚本以触发对齐检查） ----
 pnpm update:frontend                # 仅前端：caret 范围内升级（不跨 major）
 pnpm update:backend                 # 仅后端：semver 兼容范围内升级（不跨 major）
-pnpm update:all                     # 双端一起升 + check:sync 对齐检查；之后必跑 audit 双端 + validate，单独提交 chore(deps:update)
+pnpm update:all                     # 双端一起升 + check:sync 对齐检查；之后必跑 validate，单独提交 chore(deps:update)
+
+# ---- 依赖安全审计（可选，不纳入 CI 强制门禁） ----
+pnpm audit                         # 前端依赖高危漏洞检查（可选）
+pnpm audit:backend                 # 后端 cargo deny 安全检查（可选，本地需安装 cargo-deny）
 
 # ---- 国际化 / 图标 / 发布 ----
 pnpm i18n:compile                  # 编译前端国际化文案，改完 messages/ 后必须执行
@@ -271,7 +275,7 @@ CI（`.github/workflows/ci.yml`）在 `main` 分支上按变更路径触发：
    - `bindings.ts` 生成物（只允许 `cargo test` 重生成，禁止手改）
 3. **输入安全：** 所有外部输入必须校验 + 转义；Svelte 渲染默认转义，禁止 `{@html ...}` 直渲用户输入；Rust 侧字符串拼接 shell / SQL 时必须参数化。
 4. **越权与能力最小化：** Tauri capability 按需最小授权，禁止全开 `*`；前端隐藏按钮不算权限控制，涉及本地文件 / 系统能力时后端必须二次校验。前端 `openExternal` 仅放行 `http(s)`（先剥 `git+` 前缀再校验），其它 scheme 直接拒绝并上报。`store` / `autostart` / `window-state` / `single-instance` 仅 Rust 侧注册使用（见 `lib.rs`），无前端 JS 直调，故不在 `plugins.json` 声明，属刻意最小授权；新增前端直调时再按需补声明。
-5. **依赖安全：** 禁止引入未知来源依赖；新增依赖必须说明理由；前端经 `pnpm audit`、后端经 `cargo audit / cargo deny`（如已配置）检查无高危漏洞；依赖升级走手动 `chore(deps:update)` 提交，升级入口一律 `pnpm update:frontend | update:backend | update:all`（禁止裸 `pnpm update` / `cargo update`，前者是 pnpm 内建命令，会绕过脚本门禁）。
+5. **依赖安全：** 禁止引入未知来源依赖；新增依赖必须说明理由；依赖安全审计（前端 `pnpm audit`、后端 `pnpm audit:backend` 走 `cargo deny`，配置见 `deny.toml`）为可选的本地自查手段，不做强制要求、不纳入 CI，由开发者按需运行；依赖升级走手动 `chore(deps:update)` 提交，升级入口一律 `pnpm update:frontend | update:backend | update:all`（禁止裸 `pnpm update` / `cargo update`，前者是 pnpm 内建命令，会绕过脚本门禁）。
 
 ---
 
