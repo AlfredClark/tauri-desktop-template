@@ -16,8 +16,9 @@
   import { Toaster } from "#components/shadcn-svelte/sonner";
   import commands from "#libs/commands";
   import { reportCommandFailure } from "#libs/commands/cores";
+  import { alignLocale } from "#libs/i18n/locale.svelte";
   import { m } from "#libs/i18n/paraglide/messages";
-  import { getLocale, setLocale } from "#libs/i18n/paraglide/runtime";
+  import { getLocale } from "#libs/i18n/paraglide/runtime";
   import "./layout.css";
 
   const { children }: { children: Snippet } = $props();
@@ -33,7 +34,8 @@
   });
 
   // 启动水合：以后端 config.json 为权威，水合完成后把前端语言对齐到它
-  // （不触发整页重载，否则会出现语言闪烁；水合失败则回落 Paraglide 本地策略，不阻断首帧；
+  // （经 libs/i18n/locale.svelte.ts 的响应式桥 alignLocale 对齐：不整页重载，已渲染文案原地重渲染；
+  // 水合失败则回落 Paraglide 本地策略，不阻断首帧；
   // 刻意不在 +layout.ts 的 load() 里做：Tauri invoke 底层走 window.fetch，SvelteKit
   // 会在 load 期间告警让用传给 load 的 fetch，而 invoke 接不进 event.fetch；
   // 本项目是纯 SPA，挂载期后台执行与原来 load 里 fire-and-forget 时序等价）
@@ -54,7 +56,7 @@
 
     const locale = configState.value?.locale;
     if (locale && locale !== getLocale()) {
-      setLocale(locale, { reload: false });
+      alignLocale(locale);
     }
   }
 

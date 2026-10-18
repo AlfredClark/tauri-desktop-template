@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// 成对维护检查（三项，见 AGENTS.md §10.4 成对维护表）：
+// 成对维护检查（三项，见 docs/ARCHITECTURE.md 的「成对维护的配置」）：
 // 1. `.prettierrc` 的 `importOrderTypeScriptVersion` 必须与 `package.json` 的 `typescript` 版本一致；
 // 2. Tauri 前后端插件的 major.minor 必须一致（`pnpm-lock.yaml` 对 `Cargo.lock`）；
 // 3. 路径别名的权威定义（`package.json` 的 `imports`）与 TS 侧镜像（`tsconfig.aliases.json` 的 `paths`）必须逐条一致。

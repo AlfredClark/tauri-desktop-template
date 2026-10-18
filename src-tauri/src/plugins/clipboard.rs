@@ -1,5 +1,5 @@
 //! 剪贴板插件初始化：仅 Rust 侧使用——about 页经 `copy_system_info` 命令复制系统信息（纯文本），
-//! 前端无 JS 直调，故不声明 capability（能力最小化，见 AGENTS 第 8 章）。
+//! 前端无 JS 直调，故不声明 capability（能力最小化，见 AGENTS.md 的「安全红线」）。
 
 use tauri::{Runtime, plugin::Plugin};
 

@@ -38,7 +38,8 @@
    `config.json` 的 `locale` 键：后端先读持久化值、缺失则经 `tauri-plugin-os` 探测系统语言并
    落库；前端在 `+layout.svelte` 挂载期后台水合（刻意不在 `+layout.ts` 的 `load()` 里做——
    Tauri `invoke` 接不进 SvelteKit 传给 `load` 的 `fetch`），再用
-   `setLocale(locale, { reload: false })` 对齐。
+   `libs/i18n/locale.svelte.ts` 的 `alignLocale` 对齐（写 localStorage 缓存 + 响应式重渲染，
+   不整页重载）。
 4. **前后端崩溃兜底** — 前端 `ErrorBoundary`（经 `@tauri-apps/plugin-log` 上报，堆栈仅 dev
    显示，2s 节流）；后端 `cores/system.rs` panic 钩子（先走常规日志，日志不可用时落盘到
    `%TEMP%/my_app_crash.log`，超 512KB 轮转保留一份）。
@@ -96,7 +97,7 @@ pnpm check           # svelte-kit sync + svelte-check（严格 TS 检查）
 pnpm test            # vitest + cargo test 单次运行
 pnpm test:cargo      # 后端测试 + 重生成 bindings.ts
 pnpm i18n:compile    # 改完 messages/ 后必须执行
-pnpm tauri:icon      # 由 src-tauri/app-icon.png 生成各平台图标
+pnpm tauri:icon      # 由 src-tauri/app-icon.svg 生成各平台图标
 pnpm release         # bumpp 联动三处版本：package.json + tauri.conf.json + Cargo.toml
 ```
 
@@ -136,7 +137,7 @@ pnpm release         # bumpp 联动三处版本：package.json + tauri.conf.json
 `setLocale()` 切换；后端改 `src-tauri/locales/*.yml` → `rust_i18n::t!(...)` 取值。
 
 **模板派生新项目：** 改名换标、深链协议与更新密钥轮换、图标替换、文档收尾与验收矩阵的完整
-清单见 `docs/INIT.md`。脚手架（演示页与笔记示例）已由模板主分支移除；需要这些接线示例时见
+清单见 `docs/INITIAL.md`。脚手架（演示页与笔记示例）已由模板主分支移除；需要这些接线示例时见
 上游 `v0.3.0` 标签。
 
 ## 项目结构（精简）
@@ -146,7 +147,7 @@ src/routes/(main)/         # /、/settings、/about 页面；页面组件在各�
 src/components/layout/    # tabs / sidebar / dashboard 布局壳 + 标题栏 / 导航部件
 src/components/common/    # 跨页共享的手写组件（card-section / card-row / confirm-dialog）
 src/libs/commands/        # bindings.ts（生成物）+ 链式 API 封装
-src/libs/i18n/            # messages/ 文案 + project.inlang/ 配置
+src/libs/i18n/            # messages/ 文案 + project.inlang/ 配置 + locale.svelte.ts 语言响应式桥
 src/libs/navigation/      # nav-tabs.ts 导航单源注册表
 src-tauri/src/commands/   # 薄封装 + collect_commands! 注册
 src-tauri/src/features/   # 纯业务逻辑（不依赖 Tauri 运行时）
@@ -155,7 +156,7 @@ src-tauri/src/plugins/    # 各插件初始化
 src-tauri/locales/         # tray.yml（`tray.*`），一文件内含 en + zh-CN 双写
 ```
 
-分层、边界与完整结构见 `AGENTS.md`。
+分层、边界与完整结构见 `AGENTS.md`、`docs/ARCHITECTURE.md`、`docs/WORKFLOW.md`。
 
 ## 验证与贡献
 

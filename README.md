@@ -43,8 +43,9 @@ updater) out of the box.
    is the backend `config.json` `locale` key: backend reads persisted value (or probes the OS
    locale via `tauri-plugin-os` on first run), frontend hydrates it in the background on
    `+layout.svelte` mount (deliberately not in `+layout.ts` `load()` — Tauri `invoke` can't
-   plug into the `fetch` SvelteKit hands to `load`) and aligns with
-   `setLocale(locale, { reload: false })`.
+   plug into the `fetch` SvelteKit hands to `load`) and aligns with `alignLocale` from
+   `libs/i18n/locale.svelte.ts` (writes the Paraglide localStorage cache and re-renders the
+   already-rendered copy in place, no full reload).
 4. **Crash safety nets, frontend + backend** — frontend `ErrorBoundary` (reports via
    `@tauri-apps/plugin-log`, stack trace in dev only, 2s throttle); backend panic hook in
    `cores/system.rs` (normal log first, `%TEMP%/my_app_crash.log` fallback with 512KB rotation).
@@ -103,7 +104,7 @@ pnpm check           # svelte-kit sync + svelte-check (strict TS)
 pnpm test            # vitest + cargo test (single run)
 pnpm test:cargo      # backend tests + regenerate bindings.ts
 pnpm i18n:compile    # required after editing messages/
-pnpm tauri:icon      # regenerate icons from src-tauri/app-icon.png
+pnpm tauri:icon      # regenerate icons from src-tauri/app-icon.svg
 pnpm release         # bumpp linked versions: package.json + tauri.conf.json + Cargo.toml
 ```
 
@@ -143,7 +144,7 @@ hand-edit `bindings.ts`.
 / `setLocale()`; backend `src-tauri/locales/*.yml` → `rust_i18n::t!(...)`.
 
 **Bootstrap a new project:** rebranding, deep-link scheme and signing-key rotation, icons,
-doc cleanup and the acceptance matrix are described end to end in `docs/INIT.md`. Scaffolding
+doc cleanup and the acceptance matrix are described end to end in `docs/INITIAL.md`. Scaffolding
 removal is already done in this branch — if you want reference implementations for the desktop
 plugins (sandbox fs, dialogs, notifications, global shortcuts, network, file drop), check the
 [`v0.3.0`](https://github.com/AlfredClark/tauri-desktop-template/tree/v0.3.0) tag.
@@ -164,7 +165,8 @@ src-tauri/src/plugins/    # per-plugin init
 src-tauri/locales/         # tray.yml (`tray.*`), en + zh-CN per file
 ```
 
-See `AGENTS.md` for layering rules, security red lines, and the full structure.
+See `AGENTS.md` for the always-on rules and security red lines; `docs/ARCHITECTURE.md` and
+`docs/WORKFLOW.md` for structure, workflows, and the design invariants behind them.
 
 ## Validation & contributing
 

@@ -32,7 +32,7 @@
     "tauri:dev": "tauri dev",
     "tauri:build": "tauri build",
     "tauri:build:local": "tauri build --no-bundle",
-    "tauri:icon": "tauri icon src-tauri/app-icon.png && rimraf src-tauri/icons/ios src-tauri/icons/android",
+    "tauri:icon": "tauri icon src-tauri/app-icon.svg && rimraf src-tauri/icons/ios src-tauri/icons/android",
     "i18n:compile": "paraglide-js compile --project ./src/libs/i18n/project.inlang",
     "i18n:translate": "inlang machine translate --project src/libs/i18n/project.inlang",
     "clean": "rimraf build/ node_modules/.vite .svelte-kit target/",

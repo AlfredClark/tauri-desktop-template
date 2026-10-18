@@ -1,5 +1,6 @@
 // 顶部导航标签注册表：`path` 与 SvelteKit 路由一一对应，同时作为 tabs 的取值。
-// 文案直接取 Paraglide 消息函数，切换语言走整页重载，故此处无需响应式包装。
+// 文案直接取 Paraglide 消息函数；运行时的 getLocale 已由 #libs/i18n/locale.svelte.ts 覆盖为
+// 响应式读取，启动水合对齐（不重载）后自动重渲染，故此处无需响应式包装。
 import InfoIcon from "@lucide/svelte/icons/info";
 import HouseIcon from "@lucide/svelte/icons/house";
 import SettingsIcon from "@lucide/svelte/icons/settings";

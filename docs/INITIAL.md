@@ -1,4 +1,4 @@
-# INIT.md — 派生项目定制与发布清单
+# INITIAL.md — 派生项目定制与发布清单
 
 > 面向 AI Agent 的**派生项目收尾剧本**：把本模板的副本变成一个身份干净、可发布的自有项目。
 > 模板主分支已是干净起点：演示页（`/demo`）与业务示例（`/notes`）及其插件、权限、依赖已由模板侧
@@ -6,17 +6,17 @@
 > 网络请求 / 文件拖放）时，见上游仓库 `v0.3.0` 标签。
 > **只做本地开发、暂不发布的，可以跳过 Phase B/C/D 的全部身份步骤**，直接开始写业务；
 > 发布前再回来照单执行即可。
-> 长期规范永远以 `AGENTS.md` 为准（规范的效力分级见其第 13 章）；本文件只覆盖「模板 → 自有项目」
-> 这一段路，执行完毕可归档或删除。
+> 长期规范永远以 `AGENTS.md`（常驻规则）与 `docs/ARCHITECTURE.md`、`docs/WORKFLOW.md`（细节与流程）为准
+> （规范的效力分级见 `AGENTS.md` 末节）；本文件只覆盖「模板 → 自有项目」这一段路，执行完毕可归档或删除。
 
 ---
 
 ## 0. 使用方式
 
 ```text
-读 AGENTS.md（第 3、5、9、10、13 章）→ Phase 0 收集变量（§1）→ Phase A→G 顺序执行 →
-每个 Phase 收尾跑 pnpm format → 全部完成后跑 Phase F 验收矩阵（§8）+ pnpm validate →
-按 Phase G（§9）汇报
+读 AGENTS.md + docs/ARCHITECTURE.md（结构与不变量）+ docs/WORKFLOW.md（命令与流程）→
+Phase 0 收集变量（§1）→ Phase A→G 顺序执行 → 每个 Phase 收尾跑 pnpm format →
+全部完成后跑 Phase F 验收矩阵（§8）+ pnpm validate → 按 Phase G（§9）汇报
 ```
 
 **执行原则：**
@@ -32,7 +32,8 @@
 6. **缺信息就问，且带着候选问**：§1 任何一项无法从仓库推导时，先按规则推导候选，再一次性
    向用户确认（见 §1.2 收集流程）；必填项未确认前宁可阻塞，不得臆测。
 7. **文档不带模板尾巴**：`README.md` / `docs/README_zh-CN.md` 收尾时只留「语言跳转 + 标题 +
-   简介」；`AGENTS.md` 不保留对上游模板仓库与 `v0.3.0` 示例标签的指引；模板截图一律删除。
+   简介」；`AGENTS.md` / `docs/ARCHITECTURE.md` 不保留对上游模板仓库与 `v0.3.0` 示例标签的指引；
+   模板截图一律删除。
 
 ---
 
@@ -50,7 +51,7 @@
 | `IDENTIFIER`   | 反向域名，全局唯一（同机安装隔离 + store 路径隔离都认它）；避免 `com.tauri.*`；发布后再改等于换应用 | `io.github.<REPO_OWNER 小写>.<PROJECT_SLUG>`；有自有域名则 `<域名倒序>.<slug>` | `tauri.conf.json` `identifier`                                                                                                                                                               |
 | `LIB_NAME`     | snake_case 的 Rust lib 名；合法标识符（不能数字开头，必要时加前缀）                                 | `<PROJECT_SLUG 的 - 换 _>_lib`                                                 | `Cargo.toml` `[lib].name`；`main.rs` 的 `lib::run()` 引用                                                                                                                                    |
 | `SCHEME`       | 深链协议名，小写 + 连字符；OS 级全局注册、撞名即串台，必须含项目可辨识片段                          | `PROJECT_SLUG` 去掉尾部 `-desktop` / `-app`                                    | `tauri.conf.json` `plugins.deep-link.desktop.schemes`；`cores/deep_link.rs` 的 `SCHEME_PREFIX`（含文件内单测样例 URL）；`libs/hooks/deep-link.svelte.ts` 的 `DEEP_LINK_SCHEME`；两侧深链单测 |
-| `CRASH_LOG`    | 崩溃日志文件名；`%TEMP%`（平台临时目录）根部多应用共享，同名互覆盖                                  | `<snake_case(PRODUCT_NAME)>_crash.log`                                         | `cores/system.rs` 的 `persist_fallback`；AGENTS 第 1 章第 4 条与第 5.6 节；README / docs 提及                                                                                                |
+| `CRASH_LOG`    | 崩溃日志文件名；`%TEMP%`（平台临时目录）根部多应用共享，同名互覆盖                                  | `<snake_case(PRODUCT_NAME)>_crash.log`                                         | `cores/system.rs` 的 `persist_fallback`；`AGENTS.md`（崩溃边界不变量）与 `docs/ARCHITECTURE.md`（崩溃边界）；README / docs 提及                                                              |
 | `REPO_OWNER`   | 仓库归属（GitHub 用户名，注意与账号大小写一致）                                                     | `git remote get-url origin` 的 owner 段；无 remote 则问用户                    | `package.json` 三处 URL（homepage / repository / bugs）；`cliff.toml` `[remote.github].owner`；`tauri.conf.json` `plugins.updater.endpoints`                                                 |
 | `DESCRIPTION`  | 一句话描述（英文、单行）                                                                            | 用户指定；草稿 `<PRODUCT_NAME> desktop application based on Tauri and Svelte.` | `package.json` / `Cargo.toml`                                                                                                                                                                |
 | `KEYWORDS`     | 字符串数组：小写、无空格；Cargo 侧 ≤ 5 个且每个 ≤ 20 字符                                           | `["tauri", "desktop", <slug 分词>…]`（替换模板的 `template`）                  | `package.json` / `Cargo.toml`                                                                                                                                                                |
@@ -129,7 +130,7 @@ git remote get-url origin 2>/dev/null | sed -E 's#\.git$##' # REPO_OWNER / PROJE
 | B7   | `src/libs/i18n/messages/*.json`      | `page_home_intro`（含模板自述，改为本产品一句话介绍，en + zh-CN 两份）                                                                       |
 | B8   | `src/tests/component/...`            | `routes/(main)/about/_components/app-info-section.component.test.ts` 与 `routes/(main)/about/page.component.test.ts` 的 `productName` 期望值 |
 | B9   | `README.md` / `docs/README_zh-CN.md` | 标题与简介（两文件同改，避免漂移）；删除对上游模板仓库与 `v0.3.0` 示例标签的引用；其余章节不在此处修补，Phase E 会整体瘦身                   |
-| B10  | `AGENTS.md`                          | §1 项目概述（项目名称 / 一句话描述 / 核心功能第 5 条里的上游 `v0.3.0` 指引）、§3 目录树首行目录名                                            |
+| B10  | `AGENTS.md` / `docs/ARCHITECTURE.md` | `AGENTS.md` 头部模板自述行；`docs/ARCHITECTURE.md` 的目录树首行目录名与「上游示例索引」的 `v0.3.0` 指引                                      |
 
 **DoD：**
 
@@ -152,8 +153,8 @@ pnpm check:sync && pnpm validate
 - `src/tests/unit/libs/hooks/deep-link.test.ts` 与 `cores/deep_link.rs` 的单测断言同步改
 
 **C2 崩溃日志名：** `src-tauri/src/cores/system.rs` 的 `persist_fallback` 落盘文件名改为
-`<CRASH_LOG>`（`%TEMP%` 根目录多应用共享，同名互覆盖）；连带改 `AGENTS.md` 第 1 章第 4 条、
-第 5.6 节与 README / docs 的提及。
+`<CRASH_LOG>`（`%TEMP%` 根目录多应用共享，同名互覆盖）；连带改 `AGENTS.md`（崩溃边界不变量）与
+`docs/ARCHITECTURE.md`（崩溃边界一节）及 README / docs 的提及。
 
 **C3 更新密钥与端点（不换则验签失败，发版流水线必挂）：**
 
@@ -187,8 +188,10 @@ pnpm check:sync && pnpm validate
 
 ## 5. Phase D — 品牌与图标
 
-1. **替换图标源**：准备本项目标识，替换 `src-tauri/app-icon.png` 或新增 `src-tauri/app-icon.svg`；**换格式时同步
-   `package.json` 的 `tauri:icon` 脚本源路径**（模板脚本指向 `src-tauri/app-icon.png`）。
+1. **替换图标源**：准备本项目标识，直接覆盖 `src-tauri/app-icon.svg`——**推荐正方形透明底 SVG**（标称尺寸
+   任意，矢量逐档渲染）；**PNG 备选请用 1024×1024**（`icon.icns` 内嵌 1024 档、iOS 亦生成 1024，过小会被
+   放大）。源文件须自包含（不引外部字体 / 图片）；`tauri icon` 仅接受「正方形 PNG 或 SVG」。换用 PNG 或
+   改文件名时，同步 `package.json` 的 `tauri:icon` 脚本源路径（模板脚本指向 `src-tauri/app-icon.svg`）。
 2. **重生成平台图标**：`pnpm tauri:icon`（脚本自带 `rimraf src-tauri/icons/{ios,android}`；
    `src-tauri/icons/` 下十余个二进制文件会被整体覆盖，属预期变更）。**随后同步托盘图标**：
    `src-tauri/icons/tray.png` 不随该命令重生成（`cores/tray.rs` 以 `include_bytes!` 独立引用），
@@ -211,17 +214,17 @@ pnpm check:sync && pnpm validate
 
 ## 6. Phase E — 文档收尾
 
-| 文件                   | 改动                                                                                                                                                                                                                                  |
-| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `README.md`            | **只保留三段：语言跳转、标题、简介**（外加一行 TODO 注释标记待补章节）。模板版长文——Features / Tech stack / Quickstart / Pages / Configuration / Workflows / Structure——整体删除，项目落地后再补，避免带着模板自述发布                |
-| `docs/README_zh-CN.md` | 与 README 同源的对应改动（两文件必须同时改）                                                                                                                                                                                          |
-| `AGENTS.md`            | §1 项目概述（项目名 / 描述 / 核心功能清单按需精简）；§3 目录树首行；§5.6 崩溃日志名；§10 图标源文件路径（换格式时）；第 13 章（如调整过门禁）；**凡是引用 `docs/INIT.md` 的文字：本文件删除后即悬空引用，须一并清理**；选择留档则保留 |
-| `docs/images/`         | 三张模板截图（`home` / `settings` / `about`）属模板身份，初始化时删除；产品有真实界面后按路由名重拍并恢复 README 截图段                                                                                                               |
-| `INIT.md`（本文件）    | 执行完成后删除，或在文件头标注「已于 <日期> 执行，结果见 commit <hash>」留档（留档时上文悬空引用可豁免）                                                                                                                              |
+| 文件                                                      | 改动                                                                                                                                                                                                                                                                                  |
+| --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `README.md`                                               | **只保留三段：语言跳转、标题、简介**（外加一行 TODO 注释标记待补章节）。模板版长文——Features / Tech stack / Quickstart / Pages / Configuration / Workflows / Structure——整体删除，项目落地后再补，避免带着模板自述发布                                                                |
+| `docs/README_zh-CN.md`                                    | 与 README 同源的对应改动（两文件必须同时改）                                                                                                                                                                                                                                          |
+| `AGENTS.md` / `docs/ARCHITECTURE.md` / `docs/WORKFLOW.md` | `AGENTS.md` 头部模板自述；`docs/ARCHITECTURE.md` 的目录树首行、「上游示例索引」的 `v0.3.0` 指引、崩溃日志名、图标源文件路径（换格式时）；调整过门禁时同步 `AGENTS.md` 的「效力分级与定制」；**凡是引用 `docs/INITIAL.md` 的文字：本文件删除后即悬空引用，须一并清理**；选择留档则保留 |
+| `docs/images/`                                            | 三张模板截图（`home` / `settings` / `about`）属模板身份，初始化时删除；产品有真实界面后按路由名重拍并恢复 README 截图段                                                                                                                                                               |
+| `INITIAL.md`（本文件）                                    | 执行完成后删除，或在文件头标注「已于 <日期> 执行，结果见 commit <hash>」留档（留档时上文悬空引用可豁免）                                                                                                                                                                              |
 
 > Agent 提示：Phase E 是最容易被跳过的一步。若只允许做一件事，也要保证
 > `rg -i "tauri-desktop-template|template" README.md docs AGENTS.md` 不会把用户引导回模板身份；若本文件将被删除，
-> `rg -n "docs/INIT.md" AGENTS.md README.md docs` 也不得留下悬空引用。
+> `rg -n "docs/INITIAL.md" AGENTS.md README.md docs` 也不得留下悬空引用。
 
 **README 初始化后的期望形态（可直接照此落地）：**
 
@@ -261,9 +264,9 @@ English | [简体中文](docs/README_zh-CN.md)
 rg -i "tauri-desktop-template|tauri_desktop_template|Tauri Desktop Template" . \
   --glob '!**/node_modules/**' --glob '!**/*.lock'                        # 无命中（模板身份清零）
 rg "tdt://|my_app_crash" src src-tauri docs README.md AGENTS.md           # 无命中（<SCHEME> / <CRASH_LOG> 已替换）
-rg -n "v0.3.0" README.md AGENTS.md docs/README_zh-CN.md                   # 无命中（上游示例指引已删）
+rg -n "v0.3.0" README.md AGENTS.md docs                                   # 无命中（上游示例指引已删）
 test "$(wc -l < README.md)" -le 10 && echo "README 已瘦身"                # README / docs 各 ≤ 10 行
-rg -n "docs/INIT.md" AGENTS.md README.md docs 2>/dev/null                 # 本文件删除后须无命中；留档则豁免
+rg -n "docs/INITIAL.md" AGENTS.md README.md docs 2>/dev/null             # 本文件删除后须无命中；留档则豁免
 ```
 
 ### 8.2 计数基线（模板现值 → 定制后，实测参考）
@@ -327,4 +330,4 @@ git diff src/libs/commands/bindings.ts   # 应已提交且无未预期的改动
 
 ---
 
-<!-- 维护说明：本文件与模板主分支结构同步维护（改动 AGENTS.md 或仓库结构时检查 §1~§6 落点表与 §8.2 计数基线）；派生项目执行后删除或留档 -->
+<!-- 维护说明：本文件与模板主分支结构同步维护（改规范文档（`AGENTS.md` / `docs/ARCHITECTURE.md` / `docs/WORKFLOW.md`）或仓库结构时，检查 §1~§6 落点表与 §8.2 计数基线）；派生项目执行后删除或留档 -->

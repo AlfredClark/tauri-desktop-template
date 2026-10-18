@@ -5,7 +5,8 @@ import { tick } from "svelte";
 import { configState, hydrateConfig } from "#hooks/config.svelte";
 import { reportCommandFailure } from "#libs/commands/cores";
 import type { Config_Serialize } from "#libs/commands/types";
-import { getLocale, setLocale } from "#libs/i18n/paraglide/runtime";
+import { alignLocale } from "#libs/i18n/locale.svelte";
+import { getLocale } from "#libs/i18n/paraglide/runtime";
 import Harness from "../stubs/root-layout-harness.svelte";
 
 // 根布局回归：外观初始化只跑一次，未落盘的预览不得被重初始化覆盖。
@@ -76,9 +77,12 @@ vi.mock("#libs/commands/cores", () => ({
   reportCommandFailure: vi.fn(),
 }));
 
+vi.mock("#libs/i18n/locale.svelte", () => ({
+  alignLocale: vi.fn(),
+}));
+
 vi.mock("#libs/i18n/paraglide/runtime", () => ({
   getLocale: vi.fn(),
-  setLocale: vi.fn(),
 }));
 
 /** 等挂载期后台水合走完：$effect → hydrateConfig → 对齐语言，全是跨微任务的异步链 */
@@ -145,7 +149,7 @@ describe("根布局启动水合", () => {
     await flushHydrate();
 
     expect(hydrateConfig).toHaveBeenCalledOnce();
-    expect(setLocale).toHaveBeenCalledWith("zh-CN", { reload: false });
+    expect(alignLocale).toHaveBeenCalledWith("zh-CN");
   });
 
   it("语言已一致时不调用对齐", async () => {
@@ -154,7 +158,7 @@ describe("根布局启动水合", () => {
     await flushHydrate();
 
     expect(hydrateConfig).toHaveBeenCalledOnce();
-    expect(setLocale).not.toHaveBeenCalled();
+    expect(alignLocale).not.toHaveBeenCalled();
   });
 
   it("水合构造期抛错时上报且不阻断首帧", async () => {
@@ -163,7 +167,7 @@ describe("根布局启动水合", () => {
     await flushHydrate();
 
     expect(reportCommandFailure).toHaveBeenCalledWith("[config] hydrate threw", expect.anything());
-    expect(setLocale).not.toHaveBeenCalled();
+    expect(alignLocale).not.toHaveBeenCalled();
     // 首帧照常渲染，不白屏（getBy* 找不到会直接抛错，本身即断言）
     expect(screen.getByTestId("weight").textContent).not.toBeNull();
   });
