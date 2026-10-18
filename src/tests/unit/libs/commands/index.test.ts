@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { commands as rawCommands } from "$libs/commands/bindings";
-import commands, { commands as namedCommands } from "$libs/commands/index";
+import { commands as rawCommands } from "#libs/commands/bindings";
+import commands, { commands as namedCommands } from "#libs/commands/index";
 
 // 纯断言：入口只做透出与包装映射，无副作用、不调后端；
 // 包装表应与生成物同键但引用不同，证明映射真实执行而非直接透出原始表。

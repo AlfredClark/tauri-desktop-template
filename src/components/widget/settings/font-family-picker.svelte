@@ -11,21 +11,21 @@
     fontState,
     sanitizeFontFamily,
     setFontFamily,
-  } from "$hooks/appearance.svelte";
-  import { Button } from "$components/shadcn-svelte/button";
+  } from "#hooks/appearance.svelte";
+  import { Button } from "#components/shadcn-svelte/button";
   import {
     Input as CommandInput,
     Item as CommandItem,
     List as CommandList,
     Root as CommandRoot,
-  } from "$components/shadcn-svelte/command";
+  } from "#components/shadcn-svelte/command";
   import {
     Content as PopoverContent,
     Root as PopoverRoot,
     Trigger as PopoverTrigger,
-  } from "$components/shadcn-svelte/popover";
-  import CardRow from "$components/common/card-row.svelte";
-  import { m } from "$libs/i18n/paraglide/messages";
+  } from "#components/shadcn-svelte/popover";
+  import CardRow from "#components/common/card-row.svelte";
+  import { m } from "#libs/i18n/paraglide/messages";
 
   /** 系统字体族候选：插件变体数组按族名去重排序，失败时为空并禁用下拉。 */
   let systemFontFamilies = $state<string[]>([]);

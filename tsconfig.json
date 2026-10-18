@@ -1,6 +1,7 @@
 {
-  // 继承 SvelteKit 自动生成的配置
-  "extends": "./.svelte-kit/tsconfig.json",
+  // 继承 SvelteKit 自动生成的配置；tsconfig.aliases.json 提供 # 别名的 TS 侧镜像
+  // （运行时/构建的权威定义在 package.json 的 imports 字段，两者由 check:sync 校验一致）
+  "extends": ["./.svelte-kit/tsconfig.json", "./tsconfig.aliases.json"],
   // 编译器配置
   "compilerOptions": {
     // 允许在项目中引入并编译原生 JavaScript 文件

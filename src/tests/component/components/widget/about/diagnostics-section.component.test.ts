@@ -9,7 +9,7 @@ const copySystemInfoMock = vi.hoisted(() => vi.fn());
 const reportFailureMock = vi.hoisted(() => vi.fn());
 const toastMocks = vi.hoisted(() => ({ success: vi.fn(), error: vi.fn() }));
 
-vi.mock("$libs/commands", () => ({
+vi.mock("#libs/commands", () => ({
   default: {
     openLogDir: openLogDirMock,
     openConfigDir: openConfigDirMock,
@@ -17,11 +17,11 @@ vi.mock("$libs/commands", () => ({
   },
 }));
 
-vi.mock("$libs/commands/cores", () => ({
+vi.mock("#libs/commands/cores", () => ({
   reportCommandFailure: reportFailureMock,
 }));
 
-vi.mock("$libs/utils/toast", () => ({ toast: toastMocks }));
+vi.mock("#libs/utils/toast", () => ({ toast: toastMocks }));
 
 type FakeResult =
   { status: "ok"; data: unknown } | { status: "error"; error: { kind: string; message: string } };

@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Dialog as SheetPrimitive } from "bits-ui";
-  import { cn } from "$libs/utils/shadcn-svelte.js";
+  import { cn } from "#libs/utils/shadcn-svelte.js";
 
   let {
     ref = $bindable(null),

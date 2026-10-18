@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { cleanup, render, screen } from "@testing-library/svelte";
 import userEvent from "@testing-library/user-event";
-import type { Config_Serialize } from "$libs/commands/types";
+import type { Config_Serialize } from "#libs/commands/types";
 import Page from "../../../../../routes/(main)/settings/+page.svelte";
 
 // bits-ui 组件在 jsdom 下缺失的浏览器 API，就地补齐（同通用设置分组测试）。
@@ -56,14 +56,14 @@ const defaults: Config_Serialize = {
 
 const configStateMock = vi.hoisted((): { value: Config_Serialize | null } => ({ value: null }));
 
-vi.mock("$hooks/config.svelte", () => ({
+vi.mock("#hooks/config.svelte", () => ({
   configState: configStateMock,
   updateConfig: updateConfigMock,
   resetConfig: resetConfigMock,
 }));
 
-vi.mock("$libs/i18n/paraglide/runtime", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("$libs/i18n/paraglide/runtime")>();
+vi.mock("#libs/i18n/paraglide/runtime", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("#libs/i18n/paraglide/runtime")>();
   return {
     ...actual,
     getLocale: () => configStateMock.value?.locale ?? "en",
@@ -76,7 +76,7 @@ vi.mock("mode-watcher", () => ({
   setMode: setModeMock,
 }));
 
-vi.mock("$hooks/appearance.svelte", () => ({
+vi.mock("#hooks/appearance.svelte", () => ({
   layoutState: layoutStateMock,
   setLayoutName: setLayoutNameMock,
   colorThemeState: colorThemeStateMock,
@@ -100,7 +100,7 @@ vi.mock("tauri-plugin-system-fonts-api", () => ({
   getSystemFonts: getSystemFontsMock,
 }));
 
-vi.mock("$libs/utils/toast", () => ({ toast: toastMocks }));
+vi.mock("#libs/utils/toast", () => ({ toast: toastMocks }));
 
 beforeEach(() => {
   vi.clearAllMocks();

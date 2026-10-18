@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Command as CommandPrimitive } from "bits-ui";
-  import { cn } from "$libs/utils/shadcn-svelte.js";
+  import { cn } from "#libs/utils/shadcn-svelte.js";
 
   export type CommandRootApi = CommandPrimitive.Root;
 

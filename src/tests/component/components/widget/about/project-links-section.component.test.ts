@@ -7,11 +7,11 @@ import Component from "../../../../../components/widget/about/project-links-sect
 const openExternalMock = vi.hoisted(() => vi.fn());
 const toastMocks = vi.hoisted(() => ({ success: vi.fn(), error: vi.fn() }));
 
-vi.mock("$libs/utils/opener", () => ({
+vi.mock("#libs/utils/opener", () => ({
   openExternal: openExternalMock,
 }));
 
-vi.mock("$libs/utils/toast", () => ({ toast: toastMocks }));
+vi.mock("#libs/utils/toast", () => ({ toast: toastMocks }));
 
 beforeEach(() => {
   vi.clearAllMocks();

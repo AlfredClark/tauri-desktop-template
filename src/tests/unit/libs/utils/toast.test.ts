@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { toast as sonnerToast } from "svelte-sonner";
-import { __resetToastDedupeForTests, toast } from "$libs/utils/toast";
+import { __resetToastDedupeForTests, toast } from "#libs/utils/toast";
 
 vi.mock("svelte-sonner", () => ({
   toast: {

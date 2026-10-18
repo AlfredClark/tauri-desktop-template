@@ -7,7 +7,7 @@
     CardDescription,
     CardHeader,
     CardTitle,
-  } from "$components/shadcn-svelte/card";
+  } from "#components/shadcn-svelte/card";
 
   let { title, description, children }: { title: string; description?: string; children: Snippet } =
     $props();

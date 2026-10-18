@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { cleanup, render, screen } from "@testing-library/svelte";
 import userEvent from "@testing-library/user-event";
-import Component from "$components/widget/demo/demo-shortcut-section.svelte";
+import Component from "#components/widget/demo/demo-shortcut-section.svelte";
 
 // 纯替身：后端固定键命令、前端直调胶水、窗口关闭、提示全部 mock，
 // 只验证快捷键卡片的接线——自定义槽位校验拦截、注册透传、关闭键切换。
@@ -36,7 +36,7 @@ function fakeCommand(result: FakeResult): {
   return chain;
 }
 
-vi.mock("$libs/commands", () => ({
+vi.mock("#libs/commands", () => ({
   default: {
     demoShortcutKey: demoShortcutKeyMock,
     demoShortcutIsRegistered: demoShortcutIsRegisteredMock,
@@ -45,18 +45,18 @@ vi.mock("$libs/commands", () => ({
   },
 }));
 
-vi.mock("$libs/shortcuts/shortcuts", () => ({
+vi.mock("#libs/shortcuts/shortcuts", () => ({
   CLOSE_WINDOW_SHORTCUT: "Ctrl+Alt+X",
   registerShortcut: registerShortcutMock,
   unregisterShortcut: unregisterShortcutMock,
   isShortcutRegistered: isShortcutRegisteredMock,
 }));
 
-vi.mock("$libs/utils/window-controls", () => ({
+vi.mock("#libs/utils/window-controls", () => ({
   closeWindow: closeWindowMock,
 }));
 
-vi.mock("$libs/utils/toast", () => ({ toast: toastMocks }));
+vi.mock("#libs/utils/toast", () => ({ toast: toastMocks }));
 
 beforeEach(() => {
   vi.clearAllMocks();

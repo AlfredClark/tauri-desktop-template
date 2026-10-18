@@ -1,9 +1,9 @@
 // 应用配置的前端内存态：后端 config.json 是唯一权威，读写一律经 commands 链。
 // 首帧前水合一次，写时用命令返回的写后值回写——不为省一次 IPC 而复刻第二份读取路径，
 // 否则后端启动时的探测落库、将来的托盘 / 菜单改配置都会让本地缓存变陈旧。
-import commands from "$libs/commands";
-import { reportCommandFailure } from "$libs/commands/cores";
-import type { ConfigPatch, Config_Serialize } from "$libs/commands/types";
+import commands from "#libs/commands";
+import { reportCommandFailure } from "#libs/commands/cores";
+import type { ConfigPatch, Config_Serialize } from "#libs/commands/types";
 
 /** 配置的前端视图：命令返回值恒为全字段必填的 `Config_Serialize` */
 export type AppConfig = Config_Serialize;

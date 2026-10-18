@@ -1,8 +1,8 @@
 <script lang="ts">
   import { Command as CommandPrimitive } from "bits-ui";
-  import * as InputGroup from "$components/shadcn-svelte/input-group/index.js";
+  import * as InputGroup from "#components/shadcn-svelte/input-group/index.js";
   import SearchIcon from "@lucide/svelte/icons/search";
-  import { cn } from "$libs/utils/shadcn-svelte.js";
+  import { cn } from "#libs/utils/shadcn-svelte.js";
 
   let {
     ref = $bindable(null),

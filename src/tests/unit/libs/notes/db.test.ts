@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { createNote, deleteNote, listNotes, NOTES_PAGE_SIZE, updateNote } from "$libs/notes/db";
-import type { Note } from "$libs/notes/types";
+import { createNote, deleteNote, listNotes, NOTES_PAGE_SIZE, updateNote } from "#libs/notes/db";
+import type { Note } from "#libs/notes/types";
 
 // 连接单例常驻模块：全文件共用同一 fake 连接，逐用例重设其行为即可，无需复位导出。
 const selectMock = vi.fn();

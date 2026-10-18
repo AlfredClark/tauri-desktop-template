@@ -1,7 +1,7 @@
 <script lang="ts">
   // 应用图标：内联 Tauri 标识（源自 static/tauri.svg），随构建打包，不再发静态图片请求；
   // 纯装饰，`aria-hidden` 不进入可访问名称。
-  import { cn } from "$libs/utils/shadcn-svelte";
+  import { cn } from "#libs/utils/shadcn-svelte";
 
   let { class: className = "" }: { class?: string } = $props();
 </script>

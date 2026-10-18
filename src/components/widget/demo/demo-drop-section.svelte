@@ -2,14 +2,14 @@
   // 演示：文件拖放分组，窗口级拖放订阅 → 后端鉴别回显 → 存入沙盒，零 props。
   // 订阅失败（浏览器预览 / 单测无 Tauri 运行时）即标不可用；移动端无拖放能力，整卡隐藏。
   import type { UnlistenFn } from "@tauri-apps/api/event";
-  import type { DropFileInfo } from "$libs/commands/types";
-  import { getSharedIsMobile } from "$hooks/is-mobile.svelte";
-  import { Button } from "$components/shadcn-svelte/button";
-  import CardRow from "$components/common/card-row.svelte";
-  import CardSection from "$components/common/card-section.svelte";
-  import commands from "$libs/commands";
-  import { m } from "$libs/i18n/paraglide/messages";
-  import { toast } from "$libs/utils/toast";
+  import type { DropFileInfo } from "#libs/commands/types";
+  import { getSharedIsMobile } from "#hooks/is-mobile.svelte";
+  import { Button } from "#components/shadcn-svelte/button";
+  import CardRow from "#components/common/card-row.svelte";
+  import CardSection from "#components/common/card-section.svelte";
+  import commands from "#libs/commands";
+  import { m } from "#libs/i18n/paraglide/messages";
+  import { toast } from "#libs/utils/toast";
 
   /** 移动端无拖放能力，整卡隐藏（而非展示禁用态）；断点监听复用共享单例 */
   const isMobile = getSharedIsMobile();

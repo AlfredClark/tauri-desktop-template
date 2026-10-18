@@ -8,10 +8,10 @@
   import SquareIcon from "@lucide/svelte/icons/square";
   import XIcon from "@lucide/svelte/icons/x";
   import type { Snippet } from "svelte";
-  import AppIcon from "$assets/icons/app-icon.svelte";
-  import { Button } from "$components/shadcn-svelte/button";
-  import { m } from "$libs/i18n/paraglide/messages";
-  import { cn } from "$libs/utils/shadcn-svelte";
+  import AppIcon from "#assets/icons/app-icon.svelte";
+  import { Button } from "#components/shadcn-svelte/button";
+  import { m } from "#libs/i18n/paraglide/messages";
+  import { cn } from "#libs/utils/shadcn-svelte";
   import {
     closeWindow,
     isWindowAlwaysOnTop,
@@ -20,7 +20,7 @@
     onWindowResized,
     toggleAlwaysOnTopWindow,
     toggleMaximizeWindow,
-  } from "$libs/utils/window-controls";
+  } from "#libs/utils/window-controls";
 
   // 左区默认渲染应用图标与标题，传入 left 片段时由调用方接管（如侧边栏布局的折叠按钮）。
   let {

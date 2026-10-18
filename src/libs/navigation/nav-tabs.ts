@@ -5,7 +5,7 @@ import FlaskConicalIcon from "@lucide/svelte/icons/flask-conical";
 import HouseIcon from "@lucide/svelte/icons/house";
 import NotebookPenIcon from "@lucide/svelte/icons/notebook-pen";
 import SettingsIcon from "@lucide/svelte/icons/settings";
-import { m } from "$libs/i18n/paraglide/messages";
+import { m } from "#libs/i18n/paraglide/messages";
 
 /** 导航标签清单，数组顺序即渲染顺序；`as const` 保留路径字面量类型，注册错路由会在编译期报错 */
 export const NAV_TABS = [

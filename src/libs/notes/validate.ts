@@ -1,6 +1,6 @@
 // 笔记输入校验：纯函数，不触碰运行时，DB 侧 `CHECK` 约束是第二道门。
 // 上限与迁移 SQL 保持一致，改一处必须改另一处。
-import type { NoteValidationError } from "$libs/notes/types";
+import type { NoteValidationError } from "#libs/notes/types";
 
 /** 标题长度上限（字符）；与迁移 `length(title) <= 100` 同源 */
 export const MAX_NOTE_TITLE_LEN = 100;

@@ -1,21 +1,21 @@
 <script lang="ts">
   // 通用设置分组：界面语言（后端持久化）与三项开关（自启/窗口记忆/更新检查），零 props，直接读写配置 hook。
   // 语言切换是“先落盘后端、再重载前端”的两段提交，期间禁用下拉并给出 loading 提示。
-  import type { CloseBehavior, Locale } from "$libs/commands/types";
-  import { configState, updateConfig } from "$hooks/config.svelte";
-  import { Switch } from "$components/shadcn-svelte/switch";
-  import CardRow from "$components/common/card-row.svelte";
-  import CardSection from "$components/common/card-section.svelte";
+  import type { CloseBehavior, Locale } from "#libs/commands/types";
+  import { configState, updateConfig } from "#hooks/config.svelte";
+  import { Switch } from "#components/shadcn-svelte/switch";
+  import CardRow from "#components/common/card-row.svelte";
+  import CardSection from "#components/common/card-section.svelte";
   import {
     Select,
     SelectContent,
     SelectItem,
     SelectTrigger,
     SelectValue,
-  } from "$components/shadcn-svelte/select";
-  import { m } from "$libs/i18n/paraglide/messages";
-  import { getLocale, setLocale } from "$libs/i18n/paraglide/runtime";
-  import { toast } from "$libs/utils/toast";
+  } from "#components/shadcn-svelte/select";
+  import { m } from "#libs/i18n/paraglide/messages";
+  import { getLocale, setLocale } from "#libs/i18n/paraglide/runtime";
+  import { toast } from "#libs/utils/toast";
 
   /** 语言下拉的候选项：`items` 让触发器在下拉关闭时也能解析出展示文案。 */
   const localeItems: { value: Locale; label: string }[] = [

@@ -1,10 +1,10 @@
 <script lang="ts">
   // 顶部标签布局
   import type { Snippet } from "svelte";
-  import NavTabsBar from "$components/layout/parts/nav-tabs-bar.svelte";
-  import TitleBar from "$components/layout/parts/title-bar.svelte";
-  import Copyright from "$components/layout/parts/copyright.svelte";
-  import { cn } from "$libs/utils/shadcn-svelte";
+  import NavTabsBar from "#components/layout/parts/nav-tabs-bar.svelte";
+  import TitleBar from "#components/layout/parts/title-bar.svelte";
+  import Copyright from "#components/layout/parts/copyright.svelte";
+  import { cn } from "#libs/utils/shadcn-svelte";
 
   let { children }: { children: Snippet } = $props();
 </script>

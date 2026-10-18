@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { cleanup, render, screen } from "@testing-library/svelte";
 import userEvent from "@testing-library/user-event";
-import Component from "$components/widget/demo/demo-clipboard-section.svelte";
+import Component from "#components/widget/demo/demo-clipboard-section.svelte";
 
 // 纯替身：剪贴板读写命令与提示全部 mock，
 // 只验证剪贴板卡片的接线——渲染、写成功清空、写失败提示、读回显、空占位、读失败提示。
@@ -34,14 +34,14 @@ function fakeCommand(result: FakeResult): {
   return chain;
 }
 
-vi.mock("$libs/commands", () => ({
+vi.mock("#libs/commands", () => ({
   default: {
     demoClipboardWrite: demoClipboardWriteMock,
     demoClipboardRead: demoClipboardReadMock,
   },
 }));
 
-vi.mock("$libs/utils/toast", () => ({ toast: toastMocks }));
+vi.mock("#libs/utils/toast", () => ({ toast: toastMocks }));
 
 beforeEach(() => {
   vi.clearAllMocks();

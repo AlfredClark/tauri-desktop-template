@@ -56,7 +56,7 @@ rustc --version && cat rust-toolchain.toml && cat src-tauri/Cargo.toml | grep -A
 tauri-desktop-template/
 ├── src/                            # 前端：SvelteKit 单页应用（adapter-static + fallback: index.html）
 │   ├── app.html                    # HTML 外壳，SvelteKit 在此注入脚本与样式
-│   ├── assets/                     # 需要经构建处理的资源（别名 $assets，见 svelte.config.ts），icons/ 下为内联图标（github-icon / app-icon）
+│   ├── assets/                     # 需要经构建处理的资源（别名 #assets，见 package.json 的 imports 字段），icons/ 下为内联图标（github-icon / app-icon）
 │   ├── routes/                     # 页面与全局样式
 │   │   ├── +layout.svelte          # 根布局：ModeWatcher（主题）+ Toaster + ErrorBoundary（渲染异常）包裹全部分组，首帧前对齐外观变量（字体/字重/字号）
 │   │   ├── +layout.ts              # ssr = false（SPA 模式）；配置水合不在 load()（invoke 接不进 event.fetch），见 +layout.svelte 挂载期后台水合
@@ -84,7 +84,7 @@ tauri-desktop-template/
 │       ├── navigation/             # 导航等应用级注册表（nav-tabs.ts：路径 / 图标 / 顺序，顶部标签栏与侧边栏导航同源）
 │       ├── shortcuts/              # 快捷键领域：shortcuts.ts 自定义槽位 + validate.ts 纯校验（演示页 shortcut 卡片调用方，删演示页时同步清理）
 │       ├── utils/                  # 前端通用工具（shadcn-svelte.ts 的 cn()、window-controls.ts、toast.ts、opener.ts）
-│       └── hooks/                  # 前端共享状态（统一经 $hooks 引用），如 appearance.svelte.ts（布局注册表 + 字体偏好）、config.svelte.ts（后端配置内存态）、updater.svelte.ts（更新状态）、is-mobile.svelte.ts（响应式断点）、deep-link.svelte.ts（三路深链入口）
+│       └── hooks/                  # 前端共享状态（统一经 #hooks 引用），如 appearance.svelte.ts（布局注册表 + 字体偏好）、config.svelte.ts（后端配置内存态）、updater.svelte.ts（更新状态）、is-mobile.svelte.ts（响应式断点）、deep-link.svelte.ts（三路深链入口）
 ├── src-tauri/                      # 后端：Rust（edition 2024）
 │   ├── src/
 │   │   ├── main.rs                 # 二进制入口，仅转发到 lib::run()
@@ -102,10 +102,12 @@ tauri-desktop-template/
 ├── static/                         # 原样拷贝到产物根目录的资源（favicon / 图标 / svg）
 ├── .github/workflows/              # ci.yml（质量门禁）、release.yml（打包发布）
 ├── Cargo.toml                      # 虚拟工作区 + 全局 lints / profile
-├── package.json                    # 脚本与前端依赖
-├── svelte.config.ts                # adapter-static、路径别名（唯一来源）
+├── package.json                    # 脚本、前端依赖与路径别名（imports 字段）
+├── svelte.config.ts                # adapter-static 与 Svelte 预处理器配置
 ├── vite.config.ts                  # Vite + SvelteKit + Tailwind + Paraglide 插件，固定端口 1420
-├── vitest.config.ts                # 单元测试配置（复用 sveltekit() 插件以继承别名）
+├── vitest.config.ts                # 单元测试配置（复用 sveltekit() 插件；别名由 package.json imports 提供）
+├── tsconfig.json                   # 继承 .svelte-kit 生成配置与 tsconfig.aliases.json，TS 严格检查选项
+├── tsconfig.aliases.json           # # 别名的 TS 侧镜像（权威在 package.json imports；check:sync 校验一致）
 └── AGENTS.md                       # 本文件
 ```
 
@@ -115,7 +117,7 @@ tauri-desktop-template/
 - 后端 `commands/` 只做薄封装（参数与结果转换 + 注册），业务逻辑必须放入 `features/`，跨层共享能力放入 `cores/`。
 - `libs/utils/` 只放不含业务 / 应用知识的通用工具（`cn()` / `toast` / `window-controls`）；注册表类（路径、图标、顺序等应用知识）放 `libs/<领域>/`，如导航注册表在 `libs/navigation/`。后端通用能力一律进 `cores/`，不另设 `utils/`。
 - `bindings.ts` 为生成物，禁止手动编辑；`paraglide/` 生成物禁止编辑、禁止从外部导入其内部文件。
-- 路径别名（`$assets`、`$components`、`$hooks`、`$libs`）唯一来源是 `svelte.config.ts` 的 `kit.alias`，不写入 `vite.config.ts` 。
+- 路径别名（`#assets`、`#components`、`#hooks`、`#libs`）唯一来源是 `package.json` 的 `imports` 字段（Node subpath imports，Vite / Vitest 原生解析）；TS 检查器（tsc / svelte-check）读 `tsconfig.aliases.json` 的只读镜像 `paths`（TS 对 imports 映射目标按 Node 语义不做隐式扩展名补全），由 `scripts/check-version-sync.ts` 在 `pnpm check` 中校验一致；不写入 `svelte.config.ts` / `vite.config.ts`。
 
 ---
 
@@ -176,7 +178,7 @@ pnpm release                       # bumpp 联动升级三处版本号（package
 2. **前后端契约优先：** 以 tauri-specta 为准（见第 10 章第 2 条）。改命令必须先改 `features/` + `commands/`（含 `#[tauri::command]` + `#[specta::specta]` + `collect_commands!`），再 `cargo test` 重生成 `bindings.ts`，最后改前端调用。禁止手改 `bindings.ts`、禁止跳过重生成直接改前端。
 3. **状态归属：** Svelte 5 runes（`$state` / `$props` / `$effect`）优先，禁用旧式 store；页面私有状态用局部 state，跨页面共享才考虑提升。主题经 `mode-watcher` 全局管理，语言对齐走第 10 章第 1 条数据流，禁止各页面自建语言状态。
 4. **错误处理分层：** `features/` 返回业务错误 → `commands/` 转为 `CommandResult`（错误统一 `CommandError::Internal(...)`，`anyhow::Error` 经已有 `From` 自动转换）→ 前端经 `.result() / .value() / .success() / .failed()` 处理。前端 `.failed()` 回调形状为 `{ kind, message }`；未注册 `.failed()` 的失败会自动经 plugin-log 上报，不会静默丢失。禁止在 `features/` 内直接耦合 Tauri 运行时。
-5. **配置外置与同步：** Paraglide 编译选项唯一来源是 `src/libs/i18n/project.inlang/paraglide.config.ts`（CLI 与 vite 插件都读它，禁止往 `package.json` / `vite.config.ts` 各写一份）；路径别名唯一来源是 `svelte.config.ts` 的 `kit.alias`。新增外部 URL 必须同步更新 `capabilities/*.json` 与 `tauri.conf.json` 的 CSP（`updater` 下载端点由 Rust 侧发起，不受 WebView CSP 约束，无需同步 CSP，见第 8 章第 2 条）。新增配置必须检查第 10 章第 4 条成对维护表。路径别名共四个（`$assets` / `$components` / `$hooks` / `$libs`），均由该处定义；其中 hooks 一律经 `$hooks` 引用，禁止写 `$libs/hooks`（两者都能解析）——`components.json` 的 `aliases.hooks` 即 `$hooks`，CLI 生成的组件也走 `$hooks`，保持唯一写法才能避免漂移。新增 / 变更配置项必须同步 `cores/config.rs` 的 `CURRENT_SCHEMA_VERSION` 与 `MIGRATIONS` 迁移链（仅改动已有字段语义时才递增版本），否则老用户配置会静默失效。配置写锁三入口（`update` / `save_locale` / `migrate`，内部函数不加锁，新增写入路径必须走其一）；`update` 内幂等 `migrate`，存储不可用直接失败（不基于回落默认值决策），自启落盘失败回滚操作系统状态。
+5. **配置外置与同步：** Paraglide 编译选项唯一来源是 `src/libs/i18n/project.inlang/paraglide.config.ts`（CLI 与 vite 插件都读它，禁止往 `package.json` / `vite.config.ts` 各写一份）；路径别名唯一来源是 `package.json` 的 `imports` 字段（SvelteKit 已弃用 `kit.alias`，勿再启用）；`tsconfig.aliases.json` 的 `paths` 仅为其 TS 侧只读镜像，两者由 `check:sync` 校验一致。新增外部 URL 必须同步更新 `capabilities/*.json` 与 `tauri.conf.json` 的 CSP（`updater` 下载端点由 Rust 侧发起，不受 WebView CSP 约束，无需同步 CSP，见第 8 章第 2 条）。新增配置必须检查第 10 章第 4 条成对维护表。路径别名共四个（`#assets` / `#components` / `#hooks` / `#libs`），均由该处定义；其中 hooks 一律经 `#hooks` 引用，禁止写 `#libs/hooks`（两者都能解析）——`components.json` 的 `aliases.hooks` 即 `#hooks`，CLI 生成的组件也走 `#hooks`，保持唯一写法才能避免漂移。新增 / 变更配置项必须同步 `cores/config.rs` 的 `CURRENT_SCHEMA_VERSION` 与 `MIGRATIONS` 迁移链（仅改动已有字段语义时才递增版本），否则老用户配置会静默失效。配置写锁三入口（`update` / `save_locale` / `migrate`，内部函数不加锁，新增写入路径必须走其一）；`update` 内幂等 `migrate`，存储不可用直接失败（不基于回落默认值决策），自启落盘失败回滚操作系统状态。
 6. **崩溃边界：** 前端 `ErrorBoundary`（经 `@tauri-apps/plugin-log` 上报，堆栈仅 dev 显示；同步 `console.error` 留底 + 2s 节流防刷屏）+ 后端 `cores/system.rs` panic 钩子（先走常规日志，日志不可用时落盘到 `%TEMP%/my_app_crash.log` 兜底，二选一而非双写；超 512KB 轮转为 `.1` 仅保留一份）。两者互不替代，禁止另加并行机制。
 7. **语言数据流：** 唯一持久化点是后端 `config.json` 的 `locale` 键（`cores/config.rs`），类型为 `cores/locale.rs` 的 `Locale` 枚举（经 specta 导出为 `"en" | "zh-CN"` 联合类型，禁止裸 `string` 或类型断言；`Locale::parse` 仅支持这两项，繁体一律归 `zh-CN`，加语言时同步改解析、`locales/*.yml` 与前端文案）。启动时后端先读持久化值、缺失则 `tauri_plugin_os::locale()` 探测并落库，再 `rust_i18n::set_locale`；前端在 `+layout.svelte` 挂载期后台经 `commands.getConfig` 水合配置（失败重试一次，不阻断首帧；刻意不在 `+layout.ts` 的 `load()` 里做——Tauri `invoke` 走 `window.fetch("ipc://...")`，接不进 SvelteKit 传给 `load` 的 `fetch`，且纯 SPA 下 `load` 相对首帧并无时序优势），再用 `config.locale` 调 Paraglide 的 `setLocale(locale, { reload: false })` 对齐（否则整页重载 + 语言闪烁）；用户切换时 `commands.updateConfig({ locale })` 先落盘再改内存（返回是否成功，调用方按返回值分支，禁止用状态相等代理推断），运行时 `rust_i18n` 由 `config::apply_runtime_effects` 统一同步，前端随后用 Paraglide 默认 `setLocale` 重载。更新命令 `restart` 桌面端永不结算（勿 `await`）、移动端返回错误走 `.failed()`；检查 120s 超时兜底，待重启态不被新检查覆盖。完整流程见第 10 章第 1 条。
 8. **初始化与订阅：** `initAppearance` 类“读存储 → 写内存 → 应用到 DOM”的初始化只允许跑一次，禁止进入跟踪型 `$effect`（init 读写同一批状态，被跟踪即形成“改动→重初始化”回路：未落盘的预览会被存量覆盖，字重滑块冻住即此因；必须包 `untrack`）。`app.html` 的首帧内联脚本是 init 在 JS 就绪前的同步镜像，两处键名与分支逻辑必须同步改。`localStorage` 存量键名即契约（改名即视为放弃老用户存量）：已发布的存量键冻结豁免，仅新增键统一加 `app.` 前缀，禁止裸通用名。
@@ -199,13 +201,13 @@ pnpm release                       # bumpp 联动升级三处版本号（package
 - shadcn-svelte 组件在引用时尽可能使用全名引用如： `AlertDialogTrigger` 避免使用 `AlertDialog.Trigger`（仅命名空间导出的原语如 `Tooltip` 无全名可引，予以豁免）
 - 数据请求：统一经 `src/libs/commands` 链式 API（`.value() / .result() / .success() / .failed()`，回调在 `await / value()` 之前链式注册）；禁止在组件内手写裸 `invoke`。
 - 样式：Tailwind v4 + `cn()` 合并类名，优先主题变量（`src/routes/layout.css`，Geist Variable 字体，`.dark` 暗色变体）；禁止散落硬编码色值（品牌 / 图标资产的多色静态色除外，主题变量不适用于多色 logo）。Prettier（`double` 双引号、分号、2 空格缩进、行宽 100、LF）+ ESLint（`js recommended`、`typescript-eslint recommended`、`svelte flat/recommended` + `flat/prettier`）。
-- 导入顺序强制：内建模块 → 第三方 → 类型 → `$assets` / `$hooks` → `$components` → `$libs` → 相对路径（SvelteKit 内建别名 `$app/*` 按第三方对待；顺序以 `prettier --check` 为准，机器通过即合规）。
+- 导入顺序强制：内建模块 → 第三方 → 类型 → `#assets` / `#hooks` → `#components` → `#libs` → 相对路径（SvelteKit 内建别名 `$app/*` 按第三方对待；顺序以 `prettier --check` 为准，机器通过即合规）。
 - TSDoc（`/** */`，短句保持单行）只写契约与非直观处；**不要在 TSDoc 里写代码示例**（prettier-jsdoc 会重排成散文，示例用 `//` 注释块）；描述别用英文小写标识符开头（`jsdocCapitalizeDescription` 会首字母大写，中文开头可规避）。
 - 示例：
 
 ```ts
 // ✅ 推荐：链式 API + 默认值回落
-import commands from "$libs/commands";
+import commands from "#libs/commands";
 const msg = await commands.greet(name).value("Default");
 const result = await commands.greet(name).result();
 await commands.updateConfig({ locale }).success(onOk).failed(onFail);
@@ -318,6 +320,7 @@ CI（`.github/workflows/ci.yml`）在 `main` 分支上按变更路径触发：
    - `.prettierrc` 的 `importOrderTypeScriptVersion` ↔ `package.json` 的 `typescript`
    - Tauri 插件前后端版本：`pnpm-lock.yaml` 的 npm 包 ↔ `Cargo.lock` 的 cargo 包（major.minor 一致，升级入口为 `pnpm update:all`，由 `scripts/check-version-sync.ts` 在 `pnpm check` 中校验）
    - `.prettierignore` ↔ `.gitignore` 中的构建产物（Prettier 不读 `.gitignore`）
+   - 路径别名：`package.json` 的 `imports` ↔ `tsconfig.aliases.json` 的 `paths`（由 `scripts/check-version-sync.ts` 在 `pnpm check` 中校验）
    - CI backend 的 `changes` 路径过滤器 ↔ 新增的后端配置文件
 5. **构建与忽略：** 构建产物（`target/`、`build/`、`.svelte-kit/`、`src-tauri/gen/`、`node_modules/`、`src/libs/i18n/paraglide/`）均已忽略；`bindings.ts` 虽是生成物但**需要提交**；`Cargo.lock` 需要提交；`static/icon.png` 为图标源文件（`pnpm tauri:icon` 生成各平台图标）。Vite 固定端口 `1420`，忽略监听 `src-tauri/**`，`clearScreen: false` 以保留 Rust 日志。主窗口初始 `visible: false`（防恢复闪烁），由 `cores/config.rs` 的 `setup` 按记住窗口配置恢复后统一 `show`，任何提前返回前必须显示，否则永久黑屏；仅恢复 `main` 窗口。
 
@@ -328,7 +331,7 @@ CI（`.github/workflows/ci.yml`）在 `main` 分支上按变更路径触发：
 1. **"裸 invoke 图快"：** 省掉 `libs/commands` 链式层会导致错误上报与类型契约丢失。—— 正确：先走链式 API（`.value() / .result() / .success()/.failed()`）。
 2. **"手改 bindings.ts 省事"：** 生成物手改后下次 `cargo test` 即被覆盖，且 CI 会校验同步失败。—— 正确：改 Rust 侧后重跑 `cargo test`。
 3. **"改完文案不用 compile"：** 跳过 `pnpm i18n:compile` 会导致 `build` / CI 失败。—— 正确：改 `messages/` 必跑 compile。
-4. **"别名复制一份方便"：** 往 `vite.config.ts` 复制 `kit.alias`、往 `package.json` 复制 Paraglide 参数必然漂移。—— 正确：各认唯一来源（`svelte.config.ts` / `paraglide.config.ts`）。
+4. **"别名复制一份方便"：** 往 `svelte.config.ts` / `vite.config.ts` 复制别名、往 `package.json` 复制 Paraglide 参数必然漂移。—— 正确：各认唯一来源（别名在 `package.json` 的 `imports` 字段 / Paraglide 编译选项在 `paraglide.config.ts`）。
 5. **"TSDoc 里写示例"：** prettier-jsdoc 会把示例重排成散文，`jsdocCapitalizeDescription` 会大写英文小写开头。—— 正确：示例用 `//` 注释块，描述用中文开头。
 6. **"提交前不跑 validate"：** CI 挂掉再修比本地修贵 5 倍，且钩子只看暂存文件。—— 正确：`pnpm format` + `pnpm validate`（+ 按需 `cargo test`）全绿再推。
 7. **"CLI 加组件一路回车"：** `shadcn-svelte add` 遇到已安装组件会要求覆写，一路确认会污染 `button` / `input` 等无关文件。—— 正确：逐项拒绝覆写，事后用 `git diff` 回退无关文件。

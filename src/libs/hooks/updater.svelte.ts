@@ -1,10 +1,10 @@
 // 应用更新的全局状态：检查中 / 下载中切页不丢失，关于页与根布局共享同一份状态。
 // 进度事件名与 Rust 侧 `cores::updater::APP_UPDATER_PROGRESS_EVENT` 会合，改名需两端同步。
-import commands from "$libs/commands";
-import { reportCommandFailure } from "$libs/commands/cores";
-import type { UpdateInfo } from "$libs/commands/types";
-import { m } from "$libs/i18n/paraglide/messages";
-import { toast } from "$libs/utils/toast";
+import commands from "#libs/commands";
+import { reportCommandFailure } from "#libs/commands/cores";
+import type { UpdateInfo } from "#libs/commands/types";
+import { m } from "#libs/i18n/paraglide/messages";
+import { toast } from "#libs/utils/toast";
 
 /** 下载进度事件名（见 Rust 侧同名常量） */
 const PROGRESS_EVENT = "app-updater-progress";

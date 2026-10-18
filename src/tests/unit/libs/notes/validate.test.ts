@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { MAX_NOTE_BODY_LEN, MAX_NOTE_TITLE_LEN, validateNote } from "$libs/notes/validate";
+import { MAX_NOTE_BODY_LEN, MAX_NOTE_TITLE_LEN, validateNote } from "#libs/notes/validate";
 
 describe("validateNote", () => {
   it("合法输入返回空", () => {

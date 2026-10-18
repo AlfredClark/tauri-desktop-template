@@ -1,12 +1,12 @@
 <script lang="ts">
   // 项目信息分组：主页 / 仓库 / 反馈外链行（数据驱动），零 props。
-  import GithubIcon from "$assets/icons/github-icon.svelte";
-  import { Button } from "$components/shadcn-svelte/button";
-  import CardRow from "$components/common/card-row.svelte";
-  import CardSection from "$components/common/card-section.svelte";
-  import { m } from "$libs/i18n/paraglide/messages";
-  import { toast } from "$libs/utils/toast";
-  import { openExternal } from "$libs/utils/opener";
+  import GithubIcon from "#assets/icons/github-icon.svelte";
+  import { Button } from "#components/shadcn-svelte/button";
+  import CardRow from "#components/common/card-row.svelte";
+  import CardSection from "#components/common/card-section.svelte";
+  import { m } from "#libs/i18n/paraglide/messages";
+  import { toast } from "#libs/utils/toast";
+  import { openExternal } from "#libs/utils/opener";
 
   /** 外链行配置：文案键 + 地址，三行同构故数据驱动 */
   const links: { label: string; url: string }[] = [

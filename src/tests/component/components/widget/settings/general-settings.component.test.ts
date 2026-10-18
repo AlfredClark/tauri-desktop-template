@@ -1,8 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { cleanup, render, screen, waitFor } from "@testing-library/svelte";
 import userEvent from "@testing-library/user-event";
-import type { CloseBehavior, Locale } from "$libs/commands/types";
-import Component from "$components/widget/settings/general-settings.svelte";
+import type { CloseBehavior, Locale } from "#libs/commands/types";
+import Component from "#components/widget/settings/general-settings.svelte";
 
 // jsdom 缺少指针捕获与滚动 API，bits-ui 下拉用得到，仅在本文件内就地补齐。
 if (!Element.prototype.hasPointerCapture) {
@@ -43,13 +43,13 @@ const configStateMock = vi.hoisted(() => ({
   },
 }));
 
-vi.mock("$hooks/config.svelte", () => ({
+vi.mock("#hooks/config.svelte", () => ({
   configState: configStateMock,
   updateConfig: updateConfigMock,
 }));
 
-vi.mock("$libs/i18n/paraglide/runtime", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("$libs/i18n/paraglide/runtime")>();
+vi.mock("#libs/i18n/paraglide/runtime", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("#libs/i18n/paraglide/runtime")>();
   return {
     ...actual,
     getLocale: () => configStateMock.value.locale,
@@ -57,7 +57,7 @@ vi.mock("$libs/i18n/paraglide/runtime", async (importOriginal) => {
   };
 });
 
-vi.mock("$libs/utils/toast", () => ({ toast: toastMocks }));
+vi.mock("#libs/utils/toast", () => ({ toast: toastMocks }));
 
 afterEach(() => {
   cleanup();

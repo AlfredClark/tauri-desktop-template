@@ -56,14 +56,14 @@ const toastMocks = vi.hoisted(() => ({
   dismiss: vi.fn(),
 }));
 
-vi.mock("$hooks/updater.svelte", () => ({
+vi.mock("#hooks/updater.svelte", () => ({
   updaterState: updaterStateMock,
   checkForUpdate: checkForUpdateMock,
   downloadAndInstall: downloadAndInstallMock,
   restartApp: restartAppMock,
 }));
 
-vi.mock("$libs/commands", () => ({
+vi.mock("#libs/commands", () => ({
   default: {
     getSystemInfo: getSystemInfoMock,
     openLogDir: openLogDirMock,
@@ -72,11 +72,11 @@ vi.mock("$libs/commands", () => ({
   },
 }));
 
-vi.mock("$libs/utils/opener", () => ({
+vi.mock("#libs/utils/opener", () => ({
   openExternal: openExternalMock,
 }));
 
-vi.mock("$libs/utils/toast", () => ({ toast: toastMocks }));
+vi.mock("#libs/utils/toast", () => ({ toast: toastMocks }));
 
 type FakeResult =
   { status: "ok"; data: unknown } | { status: "error"; error: { kind: string; message: string } };

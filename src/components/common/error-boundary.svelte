@@ -3,7 +3,7 @@
   // 后端 panic 由 cores/system.rs 的 panic 钩子处理，两者互不替代。
   import { error as logError } from "@tauri-apps/plugin-log";
   import type { Snippet } from "svelte";
-  import { Button } from "$components/shadcn-svelte/button";
+  import { Button } from "#components/shadcn-svelte/button";
   import {
     Card,
     CardContent,
@@ -11,7 +11,7 @@
     CardFooter,
     CardHeader,
     CardTitle,
-  } from "$components/shadcn-svelte/card";
+  } from "#components/shadcn-svelte/card";
 
   let { children }: { children: Snippet } = $props();
 

@@ -1,6 +1,6 @@
 <script lang="ts">
   import { AlertDialog as AlertDialogPrimitive } from "bits-ui";
-  import { cn } from "$libs/utils/shadcn-svelte.js";
+  import { cn } from "#libs/utils/shadcn-svelte.js";
 
   let {
     ref = $bindable(null),

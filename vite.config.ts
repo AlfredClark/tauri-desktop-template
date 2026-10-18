@@ -34,6 +34,6 @@ export default defineConfig(async () => ({
     watch: { ignored: ["**/src-tauri/**"] },
   },
 
-  // 路径别名由 svelte.config.ts 的 kit.alias 统一提供（@sveltejs/kit/vite 会注入到 Vite），
+  // 路径别名由 package.json 的 imports 字段统一提供（Node subpath imports，Vite 原生解析），
   // 此处不要再复制一份，避免两处声明漂移
 }));

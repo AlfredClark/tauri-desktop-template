@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { httpFetch } from "$libs/http/client";
-import { HttpError } from "$libs/http/types";
+import { httpFetch } from "#libs/http/client";
+import { HttpError } from "#libs/http/types";
 
 vi.mock("@tauri-apps/plugin-http", () => ({
   fetch: vi.fn(),

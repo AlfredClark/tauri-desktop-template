@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { MAX_SHORTCUT_LEN, normalizeShortcut, validateShortcut } from "$libs/shortcuts/validate";
+import { MAX_SHORTCUT_LEN, normalizeShortcut, validateShortcut } from "#libs/shortcuts/validate";
 
 describe("normalizeShortcut", () => {
   it("去空白并归一修饰键大小写", () => {

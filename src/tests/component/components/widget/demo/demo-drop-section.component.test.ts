@@ -24,14 +24,14 @@ const importDropMock = vi.hoisted(() => vi.fn());
 const toastMocks = vi.hoisted(() => ({ success: vi.fn(), error: vi.fn() }));
 const dragHandlers = vi.hoisted(() => [] as Array<(event: { payload: unknown }) => void>);
 
-vi.mock("$libs/commands", () => ({
+vi.mock("#libs/commands", () => ({
   default: {
     demoInspectDrop: inspectDropMock,
     demoImportDrop: importDropMock,
   },
 }));
 
-vi.mock("$libs/utils/toast", () => ({ toast: toastMocks }));
+vi.mock("#libs/utils/toast", () => ({ toast: toastMocks }));
 
 // 拖放订阅桩：收下 handler 供用例直接投递 `drop` 事件
 vi.mock("@tauri-apps/api/window", () => ({

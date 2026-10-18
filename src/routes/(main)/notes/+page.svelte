@@ -1,8 +1,8 @@
 <script lang="ts">
   // 笔记页组装：滚动壳 + 标题 + 笔记管理分组，无业务逻辑。
-  import { ScrollArea } from "$components/shadcn-svelte/scroll-area";
-  import NotesManager from "$components/widget/notes/notes-manager.svelte";
-  import { m } from "$libs/i18n/paraglide/messages";
+  import { ScrollArea } from "#components/shadcn-svelte/scroll-area";
+  import NotesManager from "#components/widget/notes/notes-manager.svelte";
+  import { m } from "#libs/i18n/paraglide/messages";
 </script>
 
 <!-- 页面级纵向滚动：内容超高时在视口内滚动；内层保持水平居中、垂直置顶 -->

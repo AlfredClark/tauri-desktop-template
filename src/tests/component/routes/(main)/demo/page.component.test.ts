@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { cleanup, render, screen } from "@testing-library/svelte";
 import userEvent from "@testing-library/user-event";
-import type { TimeInfo } from "$libs/http/types";
+import type { TimeInfo } from "#libs/http/types";
 import Page from "../../../../../routes/(main)/demo/+page.svelte";
 
 // bits-ui 组件在 jsdom 下缺失的浏览器 API，就地补齐（滚动壳的 ResizeObserver）。
@@ -38,7 +38,7 @@ const closeWindowMock = vi.hoisted(() => vi.fn());
 const fetchCurrentTimeMock = vi.hoisted(() => vi.fn());
 const toastMocks = vi.hoisted(() => ({ success: vi.fn(), error: vi.fn() }));
 
-vi.mock("$libs/commands", () => ({
+vi.mock("#libs/commands", () => ({
   default: {
     demoAppPaths: demoAppPathsMock,
     demoWriteFile: demoWriteFileMock,
@@ -58,32 +58,32 @@ vi.mock("$libs/commands", () => ({
   },
 }));
 
-vi.mock("$libs/commands/cores", () => ({
+vi.mock("#libs/commands/cores", () => ({
   reportCommandFailure: reportFailureMock,
 }));
 
-vi.mock("$hooks/is-mobile.svelte", () => ({
+vi.mock("#hooks/is-mobile.svelte", () => ({
   // 桌面宽度不断点，拖放分组正常渲染
   getSharedIsMobile: () => ({ current: false }),
 }));
 
-vi.mock("$libs/http/time", () => ({
+vi.mock("#libs/http/time", () => ({
   fetchCurrentTime: fetchCurrentTimeMock,
   resolveTimeZone: () => "Asia/Shanghai",
 }));
 
-vi.mock("$libs/shortcuts/shortcuts", () => ({
+vi.mock("#libs/shortcuts/shortcuts", () => ({
   CLOSE_WINDOW_SHORTCUT: "Ctrl+Alt+X",
   registerShortcut: registerShortcutMock,
   unregisterShortcut: unregisterShortcutMock,
   isShortcutRegistered: isShortcutRegisteredMock,
 }));
 
-vi.mock("$libs/utils/window-controls", () => ({
+vi.mock("#libs/utils/window-controls", () => ({
   closeWindow: closeWindowMock,
 }));
 
-vi.mock("$libs/utils/toast", () => ({ toast: toastMocks }));
+vi.mock("#libs/utils/toast", () => ({ toast: toastMocks }));
 
 // 拖放订阅桩：桌面环境订阅成功但不行内投递事件，只保挂载不崩
 vi.mock("@tauri-apps/api/window", () => ({

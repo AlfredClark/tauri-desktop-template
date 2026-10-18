@@ -2,7 +2,7 @@
 // 仅允许 `http(s)` 外链：`package.json` 的仓库地址是 `git+https://` 前缀，需先剥离再校验，
 // 其它 scheme（如 `file:` / `javascript:` / `mailto:`）一律拒绝，避免 `opener:default`
 // 能力被误用；后续需要邮箱/本地资源入口时再扩展白名单。
-import { reportCommandFailure } from "$libs/commands/cores";
+import { reportCommandFailure } from "#libs/commands/cores";
 
 /**
  * 在系统默认应用中打开外部链接，成功返回真

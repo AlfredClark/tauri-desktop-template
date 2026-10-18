@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { cleanup, render, screen } from "@testing-library/svelte";
-import Component from "$components/widget/demo/demo-path-section.svelte";
+import Component from "#components/widget/demo/demo-path-section.svelte";
 
 // 纯替身：目录解析命令、失败上报、提示全部 mock，
 // 只验证目录卡片的接线——渲染标题、成功展示三处目录、失败提示并保持占位。
@@ -29,17 +29,17 @@ function fakeCommand(result: FakeResult): {
   return chain;
 }
 
-vi.mock("$libs/commands", () => ({
+vi.mock("#libs/commands", () => ({
   default: {
     demoAppPaths: demoAppPathsMock,
   },
 }));
 
-vi.mock("$libs/commands/cores", () => ({
+vi.mock("#libs/commands/cores", () => ({
   reportCommandFailure: reportFailureMock,
 }));
 
-vi.mock("$libs/utils/toast", () => ({ toast: toastMocks }));
+vi.mock("#libs/utils/toast", () => ({ toast: toastMocks }));
 
 const paths = { app_data: "/data/app", app_cache: "/data/cache", temp: "/tmp/app" };
 

@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/svelte";
 import userEvent from "@testing-library/user-event";
-import Component from "$components/widget/settings/font-family-picker.svelte";
+import Component from "#components/widget/settings/font-family-picker.svelte";
 
 // jsdom 缺少指针捕获与滚动 API，bits-ui 弹窗用得到，仅在本文件内就地补齐。
 if (!Element.prototype.hasPointerCapture) {
@@ -47,7 +47,7 @@ const setFontFamilyMock = vi.hoisted(() => vi.fn());
 const fontStateMock = vi.hoisted(() => ({ family: "system" }));
 const getSystemFontsMock = vi.hoisted(() => vi.fn());
 
-vi.mock("$hooks/appearance.svelte", () => ({
+vi.mock("#hooks/appearance.svelte", () => ({
   DEFAULT_FONT_FAMILY: "system",
   fontState: fontStateMock,
   buildFontStack: (family: string) =>

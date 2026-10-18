@@ -18,6 +18,12 @@
     "template"
   ],
   "type": "module",
+  "imports": {
+    "#assets/*": "./src/assets/*",
+    "#components/*": "./src/components/*",
+    "#hooks/*": "./src/libs/hooks/*",
+    "#libs/*": "./src/libs/*"
+  },
   "packageManager": "pnpm@12.13.0",
   "engines": {
     "node": ">=24.0.0"

@@ -8,7 +8,7 @@ import {
   onWindowResized,
   toggleAlwaysOnTopWindow,
   toggleMaximizeWindow,
-} from "$libs/utils/window-controls";
+} from "#libs/utils/window-controls";
 
 // 节点环境无 Tauri 运行时，全部分支应回落默认值且不抛错。
 describe("window-controls", () => {

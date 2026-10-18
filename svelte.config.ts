@@ -10,13 +10,7 @@ const config: import("@sveltejs/kit").Config = {
     adapter: adapter({
       fallback: "index.html",
     }),
-    // 路径别名
-    alias: {
-      $assets: "./src/assets",
-      $components: "./src/components",
-      $hooks: "./src/libs/hooks",
-      $libs: "./src/libs",
-    },
+    // 路径别名（#assets / #components / #hooks / #libs）统一在 package.json 的 imports 字段声明
   },
 };
 

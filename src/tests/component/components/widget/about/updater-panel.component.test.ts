@@ -25,7 +25,7 @@ const checkForUpdateMock = vi.hoisted(() => vi.fn());
 const downloadAndInstallMock = vi.hoisted(() => vi.fn());
 const restartAppMock = vi.hoisted(() => vi.fn());
 
-vi.mock("$hooks/updater.svelte", () => ({
+vi.mock("#hooks/updater.svelte", () => ({
   updaterState: updaterStateMock,
   checkForUpdate: checkForUpdateMock,
   downloadAndInstall: downloadAndInstallMock,

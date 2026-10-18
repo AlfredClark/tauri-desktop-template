@@ -4,8 +4,8 @@ import { defineConfig } from "vitest/config";
 import tauriConf from "./src-tauri/tauri.conf.json" with { type: "json" };
 import pkg from "./package.json" with { type: "json" };
 
-// 单元测试配置：复用 SvelteKit 插件以继承 svelte.config.ts 的路径别名与 Svelte 编译能力，
-// 因此这里不需要再抄一份 resolve.alias。
+// 单元测试配置：复用 SvelteKit 插件以获得 Svelte 编译能力；路径别名（#assets 等）
+// 由 package.json 的 imports 字段提供、Vite 原生解析，因此这里不需要再抄一份 resolve.alias。
 // 用两个 project 隔离环境：纯逻辑跑 node（不加 browser 解析条件，否则 `$app/*`
 // 客户端模块会误判 BROWSER 而崩）；组件测试跑 jsdom + svelteTesting。
 // 测试集中在 src/tests 下按源路径镜像：unit 放纯逻辑，component 放组件（目录已隔离，无需 exclude）。

@@ -27,12 +27,12 @@
 
 <script lang="ts">
   import { mergeProps } from "bits-ui";
-  import * as Tooltip from "$components/shadcn-svelte/tooltip/index.js";
+  import * as Tooltip from "#components/shadcn-svelte/tooltip/index.js";
   import {
     cn,
     type WithElementRef,
     type WithoutChildrenOrChild,
-  } from "$libs/utils/shadcn-svelte.js";
+  } from "#libs/utils/shadcn-svelte.js";
   import { useSidebar } from "./context.svelte.js";
   import type { ComponentProps, Snippet } from "svelte";
   import type { HTMLAttributes } from "svelte/elements";

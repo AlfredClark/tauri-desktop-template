@@ -23,7 +23,7 @@
 </script>
 
 <script lang="ts">
-  import { cn, type WithElementRef } from "$libs/utils/shadcn-svelte.js";
+  import { cn, type WithElementRef } from "#libs/utils/shadcn-svelte.js";
   import type { HTMLAnchorAttributes } from "svelte/elements";
 
   let {

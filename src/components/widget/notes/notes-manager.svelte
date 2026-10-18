@@ -3,16 +3,16 @@
   // 校验失败 toast 提示（键与 validate 同源）；删除经通用确认弹窗；时间展示转本地时区。
   import { onMount } from "svelte";
   import { SvelteMap } from "svelte/reactivity";
-  import ConfirmDialog from "$components/common/confirm-dialog.svelte";
-  import { Button } from "$components/shadcn-svelte/button";
-  import { Input } from "$components/shadcn-svelte/input";
-  import { Textarea } from "$components/shadcn-svelte/textarea";
-  import CardSection from "$components/common/card-section.svelte";
-  import { createNote, deleteNote, listNotes, NOTES_PAGE_SIZE, updateNote } from "$libs/notes/db";
-  import type { Note, NoteValidationError } from "$libs/notes/types";
-  import { validateNote } from "$libs/notes/validate";
-  import { m } from "$libs/i18n/paraglide/messages";
-  import { toast } from "$libs/utils/toast";
+  import ConfirmDialog from "#components/common/confirm-dialog.svelte";
+  import { Button } from "#components/shadcn-svelte/button";
+  import { Input } from "#components/shadcn-svelte/input";
+  import { Textarea } from "#components/shadcn-svelte/textarea";
+  import CardSection from "#components/common/card-section.svelte";
+  import { createNote, deleteNote, listNotes, NOTES_PAGE_SIZE, updateNote } from "#libs/notes/db";
+  import type { Note, NoteValidationError } from "#libs/notes/types";
+  import { validateNote } from "#libs/notes/validate";
+  import { m } from "#libs/i18n/paraglide/messages";
+  import { toast } from "#libs/utils/toast";
 
   /** 列表 + 新增草稿 + 行内编辑态 + 删除确认，全页私有（切页不保留） */
   let notes = $state<Note[]>([]);

@@ -1,12 +1,12 @@
 <script lang="ts">
   // 演示：剪贴板分组，输入框写纯文本、按钮读回显，空剪贴板按占位展示，零 props。
-  import { Button } from "$components/shadcn-svelte/button";
-  import { Input } from "$components/shadcn-svelte/input";
-  import CardRow from "$components/common/card-row.svelte";
-  import CardSection from "$components/common/card-section.svelte";
-  import commands from "$libs/commands";
-  import { m } from "$libs/i18n/paraglide/messages";
-  import { toast } from "$libs/utils/toast";
+  import { Button } from "#components/shadcn-svelte/button";
+  import { Input } from "#components/shadcn-svelte/input";
+  import CardRow from "#components/common/card-row.svelte";
+  import CardSection from "#components/common/card-section.svelte";
+  import commands from "#libs/commands";
+  import { m } from "#libs/i18n/paraglide/messages";
+  import { toast } from "#libs/utils/toast";
 
   /** 待写入剪贴板的输入文本，页面私有状态 */
   let draft = $state("");

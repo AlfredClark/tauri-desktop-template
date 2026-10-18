@@ -1,11 +1,11 @@
 <script lang="ts">
   // 演示：系统对话框分组，选文件 / 选目录 / 存文件三行，结果行内回显，取消是正常分支，零 props。
-  import { Button } from "$components/shadcn-svelte/button";
-  import CardRow from "$components/common/card-row.svelte";
-  import CardSection from "$components/common/card-section.svelte";
-  import commands from "$libs/commands";
-  import { m } from "$libs/i18n/paraglide/messages";
-  import { toast } from "$libs/utils/toast";
+  import { Button } from "#components/shadcn-svelte/button";
+  import CardRow from "#components/common/card-row.svelte";
+  import CardSection from "#components/common/card-section.svelte";
+  import commands from "#libs/commands";
+  import { m } from "#libs/i18n/paraglide/messages";
+  import { toast } from "#libs/utils/toast";
 
   /** 三行回显：选中为路径，取消为取消文案，失败留空（toast 已提示） */
   let pickedFile = $state<string | null>(null);

@@ -1,6 +1,6 @@
 // 笔记数据访问：经 `plugin-sql` 直连 `notes.db` 的最小 CRUD，全参数化防注入。
 // 连接单例模块级缓存；建表由后端迁移保证，此处不写 DDL。
-import type { Note } from "$libs/notes/types";
+import type { Note } from "#libs/notes/types";
 
 /** 数据库连接串：与后端迁移注册的 `NOTES_DB_URL` 同值，改名两边同步 */
 const NOTES_DB_URL = "sqlite:notes.db";

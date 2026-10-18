@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { handleDeepLinkUrl, isDeepLink, routeForUrl } from "$hooks/deep-link.svelte";
+import { handleDeepLinkUrl, isDeepLink, routeForUrl } from "#hooks/deep-link.svelte";
 
 const gotoMock = vi.hoisted(() => vi.fn());
 const toastMocks = vi.hoisted(() => ({
@@ -8,7 +8,7 @@ const toastMocks = vi.hoisted(() => ({
 }));
 
 vi.mock("$app/navigation", () => ({ goto: gotoMock }));
-vi.mock("$libs/utils/toast", () => ({ toast: toastMocks }));
+vi.mock("#libs/utils/toast", () => ({ toast: toastMocks }));
 
 beforeEach(() => {
   vi.clearAllMocks();

@@ -10,8 +10,8 @@ import type {
   SystemInfo,
   UpdateInfo,
   commands as rawCommands,
-} from "$libs/commands/bindings";
-import type { EnhancedCommand } from "$libs/commands/cores";
+} from "#libs/commands/bindings";
+import type { EnhancedCommand } from "#libs/commands/cores";
 
 /** 命令的结算结果：`ok` 分支携带数据，`error` 分支携带失败信息 */
 export type AnyResult<D = unknown, E = unknown> =

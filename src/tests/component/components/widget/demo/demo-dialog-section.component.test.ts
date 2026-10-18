@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { cleanup, render, screen } from "@testing-library/svelte";
 import userEvent from "@testing-library/user-event";
-import Component from "$components/widget/demo/demo-dialog-section.svelte";
+import Component from "#components/widget/demo/demo-dialog-section.svelte";
 
 // 纯替身：三个系统对话框命令与提示全部 mock，
 // 只验证对话框卡片的接线——渲染、选文件回显、取消文案、选目录回显、存文件回显、失败提示。
@@ -35,7 +35,7 @@ function fakeCommand(result: FakeResult): {
   return chain;
 }
 
-vi.mock("$libs/commands", () => ({
+vi.mock("#libs/commands", () => ({
   default: {
     demoPickFile: demoPickFileMock,
     demoPickFolder: demoPickFolderMock,
@@ -43,7 +43,7 @@ vi.mock("$libs/commands", () => ({
   },
 }));
 
-vi.mock("$libs/utils/toast", () => ({ toast: toastMocks }));
+vi.mock("#libs/utils/toast", () => ({ toast: toastMocks }));
 
 beforeEach(() => {
   vi.clearAllMocks();

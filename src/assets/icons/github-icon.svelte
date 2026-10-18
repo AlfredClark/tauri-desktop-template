@@ -1,7 +1,7 @@
 <script lang="ts">
   // GitHub 标识：内联单色 mark，`currentColor` 跟随文字颜色，明暗主题自适应；
   // 纯装饰，`aria-hidden` 不进入可访问名称。
-  import { cn } from "$libs/utils/shadcn-svelte";
+  import { cn } from "#libs/utils/shadcn-svelte";
 
   let { class: className = "" }: { class?: string } = $props();
 </script>

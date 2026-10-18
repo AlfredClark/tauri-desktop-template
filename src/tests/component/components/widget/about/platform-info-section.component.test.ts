@@ -1,20 +1,20 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { cleanup, render, screen } from "@testing-library/svelte";
-import { toast } from "$libs/utils/toast";
+import { toast } from "#libs/utils/toast";
 import PlatformInfoSection from "../../../../../components/widget/about/platform-info-section.svelte";
 
 const getSystemInfoMock = vi.hoisted(() => vi.fn());
 const reportFailureMock = vi.hoisted(() => vi.fn());
 
-vi.mock("$libs/commands", () => ({
+vi.mock("#libs/commands", () => ({
   default: { getSystemInfo: getSystemInfoMock },
 }));
 
-vi.mock("$libs/commands/cores", () => ({
+vi.mock("#libs/commands/cores", () => ({
   reportCommandFailure: reportFailureMock,
 }));
 
-vi.mock("$libs/utils/toast", () => ({
+vi.mock("#libs/utils/toast", () => ({
   toast: { error: vi.fn() },
 }));
 

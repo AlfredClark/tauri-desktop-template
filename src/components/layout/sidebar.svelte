@@ -1,7 +1,7 @@
 <script lang="ts">
   // 侧边栏布局：左侧全高侧边栏 + 右侧内容列（标题栏 / 内容 / 底边），窗口逻辑复用 TitleBar。
   import type { Snippet } from "svelte";
-  import AppIcon from "$assets/icons/app-icon.svelte";
+  import AppIcon from "#assets/icons/app-icon.svelte";
   import {
     Sidebar,
     SidebarContent,
@@ -9,11 +9,11 @@
     SidebarInset,
     SidebarProvider,
     SidebarTrigger,
-  } from "$components/shadcn-svelte/sidebar";
-  import Copyright from "$components/layout/parts/copyright.svelte";
-  import SideNavBar from "$components/layout/parts/side-nav-bar.svelte";
-  import TitleBar from "$components/layout/parts/title-bar.svelte";
-  import { cn } from "$libs/utils/shadcn-svelte";
+  } from "#components/shadcn-svelte/sidebar";
+  import Copyright from "#components/layout/parts/copyright.svelte";
+  import SideNavBar from "#components/layout/parts/side-nav-bar.svelte";
+  import TitleBar from "#components/layout/parts/title-bar.svelte";
+  import { cn } from "#libs/utils/shadcn-svelte";
 
   let { children }: { children: Snippet } = $props();
 </script>

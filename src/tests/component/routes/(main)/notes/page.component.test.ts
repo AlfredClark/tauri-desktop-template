@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { cleanup, render, screen } from "@testing-library/svelte";
-import type { Note } from "$libs/notes/types";
+import type { Note } from "#libs/notes/types";
 import Page from "../../../../../routes/(main)/notes/+page.svelte";
 
 // bits-ui 组件在 jsdom 下缺失的浏览器 API，就地补齐（滚动壳的 ResizeObserver）。
@@ -19,16 +19,16 @@ const updateNoteMock = vi.hoisted(() => vi.fn());
 const deleteNoteMock = vi.hoisted(() => vi.fn());
 const toastMocks = vi.hoisted(() => ({ success: vi.fn(), error: vi.fn() }));
 
-vi.mock("$libs/notes/db", async (importOriginal) => ({
+vi.mock("#libs/notes/db", async (importOriginal) => ({
   // 真值（NOTES_PAGE_SIZE 等常量）走原模块，仅数据函数用替身
-  ...(await importOriginal<typeof import("$libs/notes/db")>()),
+  ...(await importOriginal<typeof import("#libs/notes/db")>()),
   listNotes: listNotesMock,
   createNote: createNoteMock,
   updateNote: updateNoteMock,
   deleteNote: deleteNoteMock,
 }));
 
-vi.mock("$libs/utils/toast", () => ({ toast: toastMocks }));
+vi.mock("#libs/utils/toast", () => ({ toast: toastMocks }));
 
 const row: Note = {
   id: 1,

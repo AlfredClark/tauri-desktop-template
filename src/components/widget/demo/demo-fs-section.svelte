@@ -1,11 +1,11 @@
 <script lang="ts">
   // 演示：沙盒文件分组，固定读写 demo.txt，结果行内回显、成败 toast，零 props。
-  import { Button } from "$components/shadcn-svelte/button";
-  import CardRow from "$components/common/card-row.svelte";
-  import CardSection from "$components/common/card-section.svelte";
-  import commands from "$libs/commands";
-  import { m } from "$libs/i18n/paraglide/messages";
-  import { toast } from "$libs/utils/toast";
+  import { Button } from "#components/shadcn-svelte/button";
+  import CardRow from "#components/common/card-row.svelte";
+  import CardSection from "#components/common/card-section.svelte";
+  import commands from "#libs/commands";
+  import { m } from "#libs/i18n/paraglide/messages";
+  import { toast } from "#libs/utils/toast";
 
   /** 演示文件名：前后端约定固定值，不开放输入，避免路径校验分支散落到演示页 */
   const DEMO_FILENAME = "demo.txt";

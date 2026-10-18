@@ -6,10 +6,10 @@
   import { resolve } from "$app/paths";
   import { page } from "$app/state";
   import { mergeProps } from "bits-ui";
-  import { buttonVariants } from "$components/shadcn-svelte/button";
-  import * as Tooltip from "$components/shadcn-svelte/tooltip/index.js";
-  import { NAV_TABS, isNavTabPath, resolveNavTab } from "$libs/navigation/nav-tabs";
-  import { cn } from "$libs/utils/shadcn-svelte";
+  import { buttonVariants } from "#components/shadcn-svelte/button";
+  import * as Tooltip from "#components/shadcn-svelte/tooltip/index.js";
+  import { NAV_TABS, isNavTabPath, resolveNavTab } from "#libs/navigation/nav-tabs";
+  import { cn } from "#libs/utils/shadcn-svelte";
 
   // compact 为 true 时只渲染图标：仪表盘窄屏图标栏使用，标签走 tooltip 展示
   let { compact = false }: { compact?: boolean } = $props();

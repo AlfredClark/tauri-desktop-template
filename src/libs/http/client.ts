@@ -1,7 +1,7 @@
 // 通用请求封装：超时熔断 + 有限重试 + 错误归一，前端网络出口唯一收敛点。
 // 插件包动态导入：浏览器预览与 node 单测下 import 本体不抛错，失败按网络错误归一。
-import type { HttpErrorKind } from "$libs/http/types";
-import { HttpError } from "$libs/http/types";
+import type { HttpErrorKind } from "#libs/http/types";
+import { HttpError } from "#libs/http/types";
 
 /** 默认总超时；演示接口 RTT 毫秒级，10s 足够区分真故障与慢网络 */
 export const DEFAULT_TIMEOUT_MS = 10_000;

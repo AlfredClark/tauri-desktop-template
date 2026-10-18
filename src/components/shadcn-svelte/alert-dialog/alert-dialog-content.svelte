@@ -1,6 +1,6 @@
 <script lang="ts">
   import { AlertDialog as AlertDialogPrimitive } from "bits-ui";
-  import { cn, type WithoutChild, type WithoutChildrenOrChild } from "$libs/utils/shadcn-svelte.js";
+  import { cn, type WithoutChild, type WithoutChildrenOrChild } from "#libs/utils/shadcn-svelte.js";
   import AlertDialogOverlay from "./alert-dialog-overlay.svelte";
   import AlertDialogPortal from "./alert-dialog-portal.svelte";
   import type { ComponentProps } from "svelte";

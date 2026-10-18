@@ -1,19 +1,19 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { cleanup, render, screen } from "@testing-library/svelte";
 import userEvent from "@testing-library/user-event";
-import type { TimeInfo } from "$libs/http/types";
-import Component from "$components/widget/demo/demo-http-section.svelte";
+import type { TimeInfo } from "#libs/http/types";
+import Component from "#components/widget/demo/demo-http-section.svelte";
 
 // 纯替身：时间接口、提示全部 mock，只验证取数接线——点击取数、成功展示、失败提示。
 const fetchCurrentTimeMock = vi.hoisted(() => vi.fn());
 const toastMocks = vi.hoisted(() => ({ success: vi.fn(), error: vi.fn() }));
 
-vi.mock("$libs/http/time", () => ({
+vi.mock("#libs/http/time", () => ({
   fetchCurrentTime: fetchCurrentTimeMock,
   resolveTimeZone: () => "Asia/Shanghai",
 }));
 
-vi.mock("$libs/utils/toast", () => ({ toast: toastMocks }));
+vi.mock("#libs/utils/toast", () => ({ toast: toastMocks }));
 
 const current: TimeInfo = {
   dateTime: "2026-09-26T13:06:48",

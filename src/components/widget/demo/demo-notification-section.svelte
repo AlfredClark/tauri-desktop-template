@@ -1,11 +1,11 @@
 <script lang="ts">
   // 演示：系统通知分组，一键发送固定文案通知，标题正文取 i18n 保证双语，零 props。
-  import { Button } from "$components/shadcn-svelte/button";
-  import CardRow from "$components/common/card-row.svelte";
-  import CardSection from "$components/common/card-section.svelte";
-  import commands from "$libs/commands";
-  import { m } from "$libs/i18n/paraglide/messages";
-  import { toast } from "$libs/utils/toast";
+  import { Button } from "#components/shadcn-svelte/button";
+  import CardRow from "#components/common/card-row.svelte";
+  import CardSection from "#components/common/card-section.svelte";
+  import commands from "#libs/commands";
+  import { m } from "#libs/i18n/paraglide/messages";
+  import { toast } from "#libs/utils/toast";
 
   /** 发送进行中时禁用按钮，避免重复通知刷屏 */
   let busy = $state(false);

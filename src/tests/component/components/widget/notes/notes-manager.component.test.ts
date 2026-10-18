@@ -1,8 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { cleanup, render, screen } from "@testing-library/svelte";
 import userEvent from "@testing-library/user-event";
-import type { Note } from "$libs/notes/types";
-import Component from "$components/widget/notes/notes-manager.svelte";
+import type { Note } from "#libs/notes/types";
+import Component from "#components/widget/notes/notes-manager.svelte";
 
 // 纯替身：数据层、提示全部 mock，只验证管理接线——增删改查触发与空态分支。
 const listNotesMock = vi.hoisted(() => vi.fn());
@@ -11,16 +11,16 @@ const updateNoteMock = vi.hoisted(() => vi.fn());
 const deleteNoteMock = vi.hoisted(() => vi.fn());
 const toastMocks = vi.hoisted(() => ({ success: vi.fn(), error: vi.fn() }));
 
-vi.mock("$libs/notes/db", async (importOriginal) => ({
+vi.mock("#libs/notes/db", async (importOriginal) => ({
   // 真值（NOTES_PAGE_SIZE 等常量）走原模块，仅数据函数用替身
-  ...(await importOriginal<typeof import("$libs/notes/db")>()),
+  ...(await importOriginal<typeof import("#libs/notes/db")>()),
   listNotes: listNotesMock,
   createNote: createNoteMock,
   updateNote: updateNoteMock,
   deleteNote: deleteNoteMock,
 }));
 
-vi.mock("$libs/utils/toast", () => ({ toast: toastMocks }));
+vi.mock("#libs/utils/toast", () => ({ toast: toastMocks }));
 
 const row: Note = {
   id: 1,

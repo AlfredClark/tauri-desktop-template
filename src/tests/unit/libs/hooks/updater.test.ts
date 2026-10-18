@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import commands from "$libs/commands";
-import type { AnyResult, UpdateInfo } from "$libs/commands/types";
+import commands from "#libs/commands";
+import type { AnyResult, UpdateInfo } from "#libs/commands/types";
 import {
   __resetRestartForTests,
   checkForUpdate,
@@ -8,17 +8,17 @@ import {
   maybeAutoCheckForUpdate,
   restartApp,
   updaterState,
-} from "$hooks/updater.svelte";
+} from "#hooks/updater.svelte";
 
-vi.mock("$libs/commands", () => ({
+vi.mock("#libs/commands", () => ({
   default: { checkUpdate: vi.fn(), downloadAndInstallUpdate: vi.fn(), restartApp: vi.fn() },
 }));
 
-vi.mock("$libs/utils/toast", () => ({
+vi.mock("#libs/utils/toast", () => ({
   toast: { message: vi.fn(), info: vi.fn(), error: vi.fn() },
 }));
 
-import { toast as toastMock } from "$libs/utils/toast";
+import { toast as toastMock } from "#libs/utils/toast";
 
 const latest: UpdateInfo = { version: "0.2.0", current_version: "0.1.0", body: "notes" };
 

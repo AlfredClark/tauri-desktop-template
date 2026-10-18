@@ -1,12 +1,12 @@
 <script lang="ts">
   // 演示：网络请求分组，经 libs/http 从 timeapi.io 取设备时区当前时间并展示，零 props。
-  import { Button } from "$components/shadcn-svelte/button";
-  import CardRow from "$components/common/card-row.svelte";
-  import CardSection from "$components/common/card-section.svelte";
-  import { fetchCurrentTime, resolveTimeZone } from "$libs/http/time";
-  import type { TimeInfo } from "$libs/http/types";
-  import { m } from "$libs/i18n/paraglide/messages";
-  import { toast } from "$libs/utils/toast";
+  import { Button } from "#components/shadcn-svelte/button";
+  import CardRow from "#components/common/card-row.svelte";
+  import CardSection from "#components/common/card-section.svelte";
+  import { fetchCurrentTime, resolveTimeZone } from "#libs/http/time";
+  import type { TimeInfo } from "#libs/http/types";
+  import { m } from "#libs/i18n/paraglide/messages";
+  import { toast } from "#libs/utils/toast";
 
   /** 请求在途时禁用按钮，避免并发刷接口 */
   let busy = $state(false);

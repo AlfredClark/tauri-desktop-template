@@ -21,9 +21,9 @@
     "<BUILTIN_MODULES>",
     "<THIRD_PARTY_MODULES>",
     "<TYPES>",
-    "^\\$(assets|hooks)(/.*)?$",
-    "^\\$(components)(/.*)?$",
-    "^\\$(libs)(/.*)?$",
+    "^#(assets|hooks)(/.*)?$",
+    "^#(components)(/.*)?$",
+    "^#(libs)(/.*)?$",
     "^[.]"
   ],
   "importOrderTypeScriptVersion": "6.0.3",

@@ -1,8 +1,8 @@
 // timeapi.io 时间客户端：取设备时区当前时间，返回体经类型守卫后才交出。
 // 出网域与 CSP 已在后端放行 `https://timeapi.io/*`，此处只拼业务路径。
-import { httpFetch } from "$libs/http/client";
-import { HttpError } from "$libs/http/types";
-import type { TimeInfo } from "$libs/http/types";
+import { httpFetch } from "#libs/http/client";
+import { HttpError } from "#libs/http/types";
+import type { TimeInfo } from "#libs/http/types";
 
 /** 时间接口根路径，时区经查询参数传入 */
 const TIME_API_BASE = "https://timeapi.io/api/time/current/zone";

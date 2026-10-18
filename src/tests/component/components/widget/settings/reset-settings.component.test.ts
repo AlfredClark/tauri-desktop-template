@@ -1,8 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { cleanup, render, screen } from "@testing-library/svelte";
 import userEvent from "@testing-library/user-event";
-import type { Config_Serialize } from "$libs/commands/types";
-import Component from "$components/widget/settings/reset-settings.svelte";
+import type { Config_Serialize } from "#libs/commands/types";
+import Component from "#components/widget/settings/reset-settings.svelte";
 
 // bits-ui 组件在 jsdom 下缺失的浏览器 API，就地补齐（同设置页测试）。
 if (!Element.prototype.hasPointerCapture) {
@@ -40,7 +40,7 @@ const defaults: Config_Serialize = {
   schema_version: 1,
 };
 
-vi.mock("$hooks/appearance.svelte", () => ({
+vi.mock("#hooks/appearance.svelte", () => ({
   resetAppearance: resetAppearanceMock,
 }));
 
@@ -48,13 +48,13 @@ vi.mock("mode-watcher", () => ({
   setMode: setModeMock,
 }));
 
-vi.mock("$hooks/config.svelte", () => ({
+vi.mock("#hooks/config.svelte", () => ({
   configState: configStateMock,
   resetConfig: resetConfigMock,
 }));
 
-vi.mock("$libs/i18n/paraglide/runtime", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("$libs/i18n/paraglide/runtime")>();
+vi.mock("#libs/i18n/paraglide/runtime", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("#libs/i18n/paraglide/runtime")>();
   return {
     ...actual,
     getLocale: () => configStateMock.value?.locale ?? "en",
@@ -62,7 +62,7 @@ vi.mock("$libs/i18n/paraglide/runtime", async (importOriginal) => {
   };
 });
 
-vi.mock("$libs/utils/toast", () => ({ toast: toastMocks }));
+vi.mock("#libs/utils/toast", () => ({ toast: toastMocks }));
 
 beforeEach(() => {
   vi.clearAllMocks();

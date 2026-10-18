@@ -1,12 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { HttpError } from "$libs/http/types";
-import { fetchCurrentTime, resolveTimeZone } from "$libs/http/time";
+import { HttpError } from "#libs/http/types";
+import { fetchCurrentTime, resolveTimeZone } from "#libs/http/time";
 
-vi.mock("$libs/http/client", () => ({
+vi.mock("#libs/http/client", () => ({
   httpFetch: vi.fn(),
 }));
 
-import { httpFetch as httpFetchMock } from "$libs/http/client";
+import { httpFetch as httpFetchMock } from "#libs/http/client";
 
 const payload = {
   dateTime: "2026-09-26T13:06:48",

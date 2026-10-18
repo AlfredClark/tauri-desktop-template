@@ -9,7 +9,7 @@
     AlertDialogFooter,
     AlertDialogHeader,
     AlertDialogTitle,
-  } from "$components/shadcn-svelte/alert-dialog";
+  } from "#components/shadcn-svelte/alert-dialog";
 
   let {
     open = $bindable(false),

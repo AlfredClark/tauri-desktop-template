@@ -47,6 +47,7 @@ jobs:
               - 'svelte.config.ts'
               - 'tsconfig.json'
               - 'tsconfig.node.json'
+              - 'tsconfig.aliases.json'
               - 'eslint.config.ts'
               - 'components.json'
               - 'scripts/**'

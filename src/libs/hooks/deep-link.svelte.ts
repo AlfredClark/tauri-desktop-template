@@ -9,9 +9,9 @@ import { listen } from "@tauri-apps/api/event";
 import { getCurrent, onOpenUrl } from "@tauri-apps/plugin-deep-link";
 import { SvelteMap } from "svelte/reactivity";
 import type { UnlistenFn } from "@tauri-apps/api/event";
-import { reportCommandFailure } from "$libs/commands/cores";
-import { m } from "$libs/i18n/paraglide/messages";
-import { toast } from "$libs/utils/toast";
+import { reportCommandFailure } from "#libs/commands/cores";
+import { m } from "#libs/i18n/paraglide/messages";
+import { toast } from "#libs/utils/toast";
 
 /** 演示用协议 scheme，基于模板开发时按需自定义 */
 export const DEEP_LINK_SCHEME = "tdt";

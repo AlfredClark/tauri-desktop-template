@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { cleanup, render, screen } from "@testing-library/svelte";
 import userEvent from "@testing-library/user-event";
-import Component from "$components/widget/demo/demo-notification-section.svelte";
+import Component from "#components/widget/demo/demo-notification-section.svelte";
 
 // 纯替身：通知发送命令与提示全部 mock，
 // 只验证通知卡片的接线——渲染、发送成功提示、发送失败提示。
@@ -33,13 +33,13 @@ function fakeCommand(result: FakeResult): {
   return chain;
 }
 
-vi.mock("$libs/commands", () => ({
+vi.mock("#libs/commands", () => ({
   default: {
     demoNotify: demoNotifyMock,
   },
 }));
 
-vi.mock("$libs/utils/toast", () => ({ toast: toastMocks }));
+vi.mock("#libs/utils/toast", () => ({ toast: toastMocks }));
 
 beforeEach(() => {
   vi.clearAllMocks();

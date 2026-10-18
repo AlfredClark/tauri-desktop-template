@@ -1,11 +1,11 @@
 <script lang="ts">
   // 诊断分组：打开日志/配置目录 + 复制系统信息，各行独立命令、失败 toast，零 props。
-  import { Button } from "$components/shadcn-svelte/button";
-  import CardRow from "$components/common/card-row.svelte";
-  import CardSection from "$components/common/card-section.svelte";
-  import commands from "$libs/commands";
-  import { m } from "$libs/i18n/paraglide/messages";
-  import { toast } from "$libs/utils/toast";
+  import { Button } from "#components/shadcn-svelte/button";
+  import CardRow from "#components/common/card-row.svelte";
+  import CardSection from "#components/common/card-section.svelte";
+  import commands from "#libs/commands";
+  import { m } from "#libs/i18n/paraglide/messages";
+  import { toast } from "#libs/utils/toast";
 
   /** 命令在途时禁用三按钮，避免重复打开多个文件管理器窗口 */
   let busy = $state(false);

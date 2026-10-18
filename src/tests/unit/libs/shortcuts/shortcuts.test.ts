@@ -3,7 +3,7 @@ import {
   isShortcutRegistered,
   registerShortcut,
   unregisterShortcut,
-} from "$libs/shortcuts/shortcuts";
+} from "#libs/shortcuts/shortcuts";
 
 // 薄封装只验证转交：参数原样透传，handler 只收 Pressed 事件。
 const registerMock = vi.fn();

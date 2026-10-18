@@ -4,8 +4,8 @@
     buttonVariants,
     type ButtonVariant,
     type ButtonSize,
-  } from "$components/shadcn-svelte/button/index.js";
-  import { cn } from "$libs/utils/shadcn-svelte.js";
+  } from "#components/shadcn-svelte/button/index.js";
+  import { cn } from "#libs/utils/shadcn-svelte.js";
 
   let {
     ref = $bindable(null),

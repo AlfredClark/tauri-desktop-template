@@ -5,14 +5,14 @@
   import { mergeProps } from "bits-ui";
   import PanelLeftCloseIcon from "@lucide/svelte/icons/panel-left-close";
   import PanelLeftOpenIcon from "@lucide/svelte/icons/panel-left-open";
-  import { getSharedIsMobile } from "$hooks/is-mobile.svelte";
-  import { buttonVariants } from "$components/shadcn-svelte/button";
-  import * as Tooltip from "$components/shadcn-svelte/tooltip/index.js";
-  import Copyright from "$components/layout/parts/copyright.svelte";
-  import DashboardNavBar from "$components/layout/parts/dashboard-nav-bar.svelte";
-  import TitleBar from "$components/layout/parts/title-bar.svelte";
-  import { m } from "$libs/i18n/paraglide/messages";
-  import { cn } from "$libs/utils/shadcn-svelte";
+  import { getSharedIsMobile } from "#hooks/is-mobile.svelte";
+  import { buttonVariants } from "#components/shadcn-svelte/button";
+  import * as Tooltip from "#components/shadcn-svelte/tooltip/index.js";
+  import Copyright from "#components/layout/parts/copyright.svelte";
+  import DashboardNavBar from "#components/layout/parts/dashboard-nav-bar.svelte";
+  import TitleBar from "#components/layout/parts/title-bar.svelte";
+  import { m } from "#libs/i18n/paraglide/messages";
+  import { cn } from "#libs/utils/shadcn-svelte";
 
   let { children }: { children: Snippet } = $props();
 

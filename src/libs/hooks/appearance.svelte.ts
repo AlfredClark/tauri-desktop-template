@@ -4,7 +4,7 @@
 // 布局组件禁止反向导入本模块，否则形成容器到布局的循环依赖。
 // 布局名用语义名（如 tabs / sidebar），禁用 default 之类只表达"被选中"的占位名——该值会落盘。
 import type { Component, Snippet } from "svelte";
-import Tabs from "$components/layout/tabs.svelte";
+import Tabs from "#components/layout/tabs.svelte";
 
 /** 可选布局取值：新增布局时同步扩展该元组与下方加载器（元组即真值来源，避免 `Object.keys` 断言） */
 const LAYOUT_NAME_TUPLE = ["tabs", "sidebar", "dashboard"] as const;
@@ -18,8 +18,8 @@ export type LayoutComponent = Component<{ children: Snippet }>;
 /** 布局名到加载器的映射：tabs 同步兜底保证首帧，其余懒加载，首屏不下非当前布局代码 */
 export const LAYOUTS: Record<LayoutName, () => Promise<LayoutComponent>> = {
   tabs: () => Promise.resolve(Tabs),
-  sidebar: () => import("$components/layout/sidebar.svelte").then((module) => module.default),
-  dashboard: () => import("$components/layout/dashboard.svelte").then((module) => module.default),
+  sidebar: () => import("#components/layout/sidebar.svelte").then((module) => module.default),
+  dashboard: () => import("#components/layout/dashboard.svelte").then((module) => module.default),
 };
 
 /** 持久化键名，改名即视为放弃老用户存量 */

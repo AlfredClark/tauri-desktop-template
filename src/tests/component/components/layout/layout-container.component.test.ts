@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { cleanup, render, screen, waitFor } from "@testing-library/svelte";
 import userEvent from "@testing-library/user-event";
 import { createRawSnippet } from "svelte";
-import { layoutState } from "$hooks/appearance.svelte";
+import { layoutState } from "#hooks/appearance.svelte";
 import LayoutContainer from "../../../../components/layout/layout-container.svelte";
 
 // bits-ui 组件在 jsdom 下缺失的浏览器 API，就地补齐（同关于页测试）。
@@ -38,7 +38,7 @@ if (typeof window.matchMedia === "undefined") {
 }
 
 // 标题栏窗口操作在单测无 Tauri 运行时，全部按不可用回落
-vi.mock("$libs/utils/window-controls", () => ({
+vi.mock("#libs/utils/window-controls", () => ({
   isWindowControlsAvailable: vi.fn().mockResolvedValue(false),
   isWindowAlwaysOnTop: vi.fn().mockResolvedValue(false),
   toggleAlwaysOnTopWindow: vi.fn().mockResolvedValue(false),

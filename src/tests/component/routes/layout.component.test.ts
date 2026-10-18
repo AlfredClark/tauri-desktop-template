@@ -2,10 +2,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { cleanup, render, screen } from "@testing-library/svelte";
 import userEvent from "@testing-library/user-event";
 import { tick } from "svelte";
-import { configState, hydrateConfig } from "$hooks/config.svelte";
-import { reportCommandFailure } from "$libs/commands/cores";
-import type { Config_Serialize } from "$libs/commands/types";
-import { getLocale, setLocale } from "$libs/i18n/paraglide/runtime";
+import { configState, hydrateConfig } from "#hooks/config.svelte";
+import { reportCommandFailure } from "#libs/commands/cores";
+import type { Config_Serialize } from "#libs/commands/types";
+import { getLocale, setLocale } from "#libs/i18n/paraglide/runtime";
 import Harness from "../stubs/root-layout-harness.svelte";
 
 // 根布局回归：外观初始化只跑一次，未落盘的预览不得被重初始化覆盖。
@@ -55,28 +55,28 @@ vi.mock("@tauri-apps/api/window", () => ({
   getCurrentWindow: () => ({ onCloseRequested: async () => async () => {} }),
 }));
 
-vi.mock("$hooks/config.svelte", () => ({
+vi.mock("#hooks/config.svelte", () => ({
   configState: { value: null },
   hydrateConfig: vi.fn(async () => {}),
 }));
 
-vi.mock("$hooks/deep-link.svelte", () => ({
+vi.mock("#hooks/deep-link.svelte", () => ({
   initDeepLinks: vi.fn(async () => async () => {}),
 }));
 
-vi.mock("$hooks/updater.svelte", () => ({
+vi.mock("#hooks/updater.svelte", () => ({
   maybeAutoCheckForUpdate: vi.fn(),
 }));
 
-vi.mock("$libs/commands", () => ({
+vi.mock("#libs/commands", () => ({
   default: { quitApp: () => ({ failed: () => {} }) },
 }));
 
-vi.mock("$libs/commands/cores", () => ({
+vi.mock("#libs/commands/cores", () => ({
   reportCommandFailure: vi.fn(),
 }));
 
-vi.mock("$libs/i18n/paraglide/runtime", () => ({
+vi.mock("#libs/i18n/paraglide/runtime", () => ({
   getLocale: vi.fn(),
   setLocale: vi.fn(),
 }));

@@ -1,8 +1,9 @@
 #!/usr/bin/env node
-// 版本对齐检查（两项，见 AGENTS.md §10.4 成对维护表）：
+// 成对维护检查（三项，见 AGENTS.md §10.4 成对维护表）：
 // 1. `.prettierrc` 的 `importOrderTypeScriptVersion` 必须与 `package.json` 的 `typescript` 版本一致；
-// 2. Tauri 前后端插件的 major.minor 必须一致（`pnpm-lock.yaml` 对 `Cargo.lock`）。
-// 由 `pnpm check` 自动执行，失配即红灯，避免 `pnpm update` / `cargo update` 单边升级后的静默漂移。
+// 2. Tauri 前后端插件的 major.minor 必须一致（`pnpm-lock.yaml` 对 `Cargo.lock`）；
+// 3. 路径别名的权威定义（`package.json` 的 `imports`）与 TS 侧镜像（`tsconfig.aliases.json` 的 `paths`）必须逐条一致。
+// 由 `pnpm check` 自动执行，失配即红灯，避免单边修改后的静默漂移。
 // 本脚本只读文件、不写文件；退出码非零即失败。
 // 注意：仅使用可擦除的类型语法，Node 24 可直接运行，无需编译。
 import { readFileSync } from "node:fs";
@@ -19,9 +20,8 @@ function fail(message: string): never {
 const prettierrc: { importOrderTypeScriptVersion?: unknown } = JSON.parse(
   readFileSync(join(root, ".prettierrc"), "utf8"),
 );
-const pkg: { devDependencies?: Record<string, string> } = JSON.parse(
-  readFileSync(join(root, "package.json"), "utf8"),
-);
+const pkg: { devDependencies?: Record<string, string>; imports?: Record<string, unknown> } =
+  JSON.parse(readFileSync(join(root, "package.json"), "utf8"));
 
 const prettierTs = prettierrc.importOrderTypeScriptVersion;
 if (typeof prettierTs !== "string" || prettierTs.length === 0) {
@@ -40,6 +40,9 @@ console.log(`[check:sync] typescript 对齐通过：${String(prettierTs)}`);
 
 checkTauriPluginPairs();
 console.log("[check:sync] Tauri 前后端插件对齐通过");
+
+checkAliasPairs();
+console.log("[check:sync] 路径别名对齐通过");
 
 /** Npm 包名映射到 cargo 包名；返回 `null` 表示无 Rust 对应端（如 CLI），跳过 */
 function toCargoName(npmName: string): string | null {
@@ -96,6 +99,55 @@ function checkTauriPluginPairs(): void {
   if (mismatches.length > 0) {
     fail(
       `Tauri 前后端插件版本漂移：\n  - ${mismatches.join("\n  - ")}\n请两边一起升：pnpm update <npm 包> + cargo update -p <cargo 包>`,
+    );
+  }
+}
+
+/**
+ * 路径别名双轨一致性：`package.json` 的 `imports` 是运行时 / 构建的权威定义（Node subpath imports，
+ * Vite 原生解析），`tsconfig.aliases.json` 的 `paths` 是 tsc / svelte-check 的只读镜像。 TS 对
+ * imports 映射目标按 Node 语义不做隐式扩展名补全，无后缀导入必须经 `paths` 兜底； 两份文件同在仓库根，映射写法逐条直接比较。
+ */
+function checkAliasPairs(): void {
+  const imports = pkg.imports ?? {};
+  const aliasConfig: { compilerOptions?: { paths?: Record<string, unknown> } } = JSON.parse(
+    readFileSync(join(root, "tsconfig.aliases.json"), "utf8"),
+  );
+  const paths = aliasConfig.compilerOptions?.paths ?? {};
+
+  const aliasKeys = new Set([
+    ...Object.keys(imports).filter((key) => key.startsWith("#")),
+    ...Object.keys(paths).filter((key) => key.startsWith("#")),
+  ]);
+
+  const mismatches: string[] = [];
+  for (const key of Object.keys(paths)) {
+    if (!key.startsWith("#")) {
+      mismatches.push(`tsconfig.aliases.json 出现非 # 别名的 paths 条目：${key}`);
+    }
+  }
+  for (const key of aliasKeys) {
+    const importTarget = imports[key];
+    const pathTargets = paths[key];
+    if (typeof importTarget !== "string") {
+      mismatches.push(`${key} 缺少 package.json 的 imports 定义`);
+      continue;
+    }
+    if (
+      !Array.isArray(pathTargets) ||
+      pathTargets.length !== 1 ||
+      typeof pathTargets[0] !== "string"
+    ) {
+      mismatches.push(`${key} 在 tsconfig.aliases.json 的 paths 中缺少唯一映射`);
+      continue;
+    }
+    if (importTarget !== pathTargets[0]) {
+      mismatches.push(`${key} 映射不一致：imports 为 ${importTarget}，paths 为 ${pathTargets[0]}`);
+    }
+  }
+  if (mismatches.length > 0) {
+    fail(
+      `路径别名漂移（请同步 package.json 的 imports 与 tsconfig.aliases.json 的 paths）：\n  - ${mismatches.join("\n  - ")}`,
     );
   }
 }

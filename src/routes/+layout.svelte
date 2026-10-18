@@ -7,17 +7,17 @@
   import { untrack } from "svelte";
   import { getCurrentWindow } from "@tauri-apps/api/window";
   import type { Snippet } from "svelte";
-  import { initAppearance } from "$hooks/appearance.svelte";
-  import { configState, hydrateConfig } from "$hooks/config.svelte";
-  import { initDeepLinks } from "$hooks/deep-link.svelte";
-  import { maybeAutoCheckForUpdate } from "$hooks/updater.svelte";
-  import ConfirmDialog from "$components/common/confirm-dialog.svelte";
-  import ErrorBoundary from "$components/common/error-boundary.svelte";
-  import { Toaster } from "$components/shadcn-svelte/sonner";
-  import commands from "$libs/commands";
-  import { reportCommandFailure } from "$libs/commands/cores";
-  import { m } from "$libs/i18n/paraglide/messages";
-  import { getLocale, setLocale } from "$libs/i18n/paraglide/runtime";
+  import { initAppearance } from "#hooks/appearance.svelte";
+  import { configState, hydrateConfig } from "#hooks/config.svelte";
+  import { initDeepLinks } from "#hooks/deep-link.svelte";
+  import { maybeAutoCheckForUpdate } from "#hooks/updater.svelte";
+  import ConfirmDialog from "#components/common/confirm-dialog.svelte";
+  import ErrorBoundary from "#components/common/error-boundary.svelte";
+  import { Toaster } from "#components/shadcn-svelte/sonner";
+  import commands from "#libs/commands";
+  import { reportCommandFailure } from "#libs/commands/cores";
+  import { m } from "#libs/i18n/paraglide/messages";
+  import { getLocale, setLocale } from "#libs/i18n/paraglide/runtime";
   import "./layout.css";
 
   const { children }: { children: Snippet } = $props();

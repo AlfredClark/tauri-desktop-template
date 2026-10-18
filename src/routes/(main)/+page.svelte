@@ -1,6 +1,6 @@
 <script lang="ts">
   // 首页英雄区：技术栈图标 + 应用名 + 项目简介，在内容区内水平垂直居中，无业务逻辑。
-  import { m } from "$libs/i18n/paraglide/messages";
+  import { m } from "#libs/i18n/paraglide/messages";
 
   const appName = __APP_TAURI_CONF__.productName;
 

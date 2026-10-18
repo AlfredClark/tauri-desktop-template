@@ -1,21 +1,21 @@
 <script lang="ts">
   // 演示：全局快捷键分组，固定键经后端命令（注册 / 查询 / 注销），自定义键与关闭窗口键经
   // 前端直调插件 JS API；移动端经命令报错或插件缺失降级为不可用，零 props。
-  import { Button } from "$components/shadcn-svelte/button";
-  import { Input } from "$components/shadcn-svelte/input";
-  import CardRow from "$components/common/card-row.svelte";
-  import CardSection from "$components/common/card-section.svelte";
-  import commands from "$libs/commands";
+  import { Button } from "#components/shadcn-svelte/button";
+  import { Input } from "#components/shadcn-svelte/input";
+  import CardRow from "#components/common/card-row.svelte";
+  import CardSection from "#components/common/card-section.svelte";
+  import commands from "#libs/commands";
   import {
     CLOSE_WINDOW_SHORTCUT,
     isShortcutRegistered,
     registerShortcut,
     unregisterShortcut,
-  } from "$libs/shortcuts/shortcuts";
-  import { normalizeShortcut, validateShortcut } from "$libs/shortcuts/validate";
-  import { m } from "$libs/i18n/paraglide/messages";
-  import { closeWindow } from "$libs/utils/window-controls";
-  import { toast } from "$libs/utils/toast";
+  } from "#libs/shortcuts/shortcuts";
+  import { normalizeShortcut, validateShortcut } from "#libs/shortcuts/validate";
+  import { m } from "#libs/i18n/paraglide/messages";
+  import { closeWindow } from "#libs/utils/window-controls";
+  import { toast } from "#libs/utils/toast";
 
   /** 固定快捷键展示；取失败时留空，行内保持占位 */
   let shortcutKey = $state<string | null>(null);
