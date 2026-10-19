@@ -61,6 +61,7 @@ Phase 0 收集变量（§1）→ Phase A→G 顺序执行 → 每个 Phase 收�
 
 - **作者 / 版权**：默认沿用模板作者（模板 `package.json` 的 `author`）；更换时同步 `LICENSE`。
 - **许可证**：模板为 `GPL-3.0-only`（见 §9 第 4 条）；是否更换由用户决定，闭源分发前必须评估传染性义务。
+- **设计资产**：是否保留 impeccable 相关文件（`PRODUCT.md` / `DESIGN.md` / `.impeccable/`）。默认保留；不保留则按 §2 第 4、5 步删除。
 
 **示例（虚构，仅示意格式，勿直接采用）：** `acme-notes-desktop` → `Acme Notes` →
 `io.github.acme.acme-notes-desktop` → `acme_notes_desktop_lib` → scheme `acme-notes` →
@@ -97,8 +98,9 @@ git remote get-url origin 2>/dev/null | sed -E 's#\.git$##' # REPO_OWNER / PROJE
 4. REPO_OWNER（GitHub 用户名）：<候选>
 5. DESCRIPTION（一句话英文描述）：<候选>
 6. SCHEME（深链协议）：<候选>
+7. 设计资产（PRODUCT.md / DESIGN.md / .impeccable/）：<保留 / 删除>（默认保留）
 其余按推导默认：LIB_NAME=<推导值>、CRASH_LOG=<推导值>、KEYWORDS=<推导值>、INIT_VERSION=0.1.0；
-作者与许可证默认沿用模板（GPL-3.0-only），如需更换请说明。
+作者与许可证默认沿用模板（GPL-3.0-only），设计资产默认保留；如需更换请说明。
 ```
 
 ---
@@ -110,8 +112,10 @@ git remote get-url origin 2>/dev/null | sed -E 's#\.git$##' # REPO_OWNER / PROJE
 2. `pnpm install --frozen-lockfile`；确认 `git status` 干净，从最新 `main` 拉分支 `chore/init`。
 3. 基线自检：模板原状下 `pnpm validate` 应全绿，红则先修环境（Node ≥ 24 / pnpm 12.13.0 /
    Rust 1.99.0）再继续，避免把环境问题混进初始化提交。
+4. 删除设计资产（仅 §1 确认删除时执行）：删除 `PRODUCT.md`、`DESIGN.md`、`.impeccable/`。
+5. 去掉设计引用（仅 §1 确认删除时执行）：去掉 `src/routes/layout.css` 里指向 `DESIGN.md` 的注释。
 
-**DoD：** 依赖装好、工作区干净、模板基线可跑。
+**DoD：** 依赖装好、工作区干净、模板基线可跑，设计资产已按 §1 取舍。
 
 ---
 
@@ -119,18 +123,19 @@ git remote get-url origin 2>/dev/null | sed -E 's#\.git$##' # REPO_OWNER / PROJE
 
 > 下表 `PROJECT_SLUG` 等均指 §1 已确认值。
 
-| 序号 | 文件                                 | 改动                                                                                                                                         |
-| ---- | ------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| B1   | `package.json`                       | `name` → `PROJECT_SLUG`；`version` → `INIT_VERSION`；`description`；`homepage`；`repository.url`；`bugs.url`；`keywords`                     |
-| B2   | `src-tauri/Cargo.toml`               | `[package]` 的 `name` / `version` / `description` / `repository` / `keywords`；`[lib].name` → `LIB_NAME`                                     |
-| B3   | `src-tauri/src/main.rs`              | `tauri_desktop_template_lib::run()` → `LIB_NAME::run()`（B2 改名的连带引用，漏改即编译失败）                                                 |
-| B4   | `src-tauri/tauri.conf.json`          | `productName` / `identifier` / `version` / `app.windows[0].title`                                                                            |
-| B5   | `cliff.toml`                         | `[remote.github]` 的 `owner` / `repo`                                                                                                        |
-| B6   | `src/app.html`                       | `<title>`（首帧标题，SvelteKit 之后不再覆盖）                                                                                                |
-| B7   | `src/libs/i18n/messages/*.json`      | `page_home_intro`（含模板自述，改为本产品一句话介绍，en + zh-CN 两份）                                                                       |
-| B8   | `src/tests/component/...`            | `routes/(main)/about/_components/app-info-section.component.test.ts` 与 `routes/(main)/about/page.component.test.ts` 的 `productName` 期望值 |
-| B9   | `README.md` / `docs/README_zh-CN.md` | 标题与简介（两文件同改，避免漂移）；删除对上游模板仓库与 `v0.3.0` 示例标签的引用；其余章节不在此处修补，Phase E 会整体瘦身                   |
-| B10  | `AGENTS.md` / `docs/ARCHITECTURE.md` | `AGENTS.md` 头部模板自述行；`docs/ARCHITECTURE.md` 的目录树首行目录名与「上游示例索引」的 `v0.3.0` 指引                                      |
+| 序号 | 文件                                                                           | 改动                                                                                                                                                                                                                                                                                                     |
+| ---- | ------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| B1   | `package.json`                                                                 | `name` → `PROJECT_SLUG`；`version` → `INIT_VERSION`；`description`；`homepage`；`repository.url`；`bugs.url`；`keywords`                                                                                                                                                                                 |
+| B2   | `src-tauri/Cargo.toml`                                                         | `[package]` 的 `name` / `version` / `description` / `repository` / `keywords`；`[lib].name` → `LIB_NAME`                                                                                                                                                                                                 |
+| B3   | `src-tauri/src/main.rs`                                                        | `tauri_desktop_template_lib::run()` → `LIB_NAME::run()`（B2 改名的连带引用，漏改即编译失败）                                                                                                                                                                                                             |
+| B4   | `src-tauri/tauri.conf.json`                                                    | `productName` / `identifier` / `version` / `app.windows[0].title`                                                                                                                                                                                                                                        |
+| B5   | `cliff.toml`                                                                   | `[remote.github]` 的 `owner` / `repo`                                                                                                                                                                                                                                                                    |
+| B6   | `src/app.html`                                                                 | `<title>`（首帧标题，SvelteKit 之后不再覆盖）                                                                                                                                                                                                                                                            |
+| B7   | `src/libs/i18n/messages/*.json`                                                | `page_home_intro`（含模板自述，改为本产品一句话介绍，en + zh-CN 两份）                                                                                                                                                                                                                                   |
+| B8   | `src/tests/component/...`                                                      | `routes/(main)/about/_components/app-info-section.component.test.ts` 与 `routes/(main)/about/page.component.test.ts` 的 `productName` 期望值                                                                                                                                                             |
+| B9   | `README.md` / `docs/README_zh-CN.md`                                           | 标题与简介（两文件同改，避免漂移）；删除对上游模板仓库与 `v0.3.0` 示例标签的引用；其余章节不在此处修补，Phase E 会整体瘦身                                                                                                                                                                               |
+| B10  | `AGENTS.md` / `docs/ARCHITECTURE.md`                                           | `AGENTS.md` 头部模板自述行；`docs/ARCHITECTURE.md` 的目录树首行目录名与「上游示例索引」的 `v0.3.0` 指引                                                                                                                                                                                                  |
+| B11  | `PRODUCT.md` / `DESIGN.md` / `.impeccable/design.json`（仅保留设计资产时执行） | `Tauri Desktop Template` → `<PRODUCT_NAME>`（`DESIGN.md` 标题写作 `Design System: <PRODUCT_NAME>`）；`design.json` 的 `title` 与内嵌示例名同步改，或重跑生成流程重建 sidecar；`PRODUCT.md` 的包名、展示名、作者、许可证按 §1 确认值更新，模板身份占位行同步改写，并清理其中指向 `docs/INITIAL.md` 的文字 |
 
 **DoD：**
 
@@ -277,12 +282,14 @@ rg -n "docs/INITIAL.md" AGENTS.md README.md docs 2>/dev/null             # 本�
 | `capabilities/plugins.json` 权限项       | 4                                       | 不变                              |
 | 后端 `tauri-plugin-*` 依赖               | 11                                      | 不变                              |
 | 前端 `@tauri-apps/plugin-*` 依赖         | 3                                       | 不变                              |
-| 前端测试文件（`src/tests/**/*.test.ts`） | 27                                      | 不变                              |
-| 前端文案键（`en.json`）                  | 137                                     | 不变                              |
+| 前端测试文件（`src/tests/**/*.test.ts`） | 30                                      | 不变                              |
+| 前端文案键（`en.json`）                  | 140                                     | 不变                              |
 | `src-tauri/locales/*.yml`                | 1（`tray.yml`）                         | 不变                              |
 | 导航标签（`nav-tabs.ts`）                | 3                                       | 不变（新增页面时增加）            |
 | `README.md` 行数                         | 约 180                                  | ≤ 10（跳转 + 标题 + 简介 + TODO） |
 | `docs/images/`                           | 3 张模板截图（home / settings / about） | 删除或重拍（只含真实界面）        |
+
+说明：测试文件数按 `find src/tests -name '*.test.ts' | wc -l` 计数；文案键数按 `en.json` 顶层键数计数。改动测试或文案后同步更新本表。
 
 ### 8.3 质量门禁
 

@@ -41,7 +41,7 @@ web
 **已确认能力：**
 
 - tauri-specta 类型安全命令链（`bindings.ts` 生成物 + 链式 API：`.value()` / `.result()` / `.success()` / `.failed()`；未注册的失败经 plugin-log 上报）。
-- mode-watcher 明暗主题 + 十种配色（`data-color-theme`）；三套布局（tabs / sidebar / dashboard）；系统字体选择 + 字重 + 字号。
+- mode-watcher 明暗主题 + 11 套配色主题（含默认 neutral）（`data-color-theme`）；三套布局（tabs / sidebar / dashboard）；系统字体选择 + 字重 + 字号。
 - 前端 Paraglide（en / zh-CN）+ 后端 rust-i18n 双轨国际化，唯一持久化点是后端 `config.json` 的 `locale`。
 - 前端 ErrorBoundary + 后端 panic 钩子双崩溃兜底。
 - 桌面外壳：无边框窗口 + 自绘标题栏、系统托盘、关闭行为（prompt / exit / minimize_to_tray）、开机自启、窗口状态恢复、单实例聚焦 + 深链转发、更新检查（120s 超时）。

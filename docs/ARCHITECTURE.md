@@ -9,8 +9,8 @@
 ## 技术栈与关键约定
 
 - **前端框架：** SvelteKit + Svelte，SPA 模式（`adapter-static` + `fallback: index.html`，`ssr = false`）。
-- **UI / 样式：** shadcn-svelte（nova / neutral）+ Tailwind CSS v4（`@tailwindcss/vite` + `tailwind-merge` / `tailwind-variants` / `tw-animate-css`）；图标 `@lucide/svelte`，字体 `@fontsource-variable/geist`；主题经 `mode-watcher` + `layout.css` 的 `.dark` 变体；配色经 `themes.css` 的 `[data-color-theme]` 十色块（`neutral` 为默认回落，暗色须用 `:root.dark[data-color-theme]` 显式组合）；`cn()` 合并类名。
-- **前端插件：** `@tauri-apps/api` + `plugin-log`（日志上报）/ `plugin-opener` / `plugin-system-fonts`。
+- **UI / 样式：** shadcn-svelte（nova / neutral）+ Tailwind CSS v4（`@tailwindcss/vite` + `tailwind-merge` / `tailwind-variants` / `tw-animate-css`）；图标 `@lucide/svelte`，字体 `@fontsource-variable/geist`；主题经 `mode-watcher` + `layout.css` 的 `.dark` 变体；配色经 `themes.css` 的 `[data-color-theme]` 11 套配色主题（10 命名加默认 `neutral` 回落，暗色须用 `:root.dark[data-color-theme]` 显式组合）；`cn()` 合并类名。
+- **前端插件：** `@tauri-apps/api` + `@tauri-apps/plugin-log`（日志上报）/ `@tauri-apps/plugin-opener` / `@tauri-apps/plugin-deep-link` / `tauri-plugin-system-fonts-api`（系统字体探测）。
 - **前后端契约：** tauri-specta + `specta` / `specta-typescript`；Rust 侧 `#[tauri::command]` + `#[specta::specta]` 导出类型，生成物 `src/libs/commands/bindings.ts`（禁手改，但需要提交）。
 - **国际化：** 前端 Paraglide（策略 `localStorage` + `baseLocale`，CLI 为 `@inlang/cli`）；后端 rust-i18n（`src-tauri/locales/*.yml`，`fallback = "en"`）。
 - **后端：** Tauri v2 + Rust（`edition = "2024"`，工具链由 `rust-toolchain.toml` 锁定，`tauri-build` 构建脚本）。
@@ -75,7 +75,7 @@ tauri-desktop-template/
 │   ├── build.rs                    # tauri-build 构建脚本
 │   ├── tauri.conf.json             # 窗口 / CSP / 打包目标 / updater 配置
 │   └── Cargo.toml                  # 后端依赖与 crate 元信息
-├── docs/                           # AGENTS.md（常驻规则入口）、ARCHITECTURE.md（本文件）、WORKFLOW.md（命令与流程）、INITIAL.md（派生项目定制与发布清单）、README_zh-CN.md、images/（模板截图）
+├── docs/                           # ARCHITECTURE.md（本文件）、WORKFLOW.md（命令与流程）、INITIAL.md（派生项目定制与发布清单）、README_zh-CN.md、images/（模板截图）
 ├── static/                         # 原样拷贝到产物根目录的资源（favicon.png）
 ├── .github/workflows/              # ci.yml（质量门禁）、release.yml（打包发布）
 ├── Cargo.toml                      # 虚拟工作区 + 全局 lints / profile

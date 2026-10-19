@@ -6,15 +6,16 @@
 
 ## 文档索引（做对应任务前先读）
 
-| 你要做的事                                                 | 先读文档                                      |
-| ---------------------------------------------------------- | --------------------------------------------- |
-| 放新文件 / 判断分层归属 / 目录职责 / 路径别名              | `docs/ARCHITECTURE.md`                        |
-| 改 Rust 命令 / 前后端契约 / 重生成绑定                     | `docs/WORKFLOW.md` 的「命令契约流程」         |
-| 改前后端文案 / 语言切换                                    | `docs/WORKFLOW.md` 的「国际化流程」           |
-| 动配置项 / schema 迁移 / 崩溃兜底 / locale 数据流 / 初始化 | `docs/ARCHITECTURE.md` 的「设计不变量与原因」 |
-| 跑命令 / 依赖升级 / 构建产物 / 验证级别                    | `docs/WORKFLOW.md`                            |
-| 发版 / CI / 提交钩子细节                                   | `docs/WORKFLOW.md` 的「CI」与「验证矩阵」     |
-| 派生新项目（改名 / 换协议 / 换密钥 / 换图标 / 文档收尾）   | `docs/INITIAL.md`                             |
+| 你要做的事                                                 | 先读文档                                            |
+| ---------------------------------------------------------- | --------------------------------------------------- |
+| 放新文件 / 判断分层归属 / 目录职责 / 路径别名              | `docs/ARCHITECTURE.md`                              |
+| 改 Rust 命令 / 前后端契约 / 重生成绑定                     | `docs/WORKFLOW.md` 的「命令契约流程」               |
+| 改前后端文案 / 语言切换                                    | `docs/WORKFLOW.md` 的「国际化流程」                 |
+| 动配置项 / schema 迁移 / 崩溃兜底 / locale 数据流 / 初始化 | `docs/ARCHITECTURE.md` 的「设计不变量与原因」       |
+| 改外观 / 配色主题 / 布局 / 新页面视觉                      | `DESIGN.md`（视觉系统）+ `PRODUCT.md`（产品上下文） |
+| 跑命令 / 依赖升级 / 构建产物 / 验证级别                    | `docs/WORKFLOW.md`                                  |
+| 发版 / CI / 提交钩子细节                                   | `docs/WORKFLOW.md` 的「CI」与「验证矩阵」           |
+| 派生新项目（改名 / 换协议 / 换密钥 / 换图标 / 文档收尾）   | `docs/INITIAL.md`                                   |
 
 > 只有仓库根的 `AGENTS.md` 会被自动加载；上表文档按需读取——做对应任务时必须先读，不要依赖记忆。
 
@@ -47,7 +48,7 @@
 5. **配置唯一来源与迁移：** Paraglide 编译选项唯一来源 `src/libs/i18n/project.inlang/paraglide.config.ts`；路径别名唯一来源 `package.json` 的 `imports`；新增外部 URL 同步 `capabilities/*.json` 与 CSP；新增 / 变更配置项必须同步 `cores/config.rs` 的 `CURRENT_SCHEMA_VERSION` 与 `MIGRATIONS` 迁移链，配置写入只走 `update` / `save_locale` / `migrate` 三入口；新增 / 变更配置项时对照 `docs/ARCHITECTURE.md` 的「成对维护的配置」表。
 6. **崩溃边界：** 前端 `ErrorBoundary` + 后端 panic 钩子（`cores/system.rs`，兜底落盘 `%TEMP%/my_app_crash.log`）。两者互不替代，禁止另加并行机制。
 7. **语言数据流：** 唯一持久化点是 `config.json` 的 `locale` 键（`Locale` 枚举，`"en" | "zh-CN"`，禁止裸 `string` 或类型断言）；切换先经 `commands.updateConfig` 落盘再改内存，按返回值分支（禁用状态相等代理推断）；前端渲染期文案经 `libs/i18n/locale.svelte.ts` 桥接响应式（`overwriteGetLocale` 读 `$state`），**不重载的语言变更只允许经 `alignLocale`**；`restart` 桌面端永不结算（勿 `await`）。完整时序见 `docs/ARCHITECTURE.md`。
-8. **初始化与订阅：** `initAppearance` 类初始化只允许跑一次且必须 `untrack`（被 `$effect` 跟踪会形成「改动→重初始化」回路）；`app.html` 首帧内联脚本与 init 的键名 / 分支必须同步改；`localStorage` 存量键冻结豁免，新增键统一 `app.` 前缀。
+8. **初始化与订阅：** `initAppearance` 由调用点包 `untrack` 后执行（`+layout.svelte` 的 `$effect.pre`；init 内读写同一批外观状态，被跟踪会形成「改动→重初始化」回路），init 本体保持幂等、可重复调用；`app.html` 首帧内联脚本与 init 的键名 / 分支必须同步改；`localStorage` 存量键（`layout-name` / `color-theme` / `font-family` / `font-weight` / `font-size` / `dashboard-collapsed` / mode-watcher 的 `mode-watcher-mode`）冻结豁免，新增键统一 `app.` 前缀。
 
 ---
 
