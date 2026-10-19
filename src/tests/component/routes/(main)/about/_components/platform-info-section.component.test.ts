@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { cleanup, render, screen } from "@testing-library/svelte";
+import { m } from "#libs/i18n/paraglide/messages";
 import { toast } from "#libs/utils/toast";
 import PlatformInfoSection from "../../../../../../routes/(main)/about/_components/platform-info-section.svelte";
 
@@ -67,13 +68,13 @@ describe("平台信息分组", () => {
     expect(screen.getByText("x86_64")).not.toBeNull();
   });
 
-  it("加载失败时保持占位并提示", async () => {
+  it("加载失败时转为常驻错误态并提示", async () => {
     getSystemInfoMock.mockReturnValue(
       fakeCommand({ status: "error", error: { kind: "Internal", message: "boom" } }) as never,
     );
     render(PlatformInfoSection);
 
-    // 四行全部回落占位，不白屏不抛错
+    // toast 几秒后自行消失，故失败必须留在行内：不白屏、不抛错，也不再留"加载中"的省略号
     await vi.waitFor(() => {
       expect(toast.error).toHaveBeenCalledOnce();
     });
@@ -81,6 +82,7 @@ describe("平台信息分组", () => {
       "[about] failed to load system info",
       expect.anything(),
     );
-    expect(screen.getAllByText("…")).toHaveLength(4);
+    expect(screen.getByText(m.about_system_failed())).not.toBeNull();
+    expect(screen.queryAllByText("…")).toHaveLength(0);
   });
 });

@@ -19,12 +19,17 @@ export type NavTab = (typeof NAV_TABS)[number];
 /** 已登记的页面路径，`resolve()` 需要具体的路由字面量而非 `string` */
 export type NavTabPath = NavTab["path"];
 
-/** 校验并收窄为已登记的页面路径 */
-export function isNavTabPath(value: unknown): value is NavTabPath {
-  return NAV_TABS.some((tab) => tab.path === value);
-}
-
 /** 按路径匹配标签，未命中返回 `undefined`（子页面等不选中任何标签） */
 export function resolveNavTab(pathname: string): NavTab | undefined {
   return NAV_TABS.find((tab) => tab.path === pathname);
+}
+
+/**
+ * 导航项的语义状态：三套布局共用，保证同一份目的地清单在三种形态下语义一致。
+ *
+ * 返回 `aria-current` 的取值；未命中注册表的路径（如子页面）不选中任何项。 `href` / `goto()` 的参数由各渲染点自行
+ * `resolve()`——导航目标属于路由层，不在这里代劳。
+ */
+export function resolveNavCurrent(path: NavTabPath, pathname: string): "page" | undefined {
+  return resolveNavTab(pathname)?.path === path ? "page" : undefined;
 }

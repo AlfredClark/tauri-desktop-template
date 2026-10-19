@@ -5,6 +5,7 @@
 // 布局名用语义名（如 tabs / sidebar），禁用 default 之类只表达"被选中"的占位名——该值会落盘。
 import type { Component, Snippet } from "svelte";
 import Tabs from "#components/layout/tabs.svelte";
+import { DEFAULT_DASHBOARD_COLLAPSED, setDashboardCollapsed } from "#hooks/dashboard.svelte";
 
 /** 可选布局取值：新增布局时同步扩展该元组与下方加载器（元组即真值来源，避免 `Object.keys` 断言） */
 const LAYOUT_NAME_TUPLE = ["tabs", "sidebar", "dashboard"] as const;
@@ -336,6 +337,7 @@ export function initAppearance(): void {
 /** 恢复全部外观偏好为默认值：复用各 `set*` 的落盘+应用路径，不另写旁路 */
 export function resetAppearance(): void {
   setLayoutName(DEFAULT_LAYOUT);
+  setDashboardCollapsed(DEFAULT_DASHBOARD_COLLAPSED);
   setColorTheme(DEFAULT_COLOR_THEME);
   setFontFamily(DEFAULT_FONT_FAMILY);
   setFontWeight(DEFAULT_FONT_WEIGHT);

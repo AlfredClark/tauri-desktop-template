@@ -59,7 +59,7 @@ tauri-desktop-template/
 │       ├── i18n/                   # Paraglide：messages/ 文案、project.inlang/ 配置、paraglide/ 生成物、locale.svelte.ts 语言响应式桥
 │       ├── navigation/             # 导航等应用级注册表（nav-tabs.ts：路径 / 图标 / 顺序，顶部标签栏与侧边栏导航同源）
 │       ├── utils/                  # 前端通用工具（shadcn-svelte.ts 的 cn()、window-controls.ts、toast.ts、opener.ts）
-│       └── hooks/                  # 前端共享状态（统一经 #hooks 引用），如 appearance.svelte.ts（布局注册表 + 字体偏好）、config.svelte.ts（后端配置内存态）、updater.svelte.ts（更新状态）、is-mobile.svelte.ts（响应式断点）、deep-link.svelte.ts（三路深链入口）
+│       └── hooks/                  # 前端共享状态（统一经 #hooks 引用），如 appearance.svelte.ts（布局注册表 + 字体偏好）、config.svelte.ts（后端配置内存态）、updater.svelte.ts（更新状态）、is-mobile.svelte.ts（响应式断点）、deep-link.svelte.ts（三路深链入口）、dashboard.svelte.ts（仪表盘侧栏折叠偏好）
 ├── src-tauri/                      # 后端：Rust（edition 2024）
 │   ├── src/
 │   │   ├── main.rs                 # 二进制入口，仅转发到 lib::run()

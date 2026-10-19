@@ -114,7 +114,7 @@
         items={themeItems}
         onValueChange={handleThemeChange}
       >
-        <SelectTrigger class="w-44" aria-label={m.settings_theme_label()}>
+        <SelectTrigger class="w-(--control-column-width)" aria-label={m.settings_theme_label()}>
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
@@ -136,7 +136,10 @@
         items={colorThemeItems}
         onValueChange={handleColorThemeChange}
       >
-        <SelectTrigger class="w-44" aria-label={m.settings_color_theme_label()}>
+        <SelectTrigger
+          class="w-(--control-column-width)"
+          aria-label={m.settings_color_theme_label()}
+        >
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
@@ -155,7 +158,7 @@
         items={layoutItems}
         onValueChange={handleLayoutChange}
       >
-        <SelectTrigger class="w-44" aria-label={m.settings_layout_label()}>
+        <SelectTrigger class="w-(--control-column-width)" aria-label={m.settings_layout_label()}>
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
@@ -172,11 +175,7 @@
     description={m.settings_font_weight_description()}
   >
     {#snippet control()}
-      <div
-        class="flex w-44 items-center gap-3"
-        role="group"
-        aria-label={m.settings_font_weight_label()}
-      >
+      <div class="flex w-(--control-column-width) items-center gap-3">
         <Slider
           type="single"
           value={fontState.weight}
@@ -185,8 +184,13 @@
           step={FONT_WEIGHT_STEP}
           onValueChange={handleFontWeightChange}
           onValueCommit={handleFontWeightCommit}
+          ariaLabel={m.settings_font_weight_label()}
         />
-        <span class="w-8 shrink-0 text-right text-sm text-muted-foreground tabular-nums">
+        <!-- 读数与滑块的 aria-valuenow 同源，重复播报，故对 AT 隐藏 -->
+        <span
+          class="w-8 shrink-0 text-right text-sm text-muted-foreground tabular-nums"
+          aria-hidden="true"
+        >
           {fontState.weight}
         </span>
       </div>
@@ -200,7 +204,7 @@
         items={fontSizeItems}
         onValueChange={handleFontSizeChange}
       >
-        <SelectTrigger class="w-44" aria-label={m.settings_font_size_label()}>
+        <SelectTrigger class="w-(--control-column-width)" aria-label={m.settings_font_size_label()}>
           <SelectValue />
         </SelectTrigger>
         <SelectContent>

@@ -10,9 +10,6 @@
 </script>
 
 <div data-layout="tabs" class={cn("flex h-screen w-full flex-col overflow-hidden")}>
-  <header class={cn("w-full shrink-0 border-b")}>
-    <TitleBar />
-  </header>
   <nav class={cn("w-full shrink-0 border-b")}>
     <NavTabsBar />
   </nav>
@@ -25,4 +22,10 @@
   <footer class={cn("flex w-full shrink-0 items-center justify-center border-t")}>
     <Copyright class={cn("m-1 text-xs text-muted-foreground select-none")} />
   </footer>
+
+  <!-- 标题栏在 DOM 末尾、靠 `order-first` 提到视觉首位：DOM 顺序即焦点与朗读顺序，
+       含"关闭"的窗口控制不再占住前四个 Tab 停靠点 -->
+  <header class={cn("order-first w-full shrink-0 border-b")}>
+    <TitleBar />
+  </header>
 </div>

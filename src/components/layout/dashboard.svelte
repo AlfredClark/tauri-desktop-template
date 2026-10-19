@@ -1,10 +1,12 @@
 <script lang="ts">
   // 仪表盘布局：顶部标题栏 + 左侧固定导航 + 内容区 + 底边，适合页面多的后台型应用。
-  // 与 sidebar 的差异：侧栏无折叠状态机，收起/展开由底部按钮控制的局部状态，窄屏自动收为图标栏。
+  // 与 sidebar 的差异：侧栏带折叠状态机，收起/展开由底部把手控制，偏好落 localStorage（默认展开），窄屏自动收为图标栏。
+  import { untrack } from "svelte";
   import type { Snippet } from "svelte";
   import { mergeProps } from "bits-ui";
   import PanelLeftCloseIcon from "@lucide/svelte/icons/panel-left-close";
   import PanelLeftOpenIcon from "@lucide/svelte/icons/panel-left-open";
+  import { dashboardState, initDashboard, setDashboardCollapsed } from "#hooks/dashboard.svelte";
   import { getSharedIsMobile } from "#hooks/is-mobile.svelte";
   import { buttonVariants } from "#components/shadcn-svelte/button";
   import * as Tooltip from "#components/shadcn-svelte/tooltip/index.js";
@@ -16,17 +18,20 @@
 
   let { children }: { children: Snippet } = $props();
 
-  // 窄屏强制图标栏；桌面端由底部按钮控制，会话级状态，切换布局重挂载后回默认展开。
+  // 窄屏强制图标栏；桌面端由底部把手控制，偏好落 localStorage，布局重挂载后按持久化值恢复，缺省展开。
   // 断点监听复用共享单例，同断点多处订阅不断重复注册。
   const isMobile = getSharedIsMobile();
-  let collapsed = $state(false);
+
+  // init 只写折叠状态：包 untrack 切断订阅，避免"改动→重初始化"回路（对标容器层的 initLayout）
+  $effect.pre(() => {
+    untrack(() => initDashboard());
+  });
+
+  const collapsed = $derived(dashboardState.collapsed);
   const compact = $derived(isMobile.current || collapsed);
 </script>
 
 <div data-layout="dashboard" class={cn("flex h-screen w-full flex-col overflow-hidden")}>
-  <header class={cn("w-full shrink-0 border-b")}>
-    <TitleBar />
-  </header>
   <div class={cn("flex min-h-0 w-full flex-1 flex-row overflow-hidden")}>
     <aside
       class={cn(
@@ -53,7 +58,7 @@
                         ? m.dashboard_toggle_expand()
                         : m.dashboard_toggle_collapse(),
                       onclick: () => {
-                        collapsed = !collapsed;
+                        setDashboardCollapsed(!collapsed);
                       },
                     },
                     props,
@@ -87,4 +92,10 @@
   <footer class={cn("flex w-full shrink-0 items-center justify-center border-t")}>
     <Copyright class={cn("m-1 text-xs text-muted-foreground select-none")} />
   </footer>
+
+  <!-- 标题栏在 DOM 末尾、靠 `order-first` 提到视觉首位：DOM 顺序即焦点与朗读顺序，
+       含"关闭"的窗口控制不再占住内容之前的 Tab 停靠点 -->
+  <header class={cn("order-first w-full shrink-0 border-b")}>
+    <TitleBar />
+  </header>
 </div>

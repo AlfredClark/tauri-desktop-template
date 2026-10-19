@@ -17,20 +17,20 @@
 </script>
 
 <CardSection title={m.about_app_info_title()}>
-  <CardRow label={m.about_app_name()} description={appName} />
+  <CardRow label={m.about_app_name()} value={appName} />
 
-  <CardRow label={m.about_current_version()} description={appVersion}>
+  <CardRow label={m.about_current_version()} value={appVersion}>
     {#snippet control()}
       <div class="flex items-center gap-2">
         {#if updaterState.phase === "checking" || updaterState.phase === "downloading"}
-          <Button size="sm" disabled>
+          <Button variant="outline" disabled>
             {updaterState.phase === "checking" ? m.updater_checking() : m.updater_downloading()}
           </Button>
         {:else}
           {#if updaterState.phase === "up-to-date"}
             <Badge variant="secondary">{m.updater_up_to_date()}</Badge>
           {/if}
-          <Button size="sm" onclick={() => void checkForUpdate()}>
+          <Button variant="outline" onclick={() => void checkForUpdate()}>
             {updaterState.phase === "up-to-date" ? m.updater_recheck() : m.updater_check_update()}
           </Button>
         {/if}
@@ -40,9 +40,9 @@
 
   <UpdaterPanel />
 
-  <CardRow label={m.about_description()} description={appDescription} />
+  <CardRow label={m.about_description()} value={appDescription} />
 
-  <CardRow label={m.about_license()} description={appLicense} />
+  <CardRow label={m.about_license()} value={appLicense} />
 
-  <CardRow label={m.about_author()} description={appAuthor} />
+  <CardRow label={m.about_author()} value={appAuthor} />
 </CardSection>

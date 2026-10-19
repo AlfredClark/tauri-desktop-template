@@ -171,7 +171,7 @@
         onValueChange={handleLocaleChange}
         disabled={switchingLocale}
       >
-        <SelectTrigger class="w-44" aria-label={m.settings_language_label()}>
+        <SelectTrigger class="w-(--control-column-width)" aria-label={m.settings_language_label()}>
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
@@ -238,7 +238,10 @@
         items={closeBehaviorItems}
         onValueChange={handleCloseBehaviorChange}
       >
-        <SelectTrigger class="w-44" aria-label={m.settings_close_behavior_label()}>
+        <SelectTrigger
+          class="w-(--control-column-width)"
+          aria-label={m.settings_close_behavior_label()}
+        >
           <SelectValue />
         </SelectTrigger>
         <SelectContent>

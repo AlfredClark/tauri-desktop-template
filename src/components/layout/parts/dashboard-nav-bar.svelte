@@ -8,26 +8,20 @@
   import { mergeProps } from "bits-ui";
   import { buttonVariants } from "#components/shadcn-svelte/button";
   import * as Tooltip from "#components/shadcn-svelte/tooltip/index.js";
-  import { NAV_TABS, isNavTabPath, resolveNavTab } from "#libs/navigation/nav-tabs";
+  import { NAV_TABS, resolveNavCurrent } from "#libs/navigation/nav-tabs";
   import { cn } from "#libs/utils/shadcn-svelte";
 
   // compact 为 true 时只渲染图标：仪表盘窄屏图标栏使用，标签走 tooltip 展示
   let { compact = false }: { compact?: boolean } = $props();
 
-  // 当前路径命中注册表才高亮，未命中的路径（如子页面）不选中任何标签
-  const activePath = $derived(resolveNavTab(page.url.pathname)?.path ?? "");
-
-  function handleNavigate(value: unknown) {
-    if (isNavTabPath(value) && value !== activePath) {
-      void goto(resolve(value));
-    }
-  }
+  const pathname = $derived(page.url.pathname);
 </script>
 
 <nav class={cn("flex flex-col gap-1 p-2")}>
   {#each NAV_TABS as tab (tab.path)}
     {@const Icon = tab.icon}
-    {@const active = tab.path === activePath}
+    {@const current = resolveNavCurrent(tab.path, pathname)}
+    {@const active = current !== undefined}
     <Tooltip.Root>
       <Tooltip.Trigger>
         {#snippet child({ props })}
@@ -38,8 +32,8 @@
                 "w-full justify-start gap-2",
                 compact && "justify-center px-0",
               ),
-              "aria-current": active ? ("page" as const) : undefined,
-              onclick: () => handleNavigate(tab.path),
+              "aria-current": current,
+              onclick: () => void goto(resolve(tab.path)),
             },
             props,
           )}

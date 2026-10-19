@@ -6,14 +6,14 @@
   import CardSection from "#components/common/card-section.svelte";
   import { m } from "#libs/i18n/paraglide/messages";
   import { toast } from "#libs/utils/toast";
-  import { openExternal } from "#libs/utils/opener";
+  import { normalizeExternalUrl, openExternal } from "#libs/utils/opener";
 
-  /** 外链行配置：文案键 + 地址，三行同构故数据驱动 */
+  /** 外链行配置：文案键 + 地址；`git+` 是 npm 的传输前缀，展示与打开统一用还原后的地址 */
   const links: { label: string; url: string }[] = [
     { label: m.about_homepage(), url: __APP_PKG__.homepage },
     { label: m.about_repository(), url: __APP_PKG__.repository.url },
     { label: m.about_feedback(), url: __APP_PKG__.bugs.url },
-  ];
+  ].map((link) => ({ ...link, url: normalizeExternalUrl(link.url) }));
 
   /** 外链经 opener 打开；浏览器预览等无运行时按失败提示 */
   async function handleOpenLink(url: string): Promise<void> {
@@ -23,9 +23,9 @@
 
 <CardSection title={m.about_project_info_title()}>
   {#each links as link (link.url)}
-    <CardRow label={link.label} description={link.url}>
+    <CardRow label={link.label} value={link.url}>
       {#snippet control()}
-        <Button size="sm" variant="outline" onclick={() => void handleOpenLink(link.url)}>
+        <Button variant="outline" onclick={() => void handleOpenLink(link.url)}>
           <GithubIcon />
           {m.about_open()}
         </Button>

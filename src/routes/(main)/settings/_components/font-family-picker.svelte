@@ -166,7 +166,7 @@
             aria-expanded={fontPopoverOpen}
             aria-label={m.settings_font_family_label()}
             disabled={loadingFonts || (fontsLoaded && systemFontFamilies.length === 0)}
-            class="w-44 justify-between"
+            class="w-(--control-column-width) justify-between"
           >
             <span class="truncate">
               {loadingFonts ? m.settings_font_family_loading() : selectedFontLabel}

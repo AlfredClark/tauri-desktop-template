@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { NAV_TABS, isNavTabPath, resolveNavTab } from "#libs/navigation/nav-tabs";
+import { NAV_TABS, resolveNavCurrent, resolveNavTab } from "#libs/navigation/nav-tabs";
 
 describe("导航标签注册表", () => {
   it("首页固定在最前且路径不重复", () => {
@@ -19,10 +19,16 @@ describe("导航标签注册表", () => {
     expect(resolveNavTab("/unknown")).toBeUndefined();
   });
 
-  it("路径收窄只放行已登记的取值", () => {
-    expect(isNavTabPath("/about")).toBe(true);
-    expect(isNavTabPath("/unknown")).toBe(false);
-    expect(isNavTabPath(undefined)).toBe(false);
+  it("导航项状态：当前页带 aria-current，其余不带", () => {
+    for (const tab of NAV_TABS) {
+      expect(resolveNavCurrent(tab.path, tab.path)).toBe("page");
+    }
+  });
+
+  it("导航项状态：未登记的路径不选中任何项", () => {
+    for (const tab of NAV_TABS) {
+      expect(resolveNavCurrent(tab.path, "/unknown")).toBeUndefined();
+    }
   });
 
   it("每个标签都有文案与图标", () => {

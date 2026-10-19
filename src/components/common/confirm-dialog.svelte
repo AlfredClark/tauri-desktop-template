@@ -10,6 +10,7 @@
     AlertDialogHeader,
     AlertDialogTitle,
   } from "#components/shadcn-svelte/alert-dialog";
+  import type { ButtonVariant } from "#components/shadcn-svelte/button/index.js";
 
   let {
     open = $bindable(false),
@@ -17,6 +18,7 @@
     description,
     cancelLabel,
     confirmLabel,
+    variant = "default",
     onConfirm,
   }: {
     open: boolean;
@@ -24,6 +26,8 @@
     description: string;
     cancelLabel: string;
     confirmLabel: string;
+    /** 确认按钮的语义变体；破坏性操作（重置 / 删除）必须传 `destructive`，否则会与例行确认长得一样 */
+    variant?: ButtonVariant;
     onConfirm: () => unknown;
   } = $props();
 
@@ -42,7 +46,9 @@
     </AlertDialogHeader>
     <AlertDialogFooter>
       <AlertDialogCancel>{cancelLabel}</AlertDialogCancel>
-      <AlertDialogAction onclick={handleConfirm}>{confirmLabel}</AlertDialogAction>
+      <AlertDialogAction {variant} onclick={handleConfirm}>
+        {confirmLabel}
+      </AlertDialogAction>
     </AlertDialogFooter>
   </AlertDialogContent>
 </AlertDialog>

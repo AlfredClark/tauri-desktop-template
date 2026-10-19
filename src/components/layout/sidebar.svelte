@@ -33,13 +33,6 @@
     </SidebarContent>
   </Sidebar>
   <SidebarInset class={cn("h-svh overflow-hidden")}>
-    <header class={cn("w-full shrink-0 border-b")}>
-      <TitleBar>
-        {#snippet left()}
-          <SidebarTrigger class={cn("ml-1")} />
-        {/snippet}
-      </TitleBar>
-    </header>
     <div
       class={cn("flex min-h-0 w-full flex-1 flex-col items-center justify-center overflow-hidden")}
     >
@@ -48,5 +41,15 @@
     <footer class={cn("flex w-full shrink-0 items-center justify-center border-t")}>
       <Copyright class={cn("m-1 text-xs text-muted-foreground select-none")} />
     </footer>
+
+    <!-- 标题栏在 DOM 末尾、靠 `order-first` 提到视觉首位：DOM 顺序即焦点与朗读顺序，
+         含"关闭"的窗口控制与侧栏开关不再占住内容之前的 Tab 停靠点 -->
+    <header class={cn("order-first w-full shrink-0 border-b")}>
+      <TitleBar>
+        {#snippet left()}
+          <SidebarTrigger class={cn("ml-1")} />
+        {/snippet}
+      </TitleBar>
+    </header>
   </SidebarInset>
 </SidebarProvider>

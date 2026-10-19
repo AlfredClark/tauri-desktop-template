@@ -37,6 +37,11 @@ import {
   setFontWeight,
   setLayoutName,
 } from "#hooks/appearance.svelte";
+import {
+  DASHBOARD_COLLAPSED_STORAGE_KEY,
+  DEFAULT_DASHBOARD_COLLAPSED,
+  dashboardState,
+} from "#hooks/dashboard.svelte";
 
 // 节点环境无 localStorage，用内存实现替身，保证单测不依赖浏览器
 function installLocalStorageMock() {
@@ -60,6 +65,7 @@ function installLocalStorageMock() {
 beforeEach(() => {
   installLocalStorageMock();
   layoutState.name = "tabs";
+  dashboardState.collapsed = DEFAULT_DASHBOARD_COLLAPSED;
   colorThemeState.name = DEFAULT_COLOR_THEME;
   fontState.family = DEFAULT_FONT_FAMILY;
   fontState.weight = DEFAULT_FONT_WEIGHT;
@@ -491,8 +497,9 @@ describe("setColorTheme", () => {
 });
 
 describe("resetAppearance", () => {
-  it("五项偏好全部回到默认值并落盘", () => {
+  it("六项偏好全部回到默认值并落盘", () => {
     layoutState.name = "sidebar";
+    dashboardState.collapsed = true;
     colorThemeState.name = "rose";
     fontState.family = "Serif";
     fontState.weight = 700;
@@ -501,11 +508,15 @@ describe("resetAppearance", () => {
     resetAppearance();
 
     expect(layoutState.name).toBe(DEFAULT_LAYOUT);
+    expect(dashboardState.collapsed).toBe(DEFAULT_DASHBOARD_COLLAPSED);
     expect(colorThemeState.name).toBe(DEFAULT_COLOR_THEME);
     expect(fontState.family).toBe(DEFAULT_FONT_FAMILY);
     expect(fontState.weight).toBe(DEFAULT_FONT_WEIGHT);
     expect(fontState.size).toBe(DEFAULT_FONT_SIZE);
     expect(localStorage.getItem(LAYOUT_STORAGE_KEY)).toBe(DEFAULT_LAYOUT);
+    expect(localStorage.getItem(DASHBOARD_COLLAPSED_STORAGE_KEY)).toBe(
+      String(DEFAULT_DASHBOARD_COLLAPSED),
+    );
     expect(localStorage.getItem(COLOR_THEME_STORAGE_KEY)).toBe(DEFAULT_COLOR_THEME);
     expect(localStorage.getItem(FONT_FAMILY_STORAGE_KEY)).toBe(DEFAULT_FONT_FAMILY);
     expect(localStorage.getItem(FONT_WEIGHT_STORAGE_KEY)).toBe(String(DEFAULT_FONT_WEIGHT));

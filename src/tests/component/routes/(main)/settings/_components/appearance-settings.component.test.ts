@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { cleanup, render, screen, waitFor, within } from "@testing-library/svelte";
+import { cleanup, render, screen, waitFor } from "@testing-library/svelte";
 import userEvent from "@testing-library/user-event";
 import Component from "../../../../../../routes/(main)/settings/_components/appearance-settings.svelte";
 
@@ -170,7 +170,7 @@ describe("外观设置分组", () => {
     const user = userEvent.setup();
     render(Component);
 
-    const slider = within(screen.getByRole("group", { name: "Font weight" })).getByRole("slider");
+    const slider = screen.getByRole("slider", { name: "Font weight" });
     expect(slider.getAttribute("aria-valuenow")).toBe("400");
     // jsdom 无布局，click 会按零尺寸命中最小值，改用聚焦后按键
     (slider as HTMLElement).focus();

@@ -1,5 +1,20 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { openExternal } from "#libs/utils/opener";
+import { normalizeExternalUrl, openExternal } from "#libs/utils/opener";
+
+describe("normalizeExternalUrl", () => {
+  it("剥掉 npm 的 git+ 传输前缀", () => {
+    expect(normalizeExternalUrl("git+https://github.com/example/repo.git")).toBe(
+      "https://github.com/example/repo.git",
+    );
+  });
+
+  it("已是普通地址时原样返回", () => {
+    expect(normalizeExternalUrl("https://example.com")).toBe("https://example.com");
+    expect(normalizeExternalUrl("https://github.com/example/repo/issues")).toBe(
+      "https://github.com/example/repo/issues",
+    );
+  });
+});
 
 describe("openExternal", () => {
   afterEach(() => {

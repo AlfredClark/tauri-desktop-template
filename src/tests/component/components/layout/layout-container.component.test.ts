@@ -3,6 +3,11 @@ import { cleanup, render, screen, waitFor } from "@testing-library/svelte";
 import userEvent from "@testing-library/user-event";
 import { createRawSnippet } from "svelte";
 import { layoutState } from "#hooks/appearance.svelte";
+import {
+  DASHBOARD_COLLAPSED_STORAGE_KEY,
+  DEFAULT_DASHBOARD_COLLAPSED,
+  dashboardState,
+} from "#hooks/dashboard.svelte";
 import LayoutContainer from "../../../../components/layout/layout-container.svelte";
 
 // bits-ui 组件在 jsdom 下缺失的浏览器 API，就地补齐（同关于页测试）。
@@ -67,10 +72,14 @@ function renderWithProbe(layout: string): Promise<void> {
     render: () => "<span>probe-content</span>",
   }));
   render(LayoutContainer, { props: { children } });
-  // 布局经异步加载器 settle（动态 import 需多轮微任务），等目标布局落定
-  return waitFor(() => {
-    expect(document.querySelector(`[data-layout="${layout}"]`)).not.toBeNull();
-  });
+  // 布局经异步加载器 settle（动态 import 需多轮微任务），等目标布局落定；
+  // 全量套件并行跑时动态 import 会被抢 CPU，默认 1s 会假失败，故放宽到 5s
+  return waitFor(
+    () => {
+      expect(document.querySelector(`[data-layout="${layout}"]`)).not.toBeNull();
+    },
+    { timeout: 5000 },
+  );
 }
 
 beforeEach(() => {
@@ -78,11 +87,13 @@ beforeEach(() => {
   // 容器挂载会从持久化重读，用例间先清空，单个用例按需预种
   localStorage.clear();
   layoutState.name = "tabs";
+  dashboardState.collapsed = DEFAULT_DASHBOARD_COLLAPSED;
 });
 
 afterEach(() => {
   cleanup();
   layoutState.name = "tabs";
+  dashboardState.collapsed = DEFAULT_DASHBOARD_COLLAPSED;
 });
 
 describe("布局容器", () => {
@@ -118,22 +129,60 @@ describe("布局容器", () => {
     expect(screen.getByText("probe-content")).not.toBeNull();
   });
 
-  it("dashboard 把手切换侧栏收起与展开", async () => {
+  it("dashboard 侧栏默认展开，把手切换并落盘", async () => {
     const user = userEvent.setup();
     localStorage.setItem("layout-name", "dashboard");
     layoutState.name = "dashboard";
     await renderWithProbe("dashboard");
 
     const aside = document.querySelector("aside");
-    // 展开态导航标签文本可见
+    // 无存量偏好：默认展开，导航标签文本可见
     expect(aside?.querySelectorAll("span").length).toBeGreaterThan(0);
 
     await user.click(screen.getByRole("button", { name: "Collapse sidebar" }));
-    // 收起态仅剩图标，标签走悬浮 tooltip
+    // 收起态仅剩图标，标签走悬浮 tooltip；偏好随手同步落盘
     expect(aside?.querySelectorAll("span").length).toBe(0);
+    expect(localStorage.getItem(DASHBOARD_COLLAPSED_STORAGE_KEY)).toBe("true");
 
     await user.click(screen.getByRole("button", { name: "Expand sidebar" }));
     expect(aside?.querySelectorAll("span").length).toBeGreaterThan(0);
+    expect(localStorage.getItem(DASHBOARD_COLLAPSED_STORAGE_KEY)).toBe("false");
+  });
+
+  it("dashboard 侧栏按存量偏好恢复收起态", async () => {
+    // 内存态已被 beforeEach 重置为展开，只有存量是收起，才能证明挂载时确实读了存储
+    localStorage.setItem(DASHBOARD_COLLAPSED_STORAGE_KEY, "true");
+    localStorage.setItem("layout-name", "dashboard");
+    layoutState.name = "dashboard";
+    await renderWithProbe("dashboard");
+
+    await waitFor(() => {
+      expect(document.querySelector("aside")?.querySelectorAll("span").length).toBe(0);
+    });
+    expect(screen.getByRole("button", { name: "Expand sidebar" })).not.toBeNull();
+  });
+
+  it("dashboard 侧栏折叠偏好跨布局切换保留", async () => {
+    const user = userEvent.setup();
+    localStorage.setItem("layout-name", "dashboard");
+    layoutState.name = "dashboard";
+    await renderWithProbe("dashboard");
+
+    await user.click(screen.getByRole("button", { name: "Collapse sidebar" }));
+
+    layoutState.name = "tabs";
+    await waitFor(() => {
+      expect(document.querySelector('[data-layout="tabs"]')).not.toBeNull();
+    });
+
+    layoutState.name = "dashboard";
+    await waitFor(() => {
+      expect(document.querySelector('[data-layout="dashboard"]')).not.toBeNull();
+    });
+    // 重挂载后按持久化值恢复收起，而非回到默认展开
+    await waitFor(() => {
+      expect(document.querySelector("aside")?.querySelectorAll("span").length).toBe(0);
+    });
   });
 
   it("注册表缺 key 时回落 tabs 而非白屏", async () => {

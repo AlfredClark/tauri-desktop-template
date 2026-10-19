@@ -66,7 +66,7 @@
     description={m.about_diagnostics_log_description()}
   >
     {#snippet control()}
-      <Button size="sm" variant="outline" disabled={busy} onclick={() => void handleOpenLogDir()}>
+      <Button variant="outline" disabled={busy} onclick={() => void handleOpenLogDir()}>
         {m.about_open()}
       </Button>
     {/snippet}
@@ -77,12 +77,7 @@
     description={m.about_diagnostics_config_description()}
   >
     {#snippet control()}
-      <Button
-        size="sm"
-        variant="outline"
-        disabled={busy}
-        onclick={() => void handleOpenConfigDir()}
-      >
+      <Button variant="outline" disabled={busy} onclick={() => void handleOpenConfigDir()}>
         {m.about_open()}
       </Button>
     {/snippet}
@@ -93,12 +88,7 @@
     description={m.about_diagnostics_copy_description()}
   >
     {#snippet control()}
-      <Button
-        size="sm"
-        variant="outline"
-        disabled={busy}
-        onclick={() => void handleCopySystemInfo()}
-      >
+      <Button variant="outline" disabled={busy} onclick={() => void handleCopySystemInfo()}>
         {m.about_diagnostics_copy()}
       </Button>
     {/snippet}

@@ -23,7 +23,7 @@
           .latest.body}</pre>
     {/if}
     <div>
-      <Button size="sm" onclick={() => void downloadAndInstall()}>
+      <Button onclick={() => void downloadAndInstall()}>
         {m.updater_download_and_install()}
       </Button>
     </div>
@@ -39,7 +39,7 @@
   <div class="flex flex-col gap-3 py-4">
     <p class="text-sm font-medium">{m.updater_update_ready()}</p>
     <div>
-      <Button size="sm" onclick={() => restartApp()}>{m.updater_restart_now()}</Button>
+      <Button onclick={() => restartApp()}>{m.updater_restart_now()}</Button>
     </div>
   </div>
 {:else if updaterState.phase === "error" && updaterState.error}

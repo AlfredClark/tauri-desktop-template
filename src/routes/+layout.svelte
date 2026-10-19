@@ -139,7 +139,13 @@
 <!-- 跟随系统主题，并把 .dark 类同步到根元素 -->
 <ModeWatcher defaultMode="system" />
 
-<!-- 全局唯一的 Toast 挂载点：主题由 sonner 内部跟随 mode-watcher -->
+<!-- 应用本体：DOM 顺序即焦点顺序，内容在前，浮层挂载点在内容之后 -->
+<ErrorBoundary>
+  {@render children()}
+</ErrorBoundary>
+
+<!-- 全局唯一的 Toast 挂载点：主题由 sonner 内部跟随 mode-watcher。
+     挂在内容之后，避免有 toast 时它的关闭按钮抢到页面第一个 Tab 停靠点 -->
 <Toaster position="bottom-right" richColors closeButton />
 
 <!-- 关闭行为为弹窗提示时的确认框：平时不挂载，由关闭拦截按需打开 -->
@@ -151,7 +157,3 @@
   confirmLabel={m.settings_close_confirm_ok()}
   onConfirm={() => void handleConfirmQuit()}
 />
-
-<ErrorBoundary>
-  {@render children()}
-</ErrorBoundary>
