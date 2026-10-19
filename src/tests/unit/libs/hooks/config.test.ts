@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import commands from "#libs/commands";
 import type { AnyResult, Config_Serialize } from "#libs/commands/types";
-import { configState, hydrateConfig, resetConfig, updateConfig } from "#hooks/config.svelte";
+import { configState, hydrateConfig, resetConfig, updateConfig } from "#libs/hooks/config.svelte";
 
 vi.mock("#libs/commands", () => ({
   default: { getConfig: vi.fn(), resetConfig: vi.fn(), updateConfig: vi.fn() },

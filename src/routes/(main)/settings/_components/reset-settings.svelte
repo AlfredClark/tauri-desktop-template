@@ -3,8 +3,8 @@
   // 卡片负责事前说清重置范围，弹窗负责确认这一次点击；语言回落走 alignLocale 原地生效而非整页重载
   // ——重载会吃掉成功 toast，界面语言也会变得毫无征兆。
   import { setMode } from "mode-watcher";
-  import { resetAppearance } from "#hooks/appearance.svelte";
-  import { resetConfig } from "#hooks/config.svelte";
+  import { resetAppearance } from "#libs/hooks/appearance.svelte";
+  import { resetConfig } from "#libs/hooks/config.svelte";
   import CardSection from "#components/common/card-section.svelte";
   import ConfirmDialog from "#components/common/confirm-dialog.svelte";
   import { Button } from "#components/shadcn-svelte/button";

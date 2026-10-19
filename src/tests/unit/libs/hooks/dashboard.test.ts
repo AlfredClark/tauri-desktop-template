@@ -6,7 +6,7 @@ import {
   initDashboard,
   loadDashboardCollapsed,
   setDashboardCollapsed,
-} from "#hooks/dashboard.svelte";
+} from "#libs/hooks/dashboard.svelte";
 
 // 节点环境无 localStorage，用内存实现替身，保证单测不依赖浏览器
 function installLocalStorageMock() {

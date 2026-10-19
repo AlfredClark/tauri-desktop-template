@@ -59,7 +59,7 @@ tauri-desktop-template/
 │       ├── i18n/                   # Paraglide：messages/ 文案、project.inlang/ 配置、paraglide/ 生成物、locale.svelte.ts 语言响应式桥
 │       ├── navigation/             # 导航等应用级注册表（nav-tabs.ts：路径 / 图标 / 顺序，顶部标签栏与侧边栏导航同源）
 │       ├── utils/                  # 前端通用工具（shadcn-svelte.ts 的 cn()、window-controls.ts、toast.ts、opener.ts）
-│       └── hooks/                  # 前端共享状态（统一经 #hooks 引用），如 appearance.svelte.ts（布局注册表 + 字体偏好）、config.svelte.ts（后端配置内存态）、updater.svelte.ts（更新状态）、is-mobile.svelte.ts（响应式断点）、deep-link.svelte.ts（三路深链入口）、dashboard.svelte.ts（仪表盘侧栏折叠偏好）
+│       └── hooks/                  # 前端共享状态（统一经 #libs/hooks 引用），如 appearance.svelte.ts（布局注册表 + 字体偏好）、config.svelte.ts（后端配置内存态）、updater.svelte.ts（更新状态）、is-mobile.svelte.ts（响应式断点）、deep-link.svelte.ts（三路深链入口）、dashboard.svelte.ts（仪表盘侧栏折叠偏好）
 ├── src-tauri/                      # 后端：Rust（edition 2024）
 │   ├── src/
 │   │   ├── main.rs                 # 二进制入口，仅转发到 lib::run()
@@ -106,8 +106,8 @@ Svelte 组件 → libs/commands（链式 API）→ commands/（Rust 薄封装）
 
 ## 路径别名与配置唯一来源
 
-- 路径别名（`#assets` / `#components` / `#hooks` / `#libs`）唯一来源是 `package.json` 的 `imports` 字段（Node subpath imports，Vite / Vitest 原生解析）；TS 检查器（tsc / svelte-check）读 `tsconfig.aliases.json` 的只读镜像 `paths`（TS 对 imports 映射目标按 Node 语义不做隐式扩展名补全），由 `scripts/check-version-sync.ts` 在 `pnpm check` 中校验一致；不写入 `svelte.config.ts` / `vite.config.ts`（SvelteKit 已弃用 `kit.alias`，勿再启用）。
-- hooks 一律经 `#hooks` 引用，禁止写 `#libs/hooks`（两者都能解析）——`components.json` 的 `aliases.hooks` 即 `#hooks`，CLI 生成的组件也走 `#hooks`，保持唯一写法才能避免漂移。
+- 路径别名（`#assets` / `#components` / `#libs`）唯一来源是 `package.json` 的 `imports` 字段（Node subpath imports，Vite / Vitest 原生解析）；TS 检查器（tsc / svelte-check）读 `tsconfig.aliases.json` 的只读镜像 `paths`（TS 对 imports 映射目标按 Node 语义不做隐式扩展名补全），由 `scripts/check-version-sync.ts` 在 `pnpm check` 中校验一致；不写入 `svelte.config.ts` / `vite.config.ts`（SvelteKit 已弃用 `kit.alias`，勿再启用）。
+- `components.json` 的 `aliases.*` 必须与别名表写法一致（`aliases.hooks` 即 `#libs/hooks`）——CLI 生成的组件按其值发 import，改别名时两处同步，避免漂移。
 - Paraglide 编译选项唯一来源是 `src/libs/i18n/project.inlang/paraglide.config.ts`（CLI 与 vite 插件都读它），禁止往 `package.json` / `vite.config.ts` 各写一份。
 - 新增外部 URL 必须同步更新 `capabilities/*.json` 与 `tauri.conf.json` 的 CSP（`updater` 下载端点由 Rust 侧发起，不受 WebView CSP 约束，无需同步 CSP）。
 

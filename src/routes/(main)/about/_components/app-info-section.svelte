@@ -1,7 +1,7 @@
 <script lang="ts">
   // 应用信息分组：构建常量展示 + 版本检查按钮 + 更新状态面板，零 props。
   // 应用元信息以构建常量为唯一来源（版本号与 tauri.conf.json 一致）。
-  import { checkForUpdate, updaterState } from "#hooks/updater.svelte";
+  import { checkForUpdate, updaterState } from "#libs/hooks/updater.svelte";
   import { Badge } from "#components/shadcn-svelte/badge";
   import { Button } from "#components/shadcn-svelte/button";
   import CardRow from "#components/common/card-row.svelte";

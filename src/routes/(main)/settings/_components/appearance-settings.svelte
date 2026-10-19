@@ -2,7 +2,7 @@
   // 外观设置分组：主题/配色/布局/字重/字号简单行 + 字体选择器，纯前端持久化，零 props。
   // 主题经 mode-watcher、配色/布局与字体经外观 hook 即时生效，均不经过后端。
   import { setMode, userPrefersMode } from "mode-watcher";
-  import type { ColorTheme, LayoutName } from "#hooks/appearance.svelte";
+  import type { ColorTheme, LayoutName } from "#libs/hooks/appearance.svelte";
   import {
     colorThemeState,
     FONT_SIZE_OPTIONS,
@@ -15,7 +15,7 @@
     setFontSize,
     setFontWeight,
     setLayoutName,
-  } from "#hooks/appearance.svelte";
+  } from "#libs/hooks/appearance.svelte";
   import { Slider } from "#components/shadcn-svelte/slider";
   import CardRow from "#components/common/card-row.svelte";
   import CardSection from "#components/common/card-section.svelte";

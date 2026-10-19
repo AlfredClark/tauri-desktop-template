@@ -11,7 +11,7 @@
     fontState,
     sanitizeFontFamily,
     setFontFamily,
-  } from "#hooks/appearance.svelte";
+  } from "#libs/hooks/appearance.svelte";
   import { Button } from "#components/shadcn-svelte/button";
   import {
     Input as CommandInput,

@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { cleanup, render, screen } from "@testing-library/svelte";
 import userEvent from "@testing-library/user-event";
 import { tick } from "svelte";
-import { configState, hydrateConfig } from "#hooks/config.svelte";
+import { configState, hydrateConfig } from "#libs/hooks/config.svelte";
 import { reportCommandFailure } from "#libs/commands/cores";
 import type { Config_Serialize } from "#libs/commands/types";
 import { alignLocale } from "#libs/i18n/locale.svelte";
@@ -56,16 +56,16 @@ vi.mock("@tauri-apps/api/window", () => ({
   getCurrentWindow: () => ({ onCloseRequested: async () => async () => {} }),
 }));
 
-vi.mock("#hooks/config.svelte", () => ({
+vi.mock("#libs/hooks/config.svelte", () => ({
   configState: { value: null },
   hydrateConfig: vi.fn(async () => {}),
 }));
 
-vi.mock("#hooks/deep-link.svelte", () => ({
+vi.mock("#libs/hooks/deep-link.svelte", () => ({
   initDeepLinks: vi.fn(async () => async () => {}),
 }));
 
-vi.mock("#hooks/updater.svelte", () => ({
+vi.mock("#libs/hooks/updater.svelte", () => ({
   maybeAutoCheckForUpdate: vi.fn(),
 }));
 

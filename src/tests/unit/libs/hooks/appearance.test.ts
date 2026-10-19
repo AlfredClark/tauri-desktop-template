@@ -36,12 +36,12 @@ import {
   setFontSize,
   setFontWeight,
   setLayoutName,
-} from "#hooks/appearance.svelte";
+} from "#libs/hooks/appearance.svelte";
 import {
   DASHBOARD_COLLAPSED_STORAGE_KEY,
   DEFAULT_DASHBOARD_COLLAPSED,
   dashboardState,
-} from "#hooks/dashboard.svelte";
+} from "#libs/hooks/dashboard.svelte";
 
 // 节点环境无 localStorage，用内存实现替身，保证单测不依赖浏览器
 function installLocalStorageMock() {

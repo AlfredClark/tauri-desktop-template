@@ -2,12 +2,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { cleanup, render, screen, waitFor } from "@testing-library/svelte";
 import userEvent from "@testing-library/user-event";
 import { createRawSnippet } from "svelte";
-import { layoutState } from "#hooks/appearance.svelte";
+import { layoutState } from "#libs/hooks/appearance.svelte";
 import {
   DASHBOARD_COLLAPSED_STORAGE_KEY,
   DEFAULT_DASHBOARD_COLLAPSED,
   dashboardState,
-} from "#hooks/dashboard.svelte";
+} from "#libs/hooks/dashboard.svelte";
 import LayoutContainer from "../../../../components/layout/layout-container.svelte";
 
 // bits-ui 组件在 jsdom 下缺失的浏览器 API，就地补齐（同关于页测试）。

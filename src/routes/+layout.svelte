@@ -7,10 +7,10 @@
   import { untrack } from "svelte";
   import { getCurrentWindow } from "@tauri-apps/api/window";
   import type { Snippet } from "svelte";
-  import { initAppearance } from "#hooks/appearance.svelte";
-  import { configState, hydrateConfig } from "#hooks/config.svelte";
-  import { initDeepLinks } from "#hooks/deep-link.svelte";
-  import { maybeAutoCheckForUpdate } from "#hooks/updater.svelte";
+  import { initAppearance } from "#libs/hooks/appearance.svelte";
+  import { configState, hydrateConfig } from "#libs/hooks/config.svelte";
+  import { initDeepLinks } from "#libs/hooks/deep-link.svelte";
+  import { maybeAutoCheckForUpdate } from "#libs/hooks/updater.svelte";
   import ConfirmDialog from "#components/common/confirm-dialog.svelte";
   import ErrorBoundary from "#components/common/error-boundary.svelte";
   import { Toaster } from "#components/shadcn-svelte/sonner";

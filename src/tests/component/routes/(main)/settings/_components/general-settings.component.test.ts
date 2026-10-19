@@ -43,7 +43,7 @@ const configStateMock = vi.hoisted(() => ({
   },
 }));
 
-vi.mock("#hooks/config.svelte", () => ({
+vi.mock("#libs/hooks/config.svelte", () => ({
   configState: configStateMock,
   updateConfig: updateConfigMock,
 }));

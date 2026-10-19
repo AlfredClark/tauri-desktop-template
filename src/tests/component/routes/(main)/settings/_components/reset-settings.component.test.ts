@@ -41,7 +41,7 @@ const defaults: Config_Serialize = {
   schema_version: 1,
 };
 
-vi.mock("#hooks/appearance.svelte", () => ({
+vi.mock("#libs/hooks/appearance.svelte", () => ({
   resetAppearance: resetAppearanceMock,
 }));
 
@@ -49,7 +49,7 @@ vi.mock("mode-watcher", () => ({
   setMode: setModeMock,
 }));
 
-vi.mock("#hooks/config.svelte", () => ({
+vi.mock("#libs/hooks/config.svelte", () => ({
   configState: configStateMock,
   resetConfig: resetConfigMock,
 }));

@@ -5,7 +5,7 @@
 // 布局名用语义名（如 tabs / sidebar），禁用 default 之类只表达"被选中"的占位名——该值会落盘。
 import type { Component, Snippet } from "svelte";
 import Tabs from "#components/layout/tabs.svelte";
-import { DEFAULT_DASHBOARD_COLLAPSED, setDashboardCollapsed } from "#hooks/dashboard.svelte";
+import { DEFAULT_DASHBOARD_COLLAPSED, setDashboardCollapsed } from "#libs/hooks/dashboard.svelte";
 
 /** 可选布局取值：新增布局时同步扩展该元组与下方加载器（元组即真值来源，避免 `Object.keys` 断言） */
 const LAYOUT_NAME_TUPLE = ["tabs", "sidebar", "dashboard"] as const;

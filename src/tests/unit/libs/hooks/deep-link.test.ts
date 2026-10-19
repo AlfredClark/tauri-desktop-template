@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { handleDeepLinkUrl, isDeepLink, routeForUrl } from "#hooks/deep-link.svelte";
+import { handleDeepLinkUrl, isDeepLink, routeForUrl } from "#libs/hooks/deep-link.svelte";
 
 const gotoMock = vi.hoisted(() => vi.fn());
 const toastMocks = vi.hoisted(() => ({

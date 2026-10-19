@@ -47,7 +47,7 @@ const setFontFamilyMock = vi.hoisted(() => vi.fn());
 const fontStateMock = vi.hoisted(() => ({ family: "system" }));
 const getSystemFontsMock = vi.hoisted(() => vi.fn());
 
-vi.mock("#hooks/appearance.svelte", () => ({
+vi.mock("#libs/hooks/appearance.svelte", () => ({
   DEFAULT_FONT_FAMILY: "system",
   fontState: fontStateMock,
   buildFontStack: (family: string) =>

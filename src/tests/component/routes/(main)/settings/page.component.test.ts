@@ -56,7 +56,7 @@ const defaults: Config_Serialize = {
 
 const configStateMock = vi.hoisted((): { value: Config_Serialize | null } => ({ value: null }));
 
-vi.mock("#hooks/config.svelte", () => ({
+vi.mock("#libs/hooks/config.svelte", () => ({
   configState: configStateMock,
   updateConfig: updateConfigMock,
   resetConfig: resetConfigMock,
@@ -76,7 +76,7 @@ vi.mock("mode-watcher", () => ({
   setMode: setModeMock,
 }));
 
-vi.mock("#hooks/appearance.svelte", () => ({
+vi.mock("#libs/hooks/appearance.svelte", () => ({
   layoutState: layoutStateMock,
   setLayoutName: setLayoutNameMock,
   colorThemeState: colorThemeStateMock,

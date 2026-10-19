@@ -8,7 +8,7 @@ import {
   maybeAutoCheckForUpdate,
   restartApp,
   updaterState,
-} from "#hooks/updater.svelte";
+} from "#libs/hooks/updater.svelte";
 
 vi.mock("#libs/commands", () => ({
   default: { checkUpdate: vi.fn(), downloadAndInstallUpdate: vi.fn(), restartApp: vi.fn() },

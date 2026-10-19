@@ -4,8 +4,8 @@
   // 非默认布局懒加载：pending 期间继续渲染旧布局，settled 才翻转，不白屏不闪烁。
   import { untrack } from "svelte";
   import type { Snippet } from "svelte";
-  import type { LayoutComponent, LayoutName } from "#hooks/appearance.svelte";
-  import { LAYOUTS, initLayout, layoutState } from "#hooks/appearance.svelte";
+  import type { LayoutComponent, LayoutName } from "#libs/hooks/appearance.svelte";
+  import { LAYOUTS, initLayout, layoutState } from "#libs/hooks/appearance.svelte";
 
   let { children }: { children: Snippet } = $props();
 

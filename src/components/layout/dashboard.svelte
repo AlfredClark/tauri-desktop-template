@@ -6,8 +6,12 @@
   import { mergeProps } from "bits-ui";
   import PanelLeftCloseIcon from "@lucide/svelte/icons/panel-left-close";
   import PanelLeftOpenIcon from "@lucide/svelte/icons/panel-left-open";
-  import { dashboardState, initDashboard, setDashboardCollapsed } from "#hooks/dashboard.svelte";
-  import { getSharedIsMobile } from "#hooks/is-mobile.svelte";
+  import {
+    dashboardState,
+    initDashboard,
+    setDashboardCollapsed,
+  } from "#libs/hooks/dashboard.svelte";
+  import { getSharedIsMobile } from "#libs/hooks/is-mobile.svelte";
   import { buttonVariants } from "#components/shadcn-svelte/button";
   import * as Tooltip from "#components/shadcn-svelte/tooltip/index.js";
   import Copyright from "#components/layout/parts/copyright.svelte";

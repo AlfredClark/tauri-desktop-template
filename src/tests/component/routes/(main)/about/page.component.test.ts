@@ -56,7 +56,7 @@ const toastMocks = vi.hoisted(() => ({
   dismiss: vi.fn(),
 }));
 
-vi.mock("#hooks/updater.svelte", () => ({
+vi.mock("#libs/hooks/updater.svelte", () => ({
   updaterState: updaterStateMock,
   checkForUpdate: checkForUpdateMock,
   downloadAndInstall: downloadAndInstallMock,

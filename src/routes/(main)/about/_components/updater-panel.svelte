@@ -1,7 +1,7 @@
 <script lang="ts">
   // 更新状态面板：检查可用 / 下载中 / 待重启 / 失败各阶段展示，状态走全局 hook，零 props。
   // 切页再回来保持原样；下载百分比服务端未给总量时回落不确定进度。
-  import { downloadAndInstall, restartApp, updaterState } from "#hooks/updater.svelte";
+  import { downloadAndInstall, restartApp, updaterState } from "#libs/hooks/updater.svelte";
   import { Button } from "#components/shadcn-svelte/button";
   import { Progress } from "#components/shadcn-svelte/progress";
   import { m } from "#libs/i18n/paraglide/messages";
