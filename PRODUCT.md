@@ -31,7 +31,7 @@ web
 ## Operating Context
 
 - **平台与分发**：仅桌面三平台（Windows / macOS / Linux），打包目标 deb / AppImage / rpm / app / dmg / msi / nsis；自动更新对接 GitHub Releases `latest.json`。
-- **开发工作流**：`pnpm`（Node ≥ 24、pnpm@12.13.0）+ 锁定 Rust 工具链；日常入口 `pnpm tauri:dev` / `pnpm format` / `pnpm validate`；提交走 Conventional Commits（英文、小写），手动提交；CI（`ci.yml`）与发布（`release.yml`）已就位。
+- **开发工作流**：`pnpm`（Node ≥ 24、pnpm@12.15.0）+ 锁定 Rust 工具链；日常入口 `pnpm tauri:dev` / `pnpm format` / `pnpm validate`；提交走 Conventional Commits（英文、小写），手动提交；CI（`ci.yml`）与发布（`release.yml`）已就位。
 - **派生流程**：`docs/INITIAL.md` 是「模板 → 自有项目」的剧本（改名、换协议、换更新密钥、换图标、文档收尾、验收矩阵），变量未确认前不得臆测。
 - **评估面**：README（en）+ `docs/README_zh-CN.md`、`docs/ARCHITECTURE.md` / `docs/WORKFLOW.md`、`docs/images/` 三张截图，以及运行中的应用本身（`/`、`/settings`、`/about`）。
 - **模板自身页面即展示面**（已确认）：`/settings` 演示持久化设置与外观设置两条链，`/about` 演示信息 / 诊断 / 更新，`/` 是布局骨架验证起点；三页可以继续打磨，但必须保持「接线真实可用」。

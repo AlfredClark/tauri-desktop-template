@@ -87,6 +87,8 @@ export type ConfigPatch = {
 	tray_enabled?: boolean | null,
 	/**  关闭窗口行为 */
 	close_behavior?: CloseBehavior | null,
+	/**  显示应用的全局快捷键：`None`（或缺省 / `null`）表示不改该键 */
+	shortcut_show?: string | null,
 };
 
 /**
@@ -118,6 +120,11 @@ export type Config_Deserialize = {
 	tray_enabled?: boolean,
 	/**  关闭窗口行为：缺失、类型不符或无法识别时回落弹窗提示，绝不让整包解析失败 */
 	close_behavior?: CloseBehavior,
+	/**
+	 *  显示应用的全局快捷键：`Ctrl+Shift+S` 风格，空字符串表示未设置；
+	 *  缺失、类型不符或纯空白时回落空字符串，绝不让整包解析失败
+	 */
+	shortcut_show?: string,
 };
 
 /**
@@ -149,6 +156,11 @@ export type Config_Serialize = {
 	tray_enabled: boolean,
 	/**  关闭窗口行为：缺失、类型不符或无法识别时回落弹窗提示，绝不让整包解析失败 */
 	close_behavior: CloseBehavior,
+	/**
+	 *  显示应用的全局快捷键：`Ctrl+Shift+S` 风格，空字符串表示未设置；
+	 *  缺失、类型不符或纯空白时回落空字符串，绝不让整包解析失败
+	 */
+	shortcut_show: string,
 };
 
 /**  应用支持的语言 */

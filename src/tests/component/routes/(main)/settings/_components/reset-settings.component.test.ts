@@ -38,6 +38,7 @@ const defaults: Config_Serialize = {
   auto_check_update: false,
   tray_enabled: true,
   close_behavior: "prompt",
+  shortcut_show: "",
   schema_version: 1,
 };
 

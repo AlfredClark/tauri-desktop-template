@@ -51,6 +51,7 @@ const defaults: Config_Serialize = {
   auto_check_update: false,
   tray_enabled: true,
   close_behavior: "prompt",
+  shortcut_show: "",
   schema_version: 1,
 };
 
@@ -121,13 +122,15 @@ afterEach(() => {
 });
 
 describe("设置页", () => {
-  it("渲染页标题与通用外观两分组及重置入口", () => {
+  it("渲染页标题与通用外观快捷键三分组及重置入口", () => {
     render(Page);
 
     expect(screen.getByText("Settings")).not.toBeNull();
     expect(screen.getByText("General")).not.toBeNull();
     expect(screen.getByText("Appearance")).not.toBeNull();
+    expect(screen.getByText("Shortcuts")).not.toBeNull();
     expect(screen.getByText("Language")).not.toBeNull();
+    expect(screen.getByText("Show app")).not.toBeNull();
     expect(screen.getByRole("button", { name: "Reset to defaults" })).not.toBeNull();
   });
 

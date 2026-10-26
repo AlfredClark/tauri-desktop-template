@@ -38,6 +38,7 @@ pub fn run() {
         .with_window_state()
         .with_single_instance()     // 单实例必须先于 deep-link 注册（官方顺序要求），且仅桌面端启用（移动端为空操作）
         .with_deep_link()
+        .with_shortcut()
         .invoke_handler(specta_builder.invoke_handler())
         .setup(move |app| {
             cores::setup(app, &specta_builder);

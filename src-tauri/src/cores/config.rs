@@ -26,6 +26,10 @@ const KEY_AUTO_CHECK_UPDATE: &str = "auto_check_update";
 const KEY_TRAY_ENABLED: &str = "tray_enabled";
 /// 关闭窗口行为在配置文件中的键名
 const KEY_CLOSE_BEHAVIOR: &str = "close_behavior";
+/// 快捷键类配置在配置文件中的键前缀：后续新增快捷键项一律用 `shortcut_` 开头
+/// （如本项的 `shortcut_show`），便于归类与排查。
+/// 显示应用的全局快捷键在配置文件中的键名
+const KEY_SHORTCUT_SHOW: &str = "shortcut_show";
 /// 当前配置结构版本：变更字段语义时递增，并在迁移链中补对应升级步骤
 pub const CURRENT_SCHEMA_VERSION: u32 = 1;
 
@@ -103,6 +107,11 @@ pub struct Config {
     #[serde(deserialize_with = "de_close_behavior")]
     #[specta(type = CloseBehavior)]
     pub close_behavior: CloseBehavior,
+    /// 显示应用的全局快捷键：`Ctrl+Shift+S` 风格，空字符串表示未设置；
+    /// 缺失、类型不符或纯空白时回落空字符串，绝不让整包解析失败
+    #[serde(deserialize_with = "de_shortcut_show")]
+    #[specta(type = String)]
+    pub shortcut_show: String,
 }
 
 impl Default for Config {
@@ -115,6 +124,7 @@ impl Default for Config {
             auto_check_update: false,
             tray_enabled: default_tray_enabled(),
             close_behavior: CloseBehavior::default(),
+            shortcut_show: String::new(),
         }
     }
 }
@@ -140,6 +150,8 @@ pub struct ConfigPatch {
     pub tray_enabled: Option<bool>,
     /// 关闭窗口行为
     pub close_behavior: Option<CloseBehavior>,
+    /// 显示应用的全局快捷键：`None`（或缺省 / `null`）表示不改该键
+    pub shortcut_show: Option<String>,
 }
 
 /// 容错解析界面语言：经 `serde_json::Value` 中转，非字符串或未知标签一律回落默认值
@@ -194,6 +206,16 @@ where
 {
     let value = Value::deserialize(deserializer)?;
     Ok(value.as_str().map(CloseBehavior::parse).unwrap_or_default())
+}
+
+/// 容错解析显示应用的全局快捷键：经 `serde_json::Value` 中转，非字符串一律回落空字符串；
+/// 首尾空白直接收窄掉，避免手改配置多出的空格导致无谓的注销重注册
+fn de_shortcut_show<'de, D>(deserializer: D) -> Result<String, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let value = Value::deserialize(deserializer)?;
+    Ok(value.as_str().map(str::trim).unwrap_or_default().to_owned())
 }
 
 /// 容错解析结构版本：经 `parse_schema_version` 统一处理脏值
@@ -300,6 +322,7 @@ pub fn load_config(app: &tauri::AppHandle) -> Config {
         auto_check_update: load_auto_check_update(app),
         tray_enabled: load_tray_enabled(app),
         close_behavior: load_close_behavior(app),
+        shortcut_show: load_shortcut_show(app),
         schema_version: load_schema_version(app),
     }
 }
@@ -341,6 +364,13 @@ fn load_tray_enabled(app: &tauri::AppHandle) -> bool {
 fn load_close_behavior(app: &tauri::AppHandle) -> CloseBehavior {
     read_key(app, KEY_CLOSE_BEHAVIOR)
         .and_then(|value| value.as_str().map(CloseBehavior::parse))
+        .unwrap_or_default()
+}
+
+/// 读取持久化的显示应用全局快捷键；未设置、类型不符或纯空白时回落空字符串
+fn load_shortcut_show(app: &tauri::AppHandle) -> String {
+    read_key(app, KEY_SHORTCUT_SHOW)
+        .and_then(|value| value.as_str().map(str::trim).map(str::to_owned))
         .unwrap_or_default()
 }
 
@@ -395,6 +425,9 @@ pub fn update(app: &tauri::AppHandle, patch: &ConfigPatch) -> anyhow::Result<Con
         return Err(err).context("failed to persist config patch");
     }
     let after = load_config(app);
+    if needs_shortcut_sync(&before, &after) {
+        sync_shortcut_or_rollback(app, &before, &after)?;
+    }
     apply_runtime_effects(app, &before, &after);
     Ok(after)
 }
@@ -414,6 +447,51 @@ fn coerce_patch(before: &Config, patch: &ConfigPatch) -> ConfigPatch {
 /// 本次补丁是否要求变更操作系统自启状态；纯函数，便于单测决策分支
 fn wants_autostart_sync(patch: &ConfigPatch, current: bool) -> Option<bool> {
     patch.auto_start.filter(|target| *target != current)
+}
+
+/// 显示应用快捷键是否发生变化（落盘值口径，已在读取侧收窄空白）；纯函数，便于单测决策分支
+fn needs_shortcut_sync(before: &Config, after: &Config) -> bool {
+    before.shortcut_show != after.shortcut_show
+}
+
+/// 同步全局快捷键到新值：先注销旧值再注册新值；注册失败时把落盘值回滚到旧值
+/// 并尽力恢复旧注册，整条命令失败——前端据此保持旧内存态，UI 自动回滚。
+#[cfg(not(any(target_os = "android", target_os = "ios")))]
+fn sync_shortcut_or_rollback(
+    app: &tauri::AppHandle,
+    before: &Config,
+    after: &Config,
+) -> anyhow::Result<()> {
+    if let Err(err) = super::shortcut::sync(app, &before.shortcut_show, &after.shortcut_show) {
+        log::error!("failed to register global shortcut: {err:#}, rolling back persisted value");
+        if let Err(rollback_err) = apply_patch(
+            app,
+            &ConfigPatch {
+                shortcut_show: Some(before.shortcut_show.clone()),
+                ..ConfigPatch::default()
+            },
+        ) {
+            log::error!("failed to roll back shortcut config: {rollback_err:#}");
+        }
+        // 尽力恢复旧注册：失败只记日志，下次更新按配置值重试即可恢复
+        if let Err(restore_err) =
+            super::shortcut::sync(app, &after.shortcut_show, &before.shortcut_show)
+        {
+            log::error!("failed to restore previous shortcut: {restore_err:#}");
+        }
+        return Err(err).context("failed to register global shortcut");
+    }
+    Ok(())
+}
+
+/// 移动端无全局快捷键能力：直接视为成功（本应用专注桌面端，此处仅保签一致）
+#[cfg(any(target_os = "android", target_os = "ios"))]
+fn sync_shortcut_or_rollback(
+    _app: &tauri::AppHandle,
+    _before: &Config,
+    _after: &Config,
+) -> anyhow::Result<()> {
+    Ok(())
 }
 
 /// 把开机自启状态同步到操作系统；移动端无此依赖，直接视为成功
@@ -452,6 +530,7 @@ fn reset_patch() -> ConfigPatch {
         auto_check_update: Some(false),
         tray_enabled: Some(default_tray_enabled()),
         close_behavior: Some(CloseBehavior::default()),
+        shortcut_show: Some(String::new()),
     }
 }
 
@@ -520,6 +599,9 @@ fn write_entries(patch: &ConfigPatch) -> Vec<(&'static str, Value)> {
     }
     if let Some(close_behavior) = patch.close_behavior {
         entries.push((KEY_CLOSE_BEHAVIOR, Value::from(close_behavior.as_str())));
+    }
+    if let Some(shortcut_show) = &patch.shortcut_show {
+        entries.push((KEY_SHORTCUT_SHOW, Value::from(shortcut_show.trim())));
     }
     entries.push((KEY_SCHEMA_VERSION, Value::from(CURRENT_SCHEMA_VERSION)));
     entries
@@ -670,6 +752,7 @@ mod tests {
         assert!(!config.auto_start);
         assert!(!config.remember_window);
         assert!(!config.auto_check_update);
+        assert_eq!(config.shortcut_show, "");
         assert_eq!(config.schema_version, 0);
     }
 
@@ -682,12 +765,13 @@ mod tests {
             auto_check_update: true,
             tray_enabled: false,
             close_behavior: CloseBehavior::MinimizeToTray,
+            shortcut_show: "Ctrl+Shift+S".to_owned(),
             schema_version: CURRENT_SCHEMA_VERSION,
         };
         let raw = serde_json::to_value(&config).expect("config serializes");
         assert_eq!(
             raw,
-            json!({ "locale": "zh-CN", "auto_start": true, "remember_window": true, "auto_check_update": true, "tray_enabled": false, "close_behavior": "minimize_to_tray", "schema_version": 1 })
+            json!({ "locale": "zh-CN", "auto_start": true, "remember_window": true, "auto_check_update": true, "tray_enabled": false, "close_behavior": "minimize_to_tray", "shortcut_show": "Ctrl+Shift+S", "schema_version": 1 })
         );
         let back: Config = serde_json::from_value(raw).expect("config deserializes");
         assert_eq!(back, config);
@@ -809,6 +893,21 @@ mod tests {
     }
 
     #[test]
+    fn tolerates_missing_or_invalid_shortcut_show() {
+        for (raw, expected) in [
+            (json!({}), ""),
+            (json!({ "shortcut_show": "Ctrl+Shift+S" }), "Ctrl+Shift+S"),
+            (json!({ "shortcut_show": "  Alt+Space  " }), "Alt+Space"),
+            (json!({ "shortcut_show": "   " }), ""),
+            (json!({ "shortcut_show": 5 }), ""),
+            (json!({ "shortcut_show": null }), ""),
+        ] {
+            let config: Config = serde_json::from_value(raw).expect("never fails");
+            assert_eq!(config.shortcut_show, expected);
+        }
+    }
+
+    #[test]
     fn ignores_unknown_keys() {
         let config: Config = serde_json::from_value(json!({ "locale": "en", "theme": "dark" }))
             .expect("unknown keys ignored");
@@ -850,6 +949,10 @@ mod tests {
         let closed: ConfigPatch =
             serde_json::from_value(json!({ "close_behavior": "exit" })).expect("behavior parsed");
         assert_eq!(closed.close_behavior, Some(CloseBehavior::Exit));
+
+        let shown: ConfigPatch = serde_json::from_value(json!({ "shortcut_show": "Ctrl+Shift+S" }))
+            .expect("shortcut parsed");
+        assert_eq!(shown.shortcut_show, Some("Ctrl+Shift+S".to_owned()));
     }
 
     #[test]
@@ -868,6 +971,7 @@ mod tests {
             auto_check_update: Some(true),
             tray_enabled: Some(false),
             close_behavior: Some(CloseBehavior::Exit),
+            shortcut_show: Some("Ctrl+Shift+S".to_owned()),
         });
         assert_eq!(
             keys_of(&patched),
@@ -878,6 +982,7 @@ mod tests {
                 KEY_AUTO_CHECK_UPDATE,
                 KEY_TRAY_ENABLED,
                 KEY_CLOSE_BEHAVIOR,
+                KEY_SHORTCUT_SHOW,
                 KEY_SCHEMA_VERSION
             ]
         );
@@ -887,6 +992,7 @@ mod tests {
         assert_eq!(patched[3].1, json!(true));
         assert_eq!(patched[4].1, json!(false));
         assert_eq!(patched[5].1, json!("exit"));
+        assert_eq!(patched[6].1, json!("Ctrl+Shift+S"));
     }
 
     #[test]
@@ -899,6 +1005,7 @@ mod tests {
             auto_check_update: Some(true),
             tray_enabled: Some(false),
             close_behavior: Some(CloseBehavior::Exit),
+            shortcut_show: Some("Ctrl+Shift+S".to_owned()),
         };
         let entries = write_entries(&reset_patch());
         assert_eq!(
@@ -912,6 +1019,7 @@ mod tests {
         assert_eq!(entries[3].1, json!(false));
         assert_eq!(entries[4].1, json!(true));
         assert_eq!(entries[5].1, json!(CloseBehavior::default().as_str()));
+        assert_eq!(entries[6].1, json!(""));
     }
 
     #[test]
@@ -923,6 +1031,7 @@ mod tests {
             auto_check_update: false,
             tray_enabled: true,
             close_behavior: CloseBehavior::Prompt,
+            shortcut_show: String::new(),
             schema_version: CURRENT_SCHEMA_VERSION,
         };
         assert!(!needs_locale_apply(&base, &base));
@@ -957,6 +1066,22 @@ mod tests {
         assert_eq!(wants_autostart_sync(&off_while_on, true), Some(false));
 
         assert_eq!(wants_autostart_sync(&ConfigPatch::default(), false), None);
+    }
+
+    #[test]
+    fn shortcut_sync_triggers_only_on_change() {
+        let base = Config {
+            shortcut_show: "Ctrl+Shift+S".to_owned(),
+            ..Config::default()
+        };
+        assert!(!needs_shortcut_sync(&base, &base));
+
+        let cleared = Config {
+            shortcut_show: String::new(),
+            ..Config::default()
+        };
+        assert!(needs_shortcut_sync(&base, &cleared));
+        assert!(needs_shortcut_sync(&cleared, &base));
     }
 
     /// 关托盘时“最小化到托盘”无处可去，补丁与存量任一侧触发都要回落弹窗提示

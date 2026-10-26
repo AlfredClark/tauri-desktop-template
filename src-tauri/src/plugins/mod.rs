@@ -11,6 +11,8 @@ pub mod deep_link;
 pub mod log;
 pub mod opener;
 #[cfg(not(any(target_os = "android", target_os = "ios")))]
+pub mod shortcut;
+#[cfg(not(any(target_os = "android", target_os = "ios")))]
 pub mod single_instance;
 pub mod store;
 pub mod system_fonts;
@@ -34,6 +36,9 @@ pub trait BuilderExt<R: Runtime> {
     /// 必须先于深链插件注册（官方顺序要求），调用处保持该先后顺序
     #[must_use]
     fn with_single_instance(self) -> Self;
+    /// 注册全局快捷键插件；移动端为空操作（该平台未声明 `global-shortcut` 依赖）
+    #[must_use]
+    fn with_shortcut(self) -> Self;
     /// 注册深链插件；移动端为空操作（该平台未声明依赖）
     #[must_use]
     fn with_deep_link(self) -> Self;
@@ -59,6 +64,10 @@ impl BuilderExt<tauri::Wry> for tauri::Builder<tauri::Wry> {
         self.plugin(single_instance::init())
     }
 
+    fn with_shortcut(self) -> Self {
+        self.plugin(shortcut::init())
+    }
+
     fn with_deep_link(self) -> Self {
         self.plugin(deep_link::init())
     }
@@ -79,6 +88,10 @@ impl<R: Runtime> BuilderExt<R> for tauri::Builder<R> {
     }
 
     fn with_single_instance(self) -> Self {
+        self
+    }
+
+    fn with_shortcut(self) -> Self {
         self
     }
 

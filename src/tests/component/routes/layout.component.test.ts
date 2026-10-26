@@ -140,6 +140,7 @@ describe("根布局启动水合", () => {
     auto_check_update: true,
     tray_enabled: true,
     close_behavior: "prompt",
+    shortcut_show: "",
     schema_version: 1,
   };
 

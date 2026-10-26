@@ -1,6 +1,6 @@
 [package]
 name = "tauri-desktop-template"
-version = "0.4.0"
+version = "0.4.1"
 edition = "2024"
 authors = ["Alfred Clark"]
 description = "Desktop application development template based on Tauri and Svelte."
@@ -46,3 +46,4 @@ tauri-plugin-autostart = "2"
 tauri-plugin-window-state = "2"
 tauri-plugin-single-instance = "2"
 tauri-plugin-deep-link = "2"
+tauri-plugin-global-shortcut = "2"

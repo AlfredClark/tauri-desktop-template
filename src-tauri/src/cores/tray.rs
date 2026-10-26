@@ -113,8 +113,20 @@ fn toggle_main_window(app: &AppHandle) {
         }
         return;
     }
+    show_main_window(app);
+}
+
+/// 显示主窗口：取消最小化、显示并聚焦（托盘菜单与全局“显示应用”快捷键共用）
+#[cfg(not(any(target_os = "android", target_os = "ios")))]
+pub fn show_main_window<R: tauri::Runtime>(app: &tauri::AppHandle<R>) {
+    use tauri::Manager;
+
+    let Some(window) = app.get_webview_window("main") else {
+        log::warn!("main window not found when showing");
+        return;
+    };
     if let Err(err) = window.unminimize().and_then(|()| window.show()) {
-        log::warn!("failed to show main window from tray: {err:#}");
+        log::warn!("failed to show main window: {err:#}");
         return;
     }
     let _ = window.set_focus();
@@ -161,3 +173,7 @@ pub fn set_visible(_app: &AppHandle, _visible: bool) {}
 /// 移动端无系统托盘：以下皆为空操作，保证 `config` 副作用调用方无需 `cfg` 分支
 #[cfg(any(target_os = "android", target_os = "ios"))]
 pub fn refresh_texts(_app: &AppHandle) {}
+
+/// 移动端无系统托盘：显示主窗口为空操作（本应用专注桌面端，此处仅保签一致）
+#[cfg(any(target_os = "android", target_os = "ios"))]
+pub fn show_main_window(_app: &tauri::AppHandle) {}

@@ -110,7 +110,7 @@ git remote get-url origin 2>/dev/null | sed -E 's#\.git$##' # REPO_OWNER / PROJE
 1. 起点：GitHub `Use this template` 建库，或 `git clone` 后 `rm -rf .git && git init` 另起干净历史
    （二选一即定，模板历史是否保留溯源自选）。
 2. `pnpm install --frozen-lockfile`；确认 `git status` 干净，直接在 `main` 分支上执行初始化，不必另拉分支。
-3. 基线自检：模板原状下 `pnpm validate` 应全绿，红则先修环境（Node ≥ 24 / pnpm 12.13.0 /
+3. 基线自检：模板原状下 `pnpm validate` 应全绿，红则先修环境（Node ≥ 24 / pnpm 12.15.0 /
    Rust 1.99.0）再继续，避免把环境问题混进初始化提交。
 4. 删除设计资产（仅 §1 确认删除时执行）：删除 `PRODUCT.md`、`DESIGN.md`、`.impeccable/`。
 5. 去掉设计引用（仅 §1 确认删除时执行）：去掉 `src/routes/layout.css` 里指向 `DESIGN.md` 的注释。
