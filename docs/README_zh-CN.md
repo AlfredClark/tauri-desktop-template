@@ -42,7 +42,7 @@
    不整页重载）。
 4. **前后端崩溃兜底** — 前端 `ErrorBoundary`（经 `@tauri-apps/plugin-log` 上报，堆栈仅 dev
    显示，2s 节流）；后端 `cores/system.rs` panic 钩子（先走常规日志，日志不可用时落盘到
-   `%TEMP%/my_app_crash.log`，超 512KB 轮转保留一份）。
+   临时目录 `my_app_crash.log`（Win `%TEMP%` / Unix `$TMPDIR`），超 512KB 轮转保留一份）。
 5. **设置页（`/settings`）** — 通用分组（语言、开机自启、记住窗口、自动检查更新、托盘、
    关闭行为 `prompt` / `exit` / `minimize_to_tray`）经 `updateConfig` 落盘后端
    `config.json`；外观分组（主题、配色、`tabs` / `sidebar` 布局、系统字体选择器、字重、

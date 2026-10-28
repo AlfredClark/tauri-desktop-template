@@ -201,8 +201,9 @@ pub fn open_log_dir(app: &tauri::AppHandle) -> anyhow::Result<()> {
     use tauri_plugin_opener::OpenerExt;
 
     let dir = resolve_app_dir(app, true)?;
+    let dir = dir.to_str().context("log dir path is not valid UTF-8")?;
     app.opener()
-        .open_path(dir.to_string_lossy().into_owned(), None::<&str>)
+        .open_path(dir, None::<&str>)
         .context("failed to open log dir")?;
     Ok(())
 }
@@ -213,8 +214,9 @@ pub fn open_config_dir(app: &tauri::AppHandle) -> anyhow::Result<()> {
     use tauri_plugin_opener::OpenerExt;
 
     let dir = resolve_app_dir(app, false)?;
+    let dir = dir.to_str().context("config dir path is not valid UTF-8")?;
     app.opener()
-        .open_path(dir.to_string_lossy().into_owned(), None::<&str>)
+        .open_path(dir, None::<&str>)
         .context("failed to open config dir")?;
     Ok(())
 }

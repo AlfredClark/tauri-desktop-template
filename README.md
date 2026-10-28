@@ -48,7 +48,7 @@ updater) out of the box.
    already-rendered copy in place, no full reload).
 4. **Crash safety nets, frontend + backend** — frontend `ErrorBoundary` (reports via
    `@tauri-apps/plugin-log`, stack trace in dev only, 2s throttle); backend panic hook in
-   `cores/system.rs` (normal log first, `%TEMP%/my_app_crash.log` fallback with 512KB rotation).
+   `cores/system.rs` (normal log first, temp-dir `my_app_crash.log` fallback with 512KB rotation; `%TEMP%` on Windows, `$TMPDIR` on Unix).
 5. **Settings page (`/settings`)** — General group (language, autostart, remember window,
    auto-check updates, tray, close behavior with `prompt` / `exit` / `minimize_to_tray`) backed
    by `config.json` via `updateConfig`; Appearance group (theme, color theme, `tabs` / `sidebar`

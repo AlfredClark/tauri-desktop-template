@@ -51,7 +51,7 @@ Phase 0 收集变量（§1）→ Phase A→G 顺序执行 → 每个 Phase 收�
 | `IDENTIFIER`   | 反向域名，全局唯一（同机安装隔离 + store 路径隔离都认它）；避免 `com.tauri.*`；发布后再改等于换应用 | `io.github.<REPO_OWNER 小写>.<PROJECT_SLUG>`；有自有域名则 `<域名倒序>.<slug>` | `tauri.conf.json` `identifier`                                                                                                                                                               |
 | `LIB_NAME`     | snake_case 的 Rust lib 名；合法标识符（不能数字开头，必要时加前缀）                                 | `<PROJECT_SLUG 的 - 换 _>_lib`                                                 | `Cargo.toml` `[lib].name`；`main.rs` 的 `lib::run()` 引用                                                                                                                                    |
 | `SCHEME`       | 深链协议名，小写 + 连字符；OS 级全局注册、撞名即串台，必须含项目可辨识片段                          | `PROJECT_SLUG` 去掉尾部 `-desktop` / `-app`                                    | `tauri.conf.json` `plugins.deep-link.desktop.schemes`；`cores/deep_link.rs` 的 `SCHEME_PREFIX`（含文件内单测样例 URL）；`libs/hooks/deep-link.svelte.ts` 的 `DEEP_LINK_SCHEME`；两侧深链单测 |
-| `CRASH_LOG`    | 崩溃日志文件名；`%TEMP%`（平台临时目录）根部多应用共享，同名互覆盖                                  | `<snake_case(PRODUCT_NAME)>_crash.log`                                         | `cores/system.rs` 的 `persist_fallback`；`AGENTS.md`（崩溃边界不变量）与 `docs/ARCHITECTURE.md`（崩溃边界）；README / docs 提及                                                              |
+| `CRASH_LOG`    | 崩溃日志文件名；临时目录（Win `%TEMP%` / Unix `$TMPDIR`）根部多应用共享，同名互覆盖                 | `<snake_case(PRODUCT_NAME)>_crash.log`                                         | `cores/system.rs` 的 `persist_fallback`；`AGENTS.md`（崩溃边界不变量）与 `docs/ARCHITECTURE.md`（崩溃边界）；README / docs 提及                                                              |
 | `REPO_OWNER`   | 仓库归属（GitHub 用户名，注意与账号大小写一致）                                                     | `git remote get-url origin` 的 owner 段；无 remote 则问用户                    | `package.json` 三处 URL（homepage / repository / bugs）；`cliff.toml` `[remote.github].owner`；`tauri.conf.json` `plugins.updater.endpoints`                                                 |
 | `DESCRIPTION`  | 一句话描述（英文、单行）                                                                            | 用户指定；草稿 `<PRODUCT_NAME> desktop application based on Tauri and Svelte.` | `package.json` / `Cargo.toml`                                                                                                                                                                |
 | `KEYWORDS`     | 字符串数组：小写、无空格；Cargo 侧 ≤ 5 个且每个 ≤ 20 字符                                           | `["tauri", "desktop", <slug 分词>…]`（替换模板的 `template`）                  | `package.json` / `Cargo.toml`                                                                                                                                                                |
@@ -158,7 +158,7 @@ pnpm check:sync && pnpm validate
 - `src/tests/unit/libs/hooks/deep-link.test.ts` 与 `cores/deep_link.rs` 的单测断言同步改
 
 **C2 崩溃日志名：** `src-tauri/src/cores/system.rs` 的 `persist_fallback` 落盘文件名改为
-`<CRASH_LOG>`（`%TEMP%` 根目录多应用共享，同名互覆盖）；连带改 `AGENTS.md`（崩溃边界不变量）与
+`<CRASH_LOG>`（临时目录根部多应用共享，同名互覆盖；Win `%TEMP%` / Unix `$TMPDIR`）；连带改 `AGENTS.md`（崩溃边界不变量）与
 `docs/ARCHITECTURE.md`（崩溃边界一节）及 README / docs 的提及。
 
 **C3 更新密钥与端点（不换则验签失败，发版流水线必挂）：**
@@ -307,7 +307,7 @@ git diff src/libs/commands/bindings.ts   # 应已提交且无未预期的改动
 - [ ] 切换语言 → 重启 → 语言保持（`config.json` 持久化链路未破）
 - [ ] `<SCHEME>://settings` 唤起应用并跳转（深链三处同源）
 - [ ] 托盘菜单可用且托盘图标已替换为新图标（64×64 `tray.png`）、开机自启、更新检查面板可用
-- [ ] 崩溃兜底：人为 panic 后 `%TEMP%/<CRASH_LOG>` 生成
+- [ ] 崩溃兜底：人为 panic 后临时目录（Win `%TEMP%` / Unix `$TMPDIR`）下 `<CRASH_LOG>` 生成
 
 ---
 

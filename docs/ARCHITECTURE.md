@@ -129,7 +129,7 @@ Svelte 组件 → libs/commands（链式 API）→ commands/（Rust 薄封装）
 ### 崩溃边界（`cores/system.rs` + `components/common/error-boundary.svelte`）
 
 - 前端 `ErrorBoundary`：经 `@tauri-apps/plugin-log` 上报，堆栈仅 dev 显示；同步 `console.error` 留底 + 2s 节流防刷屏。
-- 后端 panic 钩子：先走常规日志，日志不可用时落盘到 `%TEMP%/my_app_crash.log` 兜底（二选一而非双写）；超 512KB 轮转为 `.1` 仅保留一份；时间戳用本地时间 RFC3339（`chrono::Local`）。
+- 后端 panic 钩子：先走常规日志，日志不可用时落盘到临时目录 `my_app_crash.log` 兜底（Win `%TEMP%` / Unix `$TMPDIR`，二选一而非双写）；超 512KB 轮转为 `.1` 仅保留一份；时间戳用本地时间 RFC3339（`chrono::Local`）。
 - 两者互不替代，禁止另加并行机制。
 
 ### 语言数据流（`cores/locale.rs` + `cores/config.rs` + `libs/hooks/config.svelte.ts` + `libs/i18n/locale.svelte.ts`）
@@ -176,6 +176,7 @@ const config = await invoke<Config>("get_config");
 - 错误体：后端 `CommandError::Internal(...)`（`anyhow::Error` 经已有 `From` 自动转换），前端 `.failed()` 收到 `{ kind, message }`；未注册 `.failed()` 的失败会自动经 plugin-log 上报，不会静默丢失。多个业务通用的逻辑应抽取到 `cores/`，避免散落在各业务文件中。
 - 时间：后端 `chrono`；业务时间全链路 UTC，展示层转本地时区；禁止无时区信息的本地时间与 UTC 解析混用。
 - Prettier 硬性约束：`plugins` 数组中 `prettier-plugin-tailwindcss` **必须在最后**；`importOrderTypeScriptVersion` 必须与 `package.json` 的 `typescript` 版本同步。
+- 路径跨平台：后端路径一律经 `PathBuf::join` / Tauri `app.path()` 解析，禁止硬编码分隔符与字符串拼接；跨 FFI/插件边界必须转 `String` 时用 `to_str()` + `context` 大声失败，禁止 `to_string_lossy()` 静默篡改（Linux/macOS 非 UTF-8 路径真实存在）；崩溃兜底用 `env::temp_dir()`，文档中称「临时目录」而不写 `%TEMP%`；前端不碰本地路径，唯一文件出口是后端固定目录 `open_path`，外链只走 `openExternal` 的 `http(s)` 白名单。
 
 ---
 

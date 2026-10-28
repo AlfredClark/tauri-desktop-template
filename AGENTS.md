@@ -46,7 +46,7 @@
 3. **状态归属：** Svelte 5 runes（`$state` / `$props` / `$effect`）优先，禁用旧式 store；页面私有状态用局部 state，跨页面共享才考虑提升。主题经 `mode-watcher` 全局管理，语言归后端 `config.json`，禁止各页面自建。
 4. **错误处理分层：** `features/` 返回业务错误 → `commands/` 转 `CommandResult`（错误统一 `CommandError::Internal(...)`，`anyhow::Error` 经已有 `From` 自动转换）→ 前端经链式 API 处理。关键取值用 `.result()` 按 `status` 分支（`.value()` 的回落会把失败与空数据压成同一个值）；回调内只做幂等赋值 / toast 且保证不抛错；多步分支 / 跨状态机流转必须 `result()` 后置分支。未注册 `.failed()` 的失败会自动经 plugin-log 上报，不会静默丢失；多个业务通用的逻辑抽取到 `cores/`，不散落在各业务文件中。
 5. **配置唯一来源与迁移：** Paraglide 编译选项唯一来源 `src/libs/i18n/project.inlang/paraglide.config.ts`；路径别名唯一来源 `package.json` 的 `imports`；新增外部 URL 同步 `capabilities/*.json` 与 CSP；新增 / 变更配置项必须同步 `cores/config.rs` 的 `CURRENT_SCHEMA_VERSION` 与 `MIGRATIONS` 迁移链，配置写入只走 `update` / `save_locale` / `migrate` 三入口；新增 / 变更配置项时对照 `docs/ARCHITECTURE.md` 的「成对维护的配置」表。
-6. **崩溃边界：** 前端 `ErrorBoundary` + 后端 panic 钩子（`cores/system.rs`，兜底落盘 `%TEMP%/my_app_crash.log`）。两者互不替代，禁止另加并行机制。
+6. **崩溃边界：** 前端 `ErrorBoundary` + 后端 panic 钩子（`cores/system.rs`，兜底落盘临时目录 `my_app_crash.log`，Win `%TEMP%` / Unix `$TMPDIR`）。两者互不替代，禁止另加并行机制。
 7. **语言数据流：** 唯一持久化点是 `config.json` 的 `locale` 键（`Locale` 枚举，`"en" | "zh-CN"`，禁止裸 `string` 或类型断言）；切换先经 `commands.updateConfig` 落盘再改内存，按返回值分支（禁用状态相等代理推断）；前端渲染期文案经 `libs/i18n/locale.svelte.ts` 桥接响应式（`overwriteGetLocale` 读 `$state`），**不重载的语言变更只允许经 `alignLocale`**；`restart` 桌面端永不结算（勿 `await`）。完整时序见 `docs/ARCHITECTURE.md`。
 8. **初始化与订阅：** `initAppearance` 由调用点包 `untrack` 后执行（`+layout.svelte` 的 `$effect.pre`；init 内读写同一批外观状态，被跟踪会形成「改动→重初始化」回路），init 本体保持幂等、可重复调用；`app.html` 首帧内联脚本与 init 的键名 / 分支必须同步改；`localStorage` 存量键（`layout-name` / `color-theme` / `font-family` / `font-weight` / `font-size` / `dashboard-collapsed` / mode-watcher 的 `mode-watcher-mode`）冻结豁免，新增键统一 `app.` 前缀。
 
