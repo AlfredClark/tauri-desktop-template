@@ -14,11 +14,11 @@
 - **前后端契约：** tauri-specta + `specta` / `specta-typescript`；Rust 侧 `#[tauri::command]` + `#[specta::specta]` 导出类型，生成物 `src/libs/commands/bindings.ts`（禁手改，但需要提交）。
 - **国际化：** 前端 Paraglide（策略 `localStorage` + `baseLocale`，CLI 为 `@inlang/cli`）；后端 rust-i18n（`src-tauri/locales/*.yml`，`fallback = "en"`）。
 - **后端：** Tauri v2 + Rust（`edition = "2024"`，工具链由 `rust-toolchain.toml` 锁定，`tauri-build` 构建脚本）。
-- **后端插件：** `opener` / `store` / `log` / `os` / `updater` / `autostart` / `window-state` / `system-fonts` / `single-instance` / `deep-link` / `clipboard-manager`——依次对应外部打开、持久化（`config.json` 存 `locale`）、日志、系统语言与平台信息采集（`tauri-plugin-os` 仅作 Rust 库使用）、自动更新 / 开机自启 / 窗口状态（仅非移动端启用）、系统字体探测（`plugins/system_fonts.rs`）、单实例（二次启动聚焦 + 深链参数转发，仅桌面端）、深链协议（`plugins.deep-link.desktop.schemes`）、剪贴板纯文本。
+- **后端插件：** `opener` / `store` / `log` / `os` / `updater` / `autostart` / `window-state` / `system-fonts` / `single-instance` / `deep-link` / `clipboard-manager` / `global-shortcut`——依次对应外部打开、持久化（`config.json` 存 `locale`）、日志、系统语言与平台信息采集（`tauri-plugin-os` 仅作 Rust 库使用）、自动更新 / 开机自启 / 窗口状态（仅非移动端启用）、系统字体探测（`plugins/system_fonts.rs`）、单实例（二次启动聚焦 + 深链参数转发，仅桌面端）、深链协议（`plugins.deep-link.desktop.schemes`）、剪贴板纯文本、显示应用全局快捷键（配置驱动动态注册，仅桌面端、无前端直调）。
 - **后端支撑：** `serde` / `serde_json` + `chrono`（UTC 时间）+ `log` 门面 + `thiserror` / `anyhow`（统一错误 `CommandError` / `CommandResult`）。
 - **构建 / 质量：** Vite（固定端口 `1420`）+ `svelte-check` 严格 TS 检查 + ESLint / Prettier + vitest；包管理器 `pnpm`（`engines.node >= 24`）；`pnpm-lock.yaml` 与 `Cargo.lock` 均提交。
 - **部署：** GitHub Actions + Tauri bundler；入口 `.github/workflows/ci.yml`（质量门禁）、`release.yml`（打包发布）。
-- **上游示例索引：** 沙盒文件 / 对话框 / 通知 / 全局快捷键 / 网络请求的完整接线示例见上游仓库 `v0.3.0` 标签。
+- **上游示例索引：** 沙盒文件 / 对话框 / 通知 / 网络请求的完整接线示例见上游仓库 `v0.3.0` 标签（全局快捷键已是主线真实功能，见设置页快捷键分组，不再只算示例）。
 
 **版本查询命令：**
 
@@ -58,6 +58,7 @@ tauri-desktop-template/
 │       ├── commands/               # tauri-specta 契约链（bindings.ts 生成物 + 链式 API 封装）
 │       ├── i18n/                   # Paraglide：messages/ 文案、project.inlang/ 配置、paraglide/ 生成物、locale.svelte.ts 语言响应式桥
 │       ├── navigation/             # 导航等应用级注册表（nav-tabs.ts：路径 / 图标 / 顺序，顶部标签栏与侧边栏导航同源）
+│       ├── shortcut/                 # 快捷键领域模块（展示切分 / 录制归一化，与后端 `Shortcut::from_str` 可解析子集对齐）
 │       ├── utils/                  # 前端通用工具（shadcn-svelte.ts 的 cn()、window-controls.ts、toast.ts、opener.ts）
 │       └── hooks/                  # 前端共享状态（统一经 #libs/hooks 引用），如 appearance.svelte.ts（布局注册表 + 字体偏好）、config.svelte.ts（后端配置内存态）、updater.svelte.ts（更新状态）、is-mobile.svelte.ts（响应式断点）、deep-link.svelte.ts（三路深链入口）、dashboard.svelte.ts（仪表盘侧栏折叠偏好）
 ├── src-tauri/                      # 后端：Rust（edition 2024）
@@ -65,9 +66,9 @@ tauri-desktop-template/
 │   │   ├── main.rs                 # 二进制入口，仅转发到 lib::run()
 │   │   ├── lib.rs                  # 串联插件注册 → 命令处理器 → 核心初始化
 │   │   ├── commands/               # 命令封装层：薄封装 + collect_commands! 注册
-│   │   ├── cores/                  # 通用能力与跨层共享类型（types / locale / config / deep_link / specta / system / tray / updater）
+│   │   ├── cores/                  # 通用能力与跨层共享类型（types / locale / config / deep_link / shortcut / specta / system / tray / updater）
 │   │   ├── features/               # 具体业务逻辑：按业务类型拆文件组装完整业务，供 commands/ 调用（通用逻辑抽到 cores/；当前为空）
-│   │   └── plugins/                # 各 Tauri 插件的初始化（log / store / opener / updater / autostart / window-state / system-fonts / single-instance / deep-link / clipboard）
+│   │   └── plugins/                # 各 Tauri 插件的初始化（log / store / opener / updater / autostart / window-state / system-fonts / single-instance / deep-link / clipboard / global-shortcut）
 │   ├── locales/                    # rust-i18n 后端文案（按功能分文件，一文件一命名空间：当前 tray.yml 的 tray.*，单文件可内含多 locale 的 en/zh-CN 双写）
 │   ├── app-icon.svg                # 应用图标源（推荐正方形透明底 SVG，标称尺寸任意；PNG 备选 ≥1024；`pnpm tauri:icon` 的输入，换图标时替换本文件）
 │   ├── capabilities/               # 权限配置（default.json / plugins.json），外部 URL 需同步更新
@@ -188,6 +189,24 @@ const config = await invoke<Config>("get_config");
 | `.prettierignore`                                        | `.gitignore` 中的构建产物               | 人工评审（Prettier 不读 `.gitignore`） |
 | 路径别名：`package.json` 的 `imports`                    | `tsconfig.aliases.json` 的 `paths`      | `check:sync`                           |
 | CI backend 的 `changes` 路径过滤器                       | 新增的后端配置文件                      | 人工评审                               |
+
+---
+
+<!-- 维护说明：本文件承接原 AGENTS.md 的技术总览与项目结构章节；技术选型或结构变更时优先更新本文件，再改代码 -->
+
+## 文档联动清单
+
+> 改代码时同步改文档：下表是「改了 A 就必须检查 B」的正向清单，与上表「成对维护的配置」同等效力，改完对照打勾。
+
+| 代码改动               | 必须同步的文档位置                                                                                                                                         |
+| ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 新增后端插件           | 本文件技术栈与目录树、`AGENTS.md` 安全红线#4、`docs/INITIAL.md` §7 白名单与 §8.2 计数、`README.md` 与 `docs/README_zh-CN.md` 功能与外壳、`PRODUCT.md` 能力 |
+| 新增 / 变更配置项      | 本文件配置节、`README.md` 与 `docs/README_zh-CN.md` 配置说明（`INITIAL.md` §8.2 文案键数如联动）                                                           |
+| 新增 / 改签名命令      | `docs/INITIAL.md` §8.2 命令数（如变化）、`docs/WORKFLOW.md` 命令契约流程（如改流程）                                                                       |
+| 新增前端依赖 / 插件    | 本文件技术栈、`README.md` 与 `docs/README_zh-CN.md` 技术选型、`docs/INITIAL.md` §8.2 计数                                                                  |
+| 新增文案键             | `docs/INITIAL.md` §8.2 文案键数                                                                                                                            |
+| 新增设置分组 / 页面    | `README.md` 与 `docs/README_zh-CN.md` 页面一览与功能、`docs/images/` 截图重拍、本文件目录树                                                                |
+| 调整门禁 / 脚本 / 校验 | `docs/WORKFLOW.md` 对应章节、`AGENTS.md`「效力分级与定制」                                                                                                 |
 
 ---
 

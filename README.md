@@ -52,14 +52,16 @@ updater) out of the box.
 5. **Settings page (`/settings`)** — General group (language, autostart, remember window,
    auto-check updates, tray, close behavior with `prompt` / `exit` / `minimize_to_tray`) backed
    by `config.json` via `updateConfig`; Appearance group (theme, color theme, `tabs` / `sidebar`
-   layout, system-font picker, weight, size) is frontend-only; one-click reset to defaults.
+   layout, system-font picker, weight, size) is frontend-only; Shortcut group (show-app:
+   badge-plus display + key recording, sticky error on register failure); one-click reset to defaults.
 6. **About page (`/about`)** — app info, project links (`opener`, `http(s)` only), platform
    info, diagnostics (open log/config dirs, copy system info), and an updater panel
    (check → download with progress → restart; desktop only, 120s check timeout).
 7. **Desktop shell** — frameless window with custom title bar (pin / minimize / maximize /
    close), system tray with localized menu (show/hide, quit), close-behavior interception,
    autostart, window-state restore (window starts `visible: false`, shown after restore),
-   single-instance focus + deep-link arg forwarding (`tdt://` scheme), updater wired to GitHub
+   single-instance focus + deep-link arg forwarding (`tdt://` scheme), show-app global shortcut
+   (`shortcut_show` config-driven, sticky failure toast), updater wired to GitHub
    Releases `latest.json`.
 
 ## Tech stack
@@ -67,17 +69,17 @@ updater) out of the box.
 > Version source of truth: `package.json` (frontend) and `src-tauri/Cargo.toml` (backend).
 > Always code against the versions declared there.
 
-| Layer           | Choice                                                                                                                                                | Notes                                                                                   |
-| --------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
-| Frontend        | SvelteKit 2 + Svelte 5                                                                                                                                | SPA mode (`adapter-static` + `fallback: index.html`, `ssr = false`), Vite port 1420     |
-| UI              | shadcn-svelte (nova / neutral) + Tailwind CSS v4, Lucide icons, Geist font                                                                            | `cn()` class merge, `.dark` variant + `[data-color-theme]` palettes                     |
-| Bridge          | `@tauri-apps/api`, `plugin-log` / `opener`, `system-fonts`                                                                                            | Logs via `plugin-log`, font list via `system-fonts-api`                                 |
-| Contract        | tauri-specta + `specta` / `specta-typescript`                                                                                                         | Generated `src/libs/commands/bindings.ts`, do not hand-edit                             |
-| i18n            | Paraglide (frontend) + rust-i18n (backend)                                                                                                            | `src/libs/i18n/messages/*.json` + `src-tauri/locales/*.yml`                             |
-| Backend         | Tauri v2 + Rust (edition 2024, pinned toolchain in `rust-toolchain.toml`)                                                                             | `commands/` thin wrappers, `features/` pure logic, `cores/` shared abilities            |
-| Backend plugins | `opener` / `store` / `log` / `os` / `updater` / `autostart` / `window-state` / `system-fonts` / `single-instance` / `deep-link` / `clipboard-manager` | `updater` / `autostart` / `window-state` / `single-instance` / `deep-link` desktop only |
-| Quality         | TypeScript strict + `svelte-check`, ESLint + Prettier, vitest, pnpm                                                                                   | Node `>= 24`, `pnpm-lock.yaml` + `Cargo.lock` committed                                 |
-| Release         | GitHub Actions (`ci.yml` / `release.yml`) + Tauri bundler                                                                                             | Version triplet kept in sync (see below)                                                |
+| Layer           | Choice                                                                                                                                                                    | Notes                                                                                                                                                             |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Frontend        | SvelteKit 2 + Svelte 5                                                                                                                                                    | SPA mode (`adapter-static` + `fallback: index.html`, `ssr = false`), Vite port 1420                                                                               |
+| UI              | shadcn-svelte (nova / neutral) + Tailwind CSS v4, Lucide icons, Geist font                                                                                                | `cn()` class merge, `.dark` variant + `[data-color-theme]` palettes                                                                                               |
+| Bridge          | `@tauri-apps/api`, `plugin-log` / `opener`, `system-fonts`                                                                                                                | Logs via `plugin-log`, font list via `system-fonts-api`                                                                                                           |
+| Contract        | tauri-specta + `specta` / `specta-typescript`                                                                                                                             | Generated `src/libs/commands/bindings.ts`, do not hand-edit                                                                                                       |
+| i18n            | Paraglide (frontend) + rust-i18n (backend)                                                                                                                                | `src/libs/i18n/messages/*.json` + `src-tauri/locales/*.yml`                                                                                                       |
+| Backend         | Tauri v2 + Rust (edition 2024, pinned toolchain in `rust-toolchain.toml`)                                                                                                 | `commands/` thin wrappers (by call domain), `features/` per-business logic (runtime allowed), `cores/` shared abilities                                           |
+| Backend plugins | `opener` / `store` / `log` / `os` / `updater` / `autostart` / `window-state` / `system-fonts` / `single-instance` / `deep-link` / `clipboard-manager` / `global-shortcut` | `updater` / `autostart` / `window-state` / `single-instance` / `deep-link` / `global-shortcut` desktop only (`global-shortcut` Rust-side only, no frontend calls) |
+| Quality         | TypeScript strict + `svelte-check`, ESLint + Prettier, vitest, pnpm                                                                                                       | Node `>= 24`, `pnpm-lock.yaml` + `Cargo.lock` committed                                                                                                           |
+| Release         | GitHub Actions (`ci.yml` / `release.yml`) + Tauri bundler                                                                                                                 | Version triplet kept in sync (see below)                                                                                                                          |
 
 ## Quickstart
 
@@ -113,7 +115,7 @@ pnpm release         # bumpp linked versions: package.json + tauri.conf.json + C
 | Route       | Contents                                                                                        |
 | ----------- | ----------------------------------------------------------------------------------------------- |
 | `/`         | Hero: stack icons + app name + intro. Layout-skeleton starting point, build your business here. |
-| `/settings` | General (backend-persisted) + Appearance (frontend-only) groups + reset button.                 |
+| `/settings` | General (backend-persisted) + Appearance (frontend-only) + Shortcut (global register) + reset.  |
 | `/about`    | App / project / platform / diagnostics groups + updater panel.                                  |
 
 Navigation tabs are registered once in `src/libs/navigation/nav-tabs.ts` and shared by the
@@ -126,7 +128,7 @@ Backend `config.json` (via `tauri-plugin-store`, `cores/config.rs`) holds the du
 
 - `locale` (`"en" | "zh-CN"`, specta union — no bare `string`), `auto_start`,
   `remember_window`, `auto_check_update`, `tray_enabled`,
-  `close_behavior` (`prompt` / `exit` / `minimize_to_tray`), `schema_version`.
+  `close_behavior` (`prompt` / `exit` / `minimize_to_tray`), `shortcut_show` (show-app global shortcut, empty means unset), `schema_version`.
 - Write paths go through `update` / `save_locale` / `migrate` only; `update` runs an idempotent
   `migrate` inside. Adding/changing a field means updating `CURRENT_SCHEMA_VERSION` +
   `MIGRATIONS` when existing-field semantics change.
@@ -135,7 +137,7 @@ Backend `config.json` (via `tauri-plugin-store`, `cores/config.rs`) holds the du
 
 ## Workflows
 
-**Add/change a command:** `features/<name>.rs` business logic (declare in `features/mod.rs`) →
+**Add/change a command:** with a matching business, `features/<name>.rs` implements it (declare in `features/mod.rs`); pure shared needs call `cores/` directly →
 `commands/<name>.rs` thin wrapper (`CommandResult` + both attributes + `collect_commands!`) →
 `cargo test` regenerates `bindings.ts` → frontend chained-API call → joint debug. Never
 hand-edit `bindings.ts`.

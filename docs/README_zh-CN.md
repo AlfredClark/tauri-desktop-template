@@ -46,31 +46,31 @@
 5. **设置页（`/settings`）** — 通用分组（语言、开机自启、记住窗口、自动检查更新、托盘、
    关闭行为 `prompt` / `exit` / `minimize_to_tray`）经 `updateConfig` 落盘后端
    `config.json`；外观分组（主题、配色、`tabs` / `sidebar` 布局、系统字体选择器、字重、
-   字号）纯前端；一键恢复默认。
+   字号）纯前端；快捷键分组（快捷显示：徽章加号展示 + 按键录制，注册失败弹必须手动关闭的提示）；一键恢复默认。
 6. **关于页（`/about`）** — 应用信息、项目链接（`opener`，仅放行 `http(s)`）、平台信息、
    诊断分组（打开日志 / 配置目录、复制系统信息）与更新面板（检查 → 带进度下载 → 重启，
    仅桌面端，检查 120s 超时兜底）。
 7. **桌面外壳** — 无边框窗口 + 自绘标题栏（置顶 / 最小化 / 最大化 / 关闭）、带本地化菜单
    （显示/隐藏、退出）的系统托盘、关闭行为拦截、开机自启、窗口状态记忆（窗口初始
-   `visible: false`，恢复后统一 `show`）、单实例聚焦 + 深链参数转发（`tdt://` 协议）、更新
-   对接 GitHub Releases `latest.json`。
+   `visible: false`，恢复后统一 `show`）、单实例聚焦 + 深链参数转发（`tdt://` 协议）、显示应用全局快捷键
+   （`shortcut_show` 配置驱动，注册失败 sticky 提示）、更新对接 GitHub Releases `latest.json`。
 
 ## 技术选型
 
 > 版本唯一来源是 `package.json`（前端）与 `src-tauri/Cargo.toml`（后端），按其中声明的版本
 > 使用 API，禁止自行升级 / 降级。
 
-| 层级        | 技术选型                                                                                                                                              | 说明                                                                                 |
-| ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
-| 前端框架    | SvelteKit 2 + Svelte 5                                                                                                                                | SPA 模式（`adapter-static` + `fallback: index.html`，`ssr = false`），Vite 端口 1420 |
-| UI / 样式   | shadcn-svelte（nova / neutral）+ Tailwind CSS v4，Lucide 图标，Geist 字体                                                                             | `cn()` 合并类名，`.dark` 变体 + `[data-color-theme]` 配色                            |
-| 前端插件    | `@tauri-apps/api`、`plugin-log` / `opener`、`system-fonts`                                                                                            | 日志经 `plugin-log` 上报，字体列表经 `system-fonts-api`                              |
-| 前后端契约  | tauri-specta + `specta` / `specta-typescript`                                                                                                         | 生成物 `src/libs/commands/bindings.ts`，禁止手改                                     |
-| 国际化      | Paraglide（前端）+ rust-i18n（后端）                                                                                                                  | `src/libs/i18n/messages/*.json` + `src-tauri/locales/*.yml`                          |
-| 后端框架    | Tauri v2 + Rust（edition 2024，工具链由 `rust-toolchain.toml` 锁定）                                                                                  | `commands/` 薄封装，`features/` 纯逻辑，`cores/` 跨层共享能力                        |
-| 后端插件    | `opener` / `store` / `log` / `os` / `updater` / `autostart` / `window-state` / `system-fonts` / `single-instance` / `deep-link` / `clipboard-manager` | `updater` / `autostart` / `window-state` / `single-instance` / `deep-link` 仅桌面端  |
-| 构建 / 质量 | TypeScript 严格模式 + `svelte-check`，ESLint + Prettier，vitest，pnpm                                                                                 | Node `>= 24`，`pnpm-lock.yaml` 与 `Cargo.lock` 均需提交                              |
-| 部署        | GitHub Actions（`ci.yml` / `release.yml`）+ Tauri bundler                                                                                             | 三处版本号联动（见下文）                                                             |
+| 层级        | 技术选型                                                                                                                                                                  | 说明                                                                                                                                                |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 前端框架    | SvelteKit 2 + Svelte 5                                                                                                                                                    | SPA 模式（`adapter-static` + `fallback: index.html`，`ssr = false`），Vite 端口 1420                                                                |
+| UI / 样式   | shadcn-svelte（nova / neutral）+ Tailwind CSS v4，Lucide 图标，Geist 字体                                                                                                 | `cn()` 合并类名，`.dark` 变体 + `[data-color-theme]` 配色                                                                                           |
+| 前端插件    | `@tauri-apps/api`、`plugin-log` / `opener`、`system-fonts`                                                                                                                | 日志经 `plugin-log` 上报，字体列表经 `system-fonts-api`                                                                                             |
+| 前后端契约  | tauri-specta + `specta` / `specta-typescript`                                                                                                                             | 生成物 `src/libs/commands/bindings.ts`，禁止手改                                                                                                    |
+| 国际化      | Paraglide（前端）+ rust-i18n（后端）                                                                                                                                      | `src/libs/i18n/messages/*.json` + `src-tauri/locales/*.yml`                                                                                         |
+| 后端框架    | Tauri v2 + Rust（edition 2024，工具链由 `rust-toolchain.toml` 锁定）                                                                                                      | `commands/` 薄封装（按调用域），`features/` 按业务类型组装完整业务，`cores/` 跨层共享能力                                                           |
+| 后端插件    | `opener` / `store` / `log` / `os` / `updater` / `autostart` / `window-state` / `system-fonts` / `single-instance` / `deep-link` / `clipboard-manager` / `global-shortcut` | `updater` / `autostart` / `window-state` / `single-instance` / `deep-link` / `global-shortcut` 仅桌面端（`global-shortcut` 仅 Rust 侧，无前端直调） |
+| 构建 / 质量 | TypeScript 严格模式 + `svelte-check`，ESLint + Prettier，vitest，pnpm                                                                                                     | Node `>= 24`，`pnpm-lock.yaml` 与 `Cargo.lock` 均需提交                                                                                             |
+| 部署        | GitHub Actions（`ci.yml` / `release.yml`）+ Tauri bundler                                                                                                                 | 三处版本号联动（见下文）                                                                                                                            |
 
 ## 快速开始
 
@@ -106,7 +106,7 @@ pnpm release         # bumpp 联动三处版本：package.json + tauri.conf.json
 | 路由        | 内容说明                                                                 |
 | ----------- | ------------------------------------------------------------------------ |
 | `/`         | 首页英雄区：技术栈图标 + 应用名 + 简介；布局骨架验证起点，业务在此开发。 |
-| `/settings` | 通用（后端持久化）+ 外观（纯前端）两分组 + 恢复默认按钮。                |
+| `/settings` | 通用（后端持久化）+ 外观（纯前端）+ 快捷键（全局注册）+ 恢复默认。       |
 | `/about`    | 应用 / 项目 / 平台 / 诊断四分组 + 更新面板。                             |
 
 导航标签在 `src/libs/navigation/nav-tabs.ts` 一处注册，供 `tabs` 与 `sidebar` 两套布局
@@ -119,7 +119,7 @@ pnpm release         # bumpp 联动三处版本：package.json + tauri.conf.json
 
 - `locale`（specta 导出的 `"en" | "zh-CN"` 联合类型，禁止裸 `string`）、`auto_start`、
   `remember_window`、`auto_check_update`、`tray_enabled`、
-  `close_behavior`（`prompt` / `exit` / `minimize_to_tray`）、`schema_version`。
+  `close_behavior`（`prompt` / `exit` / `minimize_to_tray`）、`shortcut_show`（显示应用全局快捷键，空即未设置）、`schema_version`。
 - 写路径只走 `update` / `save_locale` / `migrate` 三入口，`update` 内幂等 `migrate`。
   新增 / 变更配置项时，若改动已有字段语义须同步 `CURRENT_SCHEMA_VERSION` 与 `MIGRATIONS`
   迁移链。
@@ -128,8 +128,8 @@ pnpm release         # bumpp 联动三处版本：package.json + tauri.conf.json
 
 ## 特殊流程
 
-**新增 / 修改命令：** `features/<name>.rs` 实现业务（在 `features/mod.rs` 声明
-`pub mod <name>;`）→ `commands/<name>.rs` 薄封装（`CommandResult` + 双注解 +
+**新增 / 修改命令：** 有对应业务时 `features/<name>.rs` 实现业务（在 `features/mod.rs` 声明
+`pub mod <name>;`），无对应业务直接调 `cores/` → `commands/<name>.rs` 薄封装（`CommandResult` + 双注解 +
 `collect_commands!`）→ `cargo test` 重生成 `bindings.ts` → 前端链式 API 调用 → 联调。
 禁止手改 `bindings.ts`、禁止跳过重生成直接改前端。
 

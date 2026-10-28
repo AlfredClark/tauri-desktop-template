@@ -32,7 +32,7 @@
    - `.github/workflows/release.yml` 发布流水线
    - `bindings.ts` 生成物（只允许 `cargo test` 重生成，禁止手改）
 3. **输入安全：** 所有外部输入必须校验 + 转义；Svelte 渲染默认转义，禁止 `{@html ...}` 直渲用户输入；Rust 侧字符串拼接 shell / SQL 时必须参数化。
-4. **越权与能力最小化：** Tauri capability 按需最小授权，禁止全开 `*`；前端隐藏按钮不算权限控制，涉及本地文件 / 系统能力时后端必须二次校验。前端 `openExternal` 仅放行 `http(s)`（先剥 `git+` 前缀再校验），其它 scheme 直接拒绝并上报。`store` / `autostart` / `window-state` / `single-instance` / `clipboard-manager` 仅 Rust 侧注册使用（见 `lib.rs`），无前端 JS 直调，故不在 `plugins.json` 声明，属刻意最小授权；新增前端直调时再按需补声明。
+4. **越权与能力最小化：** Tauri capability 按需最小授权，禁止全开 `*`；前端隐藏按钮不算权限控制，涉及本地文件 / 系统能力时后端必须二次校验。前端 `openExternal` 仅放行 `http(s)`（先剥 `git+` 前缀再校验），其它 scheme 直接拒绝并上报。`store` / `autostart` / `window-state` / `single-instance` / `clipboard-manager` / `global-shortcut` 仅 Rust 侧注册使用（见 `lib.rs`），无前端 JS 直调，故不在 `plugins.json` 声明，属刻意最小授权；新增前端直调时再按需补声明。
 5. **依赖安全：** 禁止引入未知来源依赖；新增依赖必须说明理由；依赖审计（`pnpm audit` / `pnpm audit:backend`）为可选本地自查，不纳入 CI；依赖升级走手动 `chore(deps:update)` 提交，入口一律 `pnpm update:frontend | update:backend | update:all`（禁止裸 `pnpm update` / `cargo update`，前者是 pnpm 内建命令，会绕过脚本门禁）。
 
 ---
@@ -55,7 +55,7 @@
 ## 代码放哪里
 
 ```text
-src/          前端 SvelteKit SPA：routes/（页面与布局）· components/（common · layout · shadcn-svelte）· libs/（commands · i18n · hooks · navigation · utils）· tests/
+src/          前端 SvelteKit SPA：routes/（页面与布局）· components/（common · layout · shadcn-svelte）· libs/（commands · i18n · hooks · navigation · shortcut · utils）· tests/
 src-tauri/    后端 Rust：src/{commands, cores, features, plugins}/ · locales/ · capabilities/ · tauri.conf.json
 docs/         文档（常驻规则 + 按需层）；static/ 原样拷贝资源；.github/workflows/ CI 与发布
 ```

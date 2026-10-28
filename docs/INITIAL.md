@@ -253,10 +253,11 @@ English | [简体中文](docs/README_zh-CN.md)
 | `opener`                                                 | about 页项目外链（前端 `openExternal` 仅放行 `http(s)`） |
 | `clipboard-manager`（仅 Rust 侧使用，不声明 capability） | about 页复制系统信息经后端命令走 Rust API                |
 | `deep-link` / `single-instance`                          | 深链与二次启动聚焦，改 scheme 见 §4 C1                   |
+| `global-shortcut`（仅 Rust 侧使用，不声明 capability）   | 显示应用全局快捷键（配置驱动动态注册）                   |
 | `updater` / `autostart` / `window-state`                 | 桌面外壳三大件，仅非移动端启用                           |
 | `store`                                                  | `config.json` 持久化（语言 / 通用设置）                  |
 
-**禁止**「顺手清理」上表任一项；也禁止把 `store` / `autostart` / `window-state` / `single-instance` / `clipboard-manager`
+**禁止**「顺手清理」上表任一项；也禁止把 `store` / `autostart` / `window-state` / `single-instance` / `clipboard-manager` / `global-shortcut`
 补进 `capabilities/plugins.json`（它们仅 Rust 侧注册使用，无前端 JS 直调，属刻意最小授权）。
 
 ---
@@ -280,10 +281,10 @@ rg -n "docs/INITIAL.md" AGENTS.md README.md docs 2>/dev/null             # 本�
 | ---------------------------------------- | --------------------------------------- | --------------------------------- |
 | `collect_commands!` 注册命令数           | 11                                      | 不变（新增业务命令时增加）        |
 | `capabilities/plugins.json` 权限项       | 4                                       | 不变                              |
-| 后端 `tauri-plugin-*` 依赖               | 11                                      | 不变                              |
+| 后端 `tauri-plugin-*` 依赖               | 12                                      | 不变                              |
 | 前端 `@tauri-apps/plugin-*` 依赖         | 3                                       | 不变                              |
-| 前端测试文件（`src/tests/**/*.test.ts`） | 30                                      | 不变                              |
-| 前端文案键（`en.json`）                  | 140                                     | 不变                              |
+| 前端测试文件（`src/tests/**/*.test.ts`） | 32                                      | 不变                              |
+| 前端文案键（`en.json`）                  | 150                                     | 不变                              |
 | `src-tauri/locales/*.yml`                | 1（`tray.yml`）                         | 不变                              |
 | 导航标签（`nav-tabs.ts`）                | 3                                       | 不变（新增页面时增加）            |
 | `README.md` 行数                         | 约 180                                  | ≤ 10（跳转 + 标题 + 简介 + TODO） |

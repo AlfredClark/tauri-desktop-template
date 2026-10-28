@@ -240,6 +240,7 @@ components:
 
 - **Style:** 胶囊形（高 20px），默认 Graphite 实心 + Paper Bright 文字；`secondary` 变体用 Steel 底 + 深字（版本状态"已是最新"用的就是它）。
 - **State:** 徽标是只读状态标记，永远不可点击，也不承担主操作。
+- **设置行徽章组：** 快捷键这类"组合值"用 `secondary` 徽章逐键展示，`Plus` 图标作连接符；整组单行不换行（`flex-nowrap`），超长横向滚动（滚动条隐藏），尾部主键始终可见；编辑走右侧 ghost 图标按钮，徽标本身不可点击（与"只读"一致）。
 
 ### Cards / Containers
 
