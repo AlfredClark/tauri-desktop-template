@@ -2,7 +2,7 @@
 //! 通用能力放在 `cores`，这里只做参数校验与结果转换。
 //!
 //! 本层按前端调用域分组（配置 / 系统 / 更新），不与 `features` 一一对应：
-//! 需 `Tauri` 运行时的命令委托给 `cores`，纯函数命令才委托给 `features`。
+//! 具体业务委托给 `features` 中对应业务的文件，多业务通用的能力委托给 `cores`。
 
 #![allow(clippy::unnecessary_wraps)]
 

@@ -17,3 +17,20 @@ pub fn init<R: Runtime>() -> impl Plugin<R> {
         })
         .build()
 }
+
+/// 启动收尾：按存量配置注册显示应用快捷键；失败只记日志（前端未挂载，无法 toast）
+#[cfg(not(any(target_os = "android", target_os = "ios")))]
+pub fn setup(app: &tauri::App) {
+    let handle = app.handle();
+    let current = crate::cores::config::load_config(handle).shortcut_show;
+    if current.trim().is_empty() {
+        return;
+    }
+    if let Err(err) = crate::cores::shortcut::sync(handle, "", &current) {
+        log::warn!("failed to register startup shortcut: {err:#}");
+    }
+}
+
+/// 移动端空实现：该平台未声明 `global-shortcut` 依赖
+#[cfg(any(target_os = "android", target_os = "ios"))]
+pub fn setup(_app: &tauri::App) {}

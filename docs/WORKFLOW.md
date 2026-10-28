@@ -64,9 +64,9 @@ pnpm release                       # bumpp 联动升级三处版本号（package
 
 ## 命令契约流程
 
-`features/<name>.rs` 实现业务（`features/mod.rs` 声明 `pub mod <name>;`）→ `commands/<name>.rs` 薄封装（`CommandResult` + 双注解 `#[tauri::command]` / `#[specta::specta]` + 进 `collect_commands!`）→ `cargo test` 重生成 `bindings.ts` → 前端链式 API 调用 → 联调。
+有对应业务时 `features/<name>.rs` 实现业务（`features/mod.rs` 声明 `pub mod <name>;`），无对应业务（纯通用能力）直接调 `cores/` → `commands/<name>.rs` 薄封装（`CommandResult` + 双注解 `#[tauri::command]` / `#[specta::specta]` + 进 `collect_commands!`）→ `cargo test` 重生成 `bindings.ts` → 前端链式 API 调用 → 联调。
 
-禁止跳过生成步骤直接改代码：必须先改 `features/` + `commands/`，再 `cargo test` 重生成 `bindings.ts`，最后改前端调用；禁止手改 `bindings.ts`。
+禁止跳过生成步骤直接改代码：必须先改 `commands/`（有对应业务时先改 `features/` 对应业务文件），再 `cargo test` 重生成 `bindings.ts`，最后改前端调用；禁止手改 `bindings.ts`。
 
 ---
 

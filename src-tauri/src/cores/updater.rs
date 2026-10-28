@@ -1,6 +1,6 @@
 //! 应用更新能力：检查、下载安装与重启。
 //!
-//! 需要 Tauri 运行时（更新器与事件发送），故放在 `cores` 而非纯函数的 `features`。
+//! 更新检查与安装是跨业务的通用能力，故放在 `cores` 而非按业务归属的 `features`。
 //! 命令层（`commands::updater`）只做薄封装；下载进度经 `APP_UPDATER_PROGRESS_EVENT`
 //! 事件推送，前端在 `libs/hooks/updater.svelte.ts` 订阅（事件名两端以该常量为准）。
 use anyhow::Context;

@@ -45,7 +45,7 @@ tauri-desktop-template/
 │   │   │   ├── +layout.svelte      # 分组布局：LayoutContainer 包裹，特殊页另起分组即可绕开布局
 │   │   │   ├── +page.svelte        # 占位首页：布局骨架验证起点，业务在此开发
 │   │   │   ├── about/              # 关于页（应用 / 项目 / 平台分组 + 更新面板；页面组件在 `_components/`）
-│   │   │   └── settings/           # 完整设置页（通用 + 外观两分组；页面组件在 `_components/`）
+│   │   │   └── settings/           # 完整设置页（通用 + 外观 + 快捷键 + 重置；页面组件在 `_components/`，超过 ~8 个分组时按分组建子目录）
 │   │   └── layout.css              # Tailwind v4 入口与 shadcn-svelte 主题令牌（含 .dark 暗色变体与 --app-font-* 外观变量）
 │   │   └── themes.css              # 配色主题令牌（鲜艳系 7 色 + 暗色美学 3 色的浅色 + :root.dark 暗色块，neutral 回落 layout.css）
 │   ├── components/
@@ -66,7 +66,7 @@ tauri-desktop-template/
 │   │   ├── lib.rs                  # 串联插件注册 → 命令处理器 → 核心初始化
 │   │   ├── commands/               # 命令封装层：薄封装 + collect_commands! 注册
 │   │   ├── cores/                  # 通用能力与跨层共享类型（types / locale / config / deep_link / specta / system / tray / updater）
-│   │   ├── features/               # 业务逻辑（纯函数，不依赖 Tauri 运行时；当前为空，业务实现落在此层）
+│   │   ├── features/               # 具体业务逻辑：按业务类型拆文件组装完整业务，供 commands/ 调用（通用逻辑抽到 cores/；当前为空）
 │   │   └── plugins/                # 各 Tauri 插件的初始化（log / store / opener / updater / autostart / window-state / system-fonts / single-instance / deep-link / clipboard）
 │   ├── locales/                    # rust-i18n 后端文案（按功能分文件，一文件一命名空间：当前 tray.yml 的 tray.*，单文件可内含多 locale 的 en/zh-CN 双写）
 │   ├── app-icon.svg                # 应用图标源（推荐正方形透明底 SVG，标称尺寸任意；PNG 备选 ≥1024；`pnpm tauri:icon` 的输入，换图标时替换本文件）
@@ -97,6 +97,7 @@ Svelte 组件 → libs/commands（链式 API）→ commands/（Rust 薄封装）
 ```
 
 - 禁止反向调用与跨层跳跃：组件裸 `invoke`、命令层写业务逻辑都属违规。
+- 后端业务归属：具体业务逻辑按业务类型拆分为 `features/<业务>.rs`（`features/mod.rs` 声明 `pub mod <业务>;`），在其中组装完成该业务所需的完整逻辑，由 `commands/` 调用；不要求纯函数，也允许依赖 Tauri 运行时。多个业务通用或共享的逻辑抽取到 `cores/`，不散落在各业务文件中。`commands/` 按前端调用域分组，与 `features/` 的业务分组允许 N:M。
 - 纯前端 UI 偏好（布局 / 字体等外观偏好走 `localStorage`）是有意例外，不经 commands 链。
 - `libs/utils/` 只放不含业务 / 应用知识的通用工具（`cn()` / `toast` / `window-controls`）；注册表类（路径、图标、顺序等应用知识）放 `libs/<领域>/`，如导航注册表在 `libs/navigation/`。后端通用能力一律进 `cores/`，不另设 `utils/`。
 - 页面专有组件放所属路由的 `_components/`（页面内相对导入）；仅跨页共享的手写组件放 `components/common/`。
@@ -121,6 +122,7 @@ Svelte 组件 → libs/commands（链式 API）→ commands/（Rust 薄封装）
 
 - 新增 / 变更配置项必须同步 `CURRENT_SCHEMA_VERSION` 与 `MIGRATIONS` 迁移链（仅改动已有字段语义时才递增版本），否则老用户配置会静默失效。
 - 配置写锁三入口：`update` / `save_locale` / `migrate`（内部函数不加锁）；新增写入路径必须走其一。
+- 文件规模阈值：`cores/config.rs` 超过 ~1500 行时把迁移链拆为 `cores/config/migrate.rs` 目录模块，读写与副作用保留在 `config.rs`。
 - `update` 内幂等 `migrate`；存储不可用直接失败（不基于回落默认值决策）；自启落盘失败回滚操作系统状态。
 
 ### 崩溃边界（`cores/system.rs` + `components/common/error-boundary.svelte`）
@@ -170,7 +172,7 @@ const config = await invoke<Config>("get_config");
 
 - `EnhancedCommand` 三种用法：取值 `.value()` / 分支 `.result()` / 事务 `.success()/.failed()`。关键取值用 `.result()` 按 `status` 分支——`.value()` 的回落会把失败与空数据压成同一个值。
 - 回调在 `await / value()` 之前链式注册；回调内只做幂等赋值 / toast 且保证不抛错（回调抛错只上报不扩散，`await` 仍得原结果；关键分支若放回调内会形成「状态未落但结果为 ok」的不一致）；多步分支 / 跨状态机流转必须用 `result()` 后置分支。
-- 错误体：后端 `CommandError::Internal(...)`（`anyhow::Error` 经已有 `From` 自动转换），前端 `.failed()` 收到 `{ kind, message }`；未注册 `.failed()` 的失败会自动经 plugin-log 上报，不会静默丢失。禁止在 `features/` 内直接耦合 Tauri 运行时。
+- 错误体：后端 `CommandError::Internal(...)`（`anyhow::Error` 经已有 `From` 自动转换），前端 `.failed()` 收到 `{ kind, message }`；未注册 `.failed()` 的失败会自动经 plugin-log 上报，不会静默丢失。多个业务通用的逻辑应抽取到 `cores/`，避免散落在各业务文件中。
 - 时间：后端 `chrono`；业务时间全链路 UTC，展示层转本地时区；禁止无时区信息的本地时间与 UTC 解析混用。
 - Prettier 硬性约束：`plugins` 数组中 `prettier-plugin-tailwindcss` **必须在最后**；`importOrderTypeScriptVersion` 必须与 `package.json` 的 `typescript` 版本同步。
 

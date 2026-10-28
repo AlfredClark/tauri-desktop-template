@@ -100,8 +100,9 @@ impl<R: Runtime> BuilderExt<R> for tauri::Builder<R> {
     }
 }
 
-/// 应用启动时的插件运行时收尾（对标 `cores::setup`）：目前只有深链协议的
-/// Win/Linux 运行时注册；各插件的具体收尾放在各自文件的 `setup` 内，这里只做串联
+/// 应用启动时的插件运行时收尾（对标 `cores::setup`）：深链协议的 Win/Linux 运行时注册 +
+/// 显示应用快捷键的按存量注册；各插件的具体收尾放在各自文件的 `setup` 内，这里只做串联
 pub fn setup(app: &tauri::App) {
     deep_link::setup(app);
+    shortcut::setup(app);
 }

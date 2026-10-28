@@ -1,7 +1,7 @@
 //! 显示应用的全局快捷键：配置驱动的动态注册，触发时显示主窗口。
 //!
-//! 注册时机有两处：启动时按存量配置注册一次（`setup`），用户改值时注销旧值、
-//! 注册新值（经 `cores::config::update` 的 `sync_shortcut_or_rollback`）。
+//! 注册时机有两处：启动时按存量配置注册一次（`plugins::shortcut::setup`），
+//! 用户改值时注销旧值、注册新值（经 `cores::config::update` 的 `sync_shortcut_or_rollback`）。
 //! 空字符串表示未设置，只注销不注册。
 
 use tauri::AppHandle;
@@ -39,18 +39,6 @@ pub fn sync(app: &AppHandle, before: &str, after: &str) -> anyhow::Result<()> {
         .map_err(|err| anyhow::anyhow!("failed to register shortcut {after:?}: {err:#}"))?;
     log::info!("registered show-window shortcut {after:?}");
     Ok(())
-}
-
-/// 启动注册：存量非空则尝试注册；失败只记日志（前端未挂载，无法 toast）
-pub fn setup(app: &tauri::App) {
-    let handle = app.handle();
-    let current = super::config::load_config(handle).shortcut_show;
-    if current.trim().is_empty() {
-        return;
-    }
-    if let Err(err) = sync(handle, "", &current) {
-        log::warn!("failed to register startup shortcut: {err:#}");
-    }
 }
 
 #[cfg(test)]
