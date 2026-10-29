@@ -23,7 +23,7 @@
     "#components/*": "./src/components/*",
     "#libs/*": "./src/libs/*"
   },
-  "packageManager": "pnpm@12.15.0",
+  "packageManager": "pnpm@12.16.1",
   "engines": {
     "node": ">=24.0.0"
   },
