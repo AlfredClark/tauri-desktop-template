@@ -44,18 +44,19 @@ Phase 0 收集变量（§1）→ Phase A→G 顺序执行 → 每个 Phase 收�
 
 ### 1.1 变量表
 
-| 变量           | 规则与约束                                                                                          | 推导候选（默认值）                                                             | 主要落点                                                                                                                                                                                     |
-| -------------- | --------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `PROJECT_SLUG` | kebab-case 包名；npm 规则：小写、无空格、不以 `.` / `_` 开头                                        | 仓库目录名，或 `git remote get-url origin` 的仓库名                            | `package.json` `name`；`Cargo.toml` `[package].name`；`cliff.toml` `remote.github.repo`；README / AGENTS 标题与简介                                                                          |
-| `PRODUCT_NAME` | 展示名，可含空格；含非 ASCII 时须在打包产物上目视验证                                               | 用户指定；草稿 = `PROJECT_SLUG` 去掉尾部 `-desktop` / `-app` 后 Title Case     | `tauri.conf.json` `productName`；`app.html` `<title>`；窗口 `title`；`about` 页两处测试（`app-info-section.component.test.ts` / `about/page.component.test.ts`）                             |
-| `IDENTIFIER`   | 反向域名，全局唯一（同机安装隔离 + store 路径隔离都认它）；避免 `com.tauri.*`；发布后再改等于换应用 | `io.github.<REPO_OWNER 小写>.<PROJECT_SLUG>`；有自有域名则 `<域名倒序>.<slug>` | `tauri.conf.json` `identifier`                                                                                                                                                               |
-| `LIB_NAME`     | snake_case 的 Rust lib 名；合法标识符（不能数字开头，必要时加前缀）                                 | `<PROJECT_SLUG 的 - 换 _>_lib`                                                 | `Cargo.toml` `[lib].name`；`main.rs` 的 `lib::run()` 引用                                                                                                                                    |
-| `SCHEME`       | 深链协议名，小写 + 连字符；OS 级全局注册、撞名即串台，必须含项目可辨识片段                          | `PROJECT_SLUG` 去掉尾部 `-desktop` / `-app`                                    | `tauri.conf.json` `plugins.deep-link.desktop.schemes`；`cores/deep_link.rs` 的 `SCHEME_PREFIX`（含文件内单测样例 URL）；`libs/hooks/deep-link.svelte.ts` 的 `DEEP_LINK_SCHEME`；两侧深链单测 |
-| `CRASH_LOG`    | 崩溃日志文件名；临时目录（Win `%TEMP%` / Unix `$TMPDIR`）根部多应用共享，同名互覆盖                 | `<snake_case(PRODUCT_NAME)>_crash.log`                                         | `cores/system.rs` 的 `persist_fallback`；`AGENTS.md`（崩溃边界不变量）与 `docs/ARCHITECTURE.md`（崩溃边界）；README / docs 提及                                                              |
-| `REPO_OWNER`   | 仓库归属（GitHub 用户名，注意与账号大小写一致）                                                     | `git remote get-url origin` 的 owner 段；无 remote 则问用户                    | `package.json` 三处 URL（homepage / repository / bugs）；`cliff.toml` `[remote.github].owner`；`tauri.conf.json` `plugins.updater.endpoints`                                                 |
-| `DESCRIPTION`  | 一句话描述（英文、单行）                                                                            | 用户指定；草稿 `<PRODUCT_NAME> desktop application based on Tauri and Svelte.` | `package.json` / `Cargo.toml`                                                                                                                                                                |
-| `KEYWORDS`     | 字符串数组：小写、无空格；Cargo 侧 ≤ 5 个且每个 ≤ 20 字符                                           | `["tauri", "desktop", <slug 分词>…]`（替换模板的 `template`）                  | `package.json` / `Cargo.toml`                                                                                                                                                                |
-| `INIT_VERSION` | 语义化版本；新项目起点（与模板自身版本无关）                                                        | 默认 `0.1.0`；用户已有版本规划则从其                                           | `package.json` / `tauri.conf.json` / `Cargo.toml` 三处                                                                                                                                       |
+| 变量           | 规则与约束                                                                                          | 推导候选（默认值）                                                                                                                                  | 主要落点                                                                                                                                                                                     |
+| -------------- | --------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `PROJECT_SLUG` | kebab-case 包名；npm 规则：小写、无空格、不以 `.` / `_` 开头                                        | 仓库目录名，或 `git remote get-url origin` 的仓库名                                                                                                 | `package.json` `name`；`Cargo.toml` `[package].name`；`cliff.toml` `remote.github.repo`；README / AGENTS 标题与简介                                                                          |
+| `PRODUCT_NAME` | 展示名，可含空格；含非 ASCII 时须在打包产物上目视验证                                               | 用户指定；草稿 = `PROJECT_SLUG` 去掉尾部 `-desktop` / `-app` 后 Title Case                                                                          | `tauri.conf.json` `productName`；`app.html` `<title>`；窗口 `title`；`about` 页两处测试（`app-info-section.component.test.ts` / `about/page.component.test.ts`）                             |
+| `IDENTIFIER`   | 反向域名，全局唯一（同机安装隔离 + store 路径隔离都认它）；避免 `com.tauri.*`；发布后再改等于换应用 | `io.github.<REPO_OWNER 小写>.<PROJECT_SLUG>`；有自有域名则 `<域名倒序>.<slug>`                                                                      | `tauri.conf.json` `identifier`                                                                                                                                                               |
+| `LIB_NAME`     | snake_case 的 Rust lib 名；合法标识符（不能数字开头，必要时加前缀）                                 | `<PROJECT_SLUG 的 - 换 _>_lib`                                                                                                                      | `Cargo.toml` `[lib].name`；`main.rs` 的 `lib::run()` 引用                                                                                                                                    |
+| `SCHEME`       | 深链协议名，小写 + 连字符；OS 级全局注册、撞名即串台，必须含项目可辨识片段                          | `PROJECT_SLUG` 去掉尾部 `-desktop` / `-app`                                                                                                         | `tauri.conf.json` `plugins.deep-link.desktop.schemes`；`cores/deep_link.rs` 的 `SCHEME_PREFIX`（含文件内单测样例 URL）；`libs/hooks/deep-link.svelte.ts` 的 `DEEP_LINK_SCHEME`；两侧深链单测 |
+| `CRASH_LOG`    | 崩溃日志文件名；临时目录（Win `%TEMP%` / Unix `$TMPDIR`）根部多应用共享，同名互覆盖                 | `<snake_case(PRODUCT_NAME)>_crash.log`                                                                                                              | `cores/system.rs` 的 `persist_fallback`；`AGENTS.md`（崩溃边界不变量）与 `docs/ARCHITECTURE.md`（崩溃边界）；README / docs 提及                                                              |
+| `REPO_OWNER`   | 仓库归属（GitHub 用户名，注意与账号大小写一致）                                                     | `git remote get-url origin` 的 owner 段；无 remote 则问用户                                                                                         | `package.json` 三处 URL（homepage / repository / bugs）；`cliff.toml` `[remote.github].owner`；`tauri.conf.json` `plugins.updater.endpoints`                                                 |
+| `DESCRIPTION`  | 一句话描述（英文、单行）                                                                            | 用户指定；草稿 `<PRODUCT_NAME> desktop application based on Tauri and Svelte.`                                                                      | `package.json` / `Cargo.toml`                                                                                                                                                                |
+| `KEYWORDS`     | 字符串数组：小写、无空格；Cargo 侧 ≤ 5 个且每个 ≤ 20 字符                                           | `["tauri", "desktop", <slug 分词>…]`（替换模板的 `template`）                                                                                       | `package.json` / `Cargo.toml`                                                                                                                                                                |
+| `INIT_VERSION` | 语义化版本；新项目起点（与模板自身版本无关）                                                        | 默认 `0.1.0`；用户已有版本规划则从其                                                                                                                | `package.json` / `tauri.conf.json` / `Cargo.toml` 三处                                                                                                                                       |
+| `TRAY_ID`      | D-Bus `StatusNotifier` 的 `Id`；同机多应用共存按此区分，撞名即串台，必须每应用唯一                  | `PROJECT_SLUG` 迭代剥离尾部 `-desktop` / `-app` 后 kebab-case 化再加 `-tray` 后缀；模板值 `template-tray`；剥离后为空或出现 `-tray-tray` 时人工复核 | `cores/tray.rs` 的 `TRAY_ID`                                                                                                                                                                 |
 
 **附带确认项（与上表一起问，未确认前不落盘）：**
 
@@ -65,7 +66,7 @@ Phase 0 收集变量（§1）→ Phase A→G 顺序执行 → 每个 Phase 收�
 
 **示例（虚构，仅示意格式，勿直接采用）：** `acme-notes-desktop` → `Acme Notes` →
 `io.github.acme.acme-notes-desktop` → `acme_notes_desktop_lib` → scheme `acme-notes` →
-`acme_notes_crash.log`。
+tray `acme-notes-tray` → `acme_notes_crash.log`。
 
 **推导命令参考：**
 
@@ -82,8 +83,9 @@ git remote get-url origin 2>/dev/null | sed -E 's#\.git$##' # REPO_OWNER / PROJE
    覆盖）；不要一个变量一个问题。优先使用宿主 Agent 的提问机制（如选项式提问），无该机制时
    直接在对话里列出表格请用户逐项确认。
 3. **缺信息处理**：必填项（`PROJECT_SLUG` / `PRODUCT_NAME` / `REPO_OWNER` / `IDENTIFIER` /
-   `SCHEME`）不得臆测，问不到就阻塞；可推导项（`LIB_NAME` / `CRASH_LOG` / `KEYWORDS` /
-   `INIT_VERSION`）采用推导默认，并在汇报里标注「取默认值」。
+   `SCHEME`）不得臆测，问不到就阻塞；可推导项（`LIB_NAME` / `CRASH_LOG` / `TRAY_ID` / `KEYWORDS` /
+   `INIT_VERSION`）采用推导默认，并在汇报里标注「取默认值」；`TRAY_ID` 命中复核条件（剥离后为空
+   或出现 `-tray-tray`）时升级为阻塞项，由用户拍板终值。
 4. **回填与留档**：确认后把真实值填入 1.1 表，并在收尾汇报中完整复述。
 5. **改值要全量回查**：变量出现在包名、证书标识、协议注册、签名端点等多处；一旦确认后修改，
    必须按「主要落点」列全部重新替换一次，不允许只改一半。
@@ -99,8 +101,9 @@ git remote get-url origin 2>/dev/null | sed -E 's#\.git$##' # REPO_OWNER / PROJE
 5. DESCRIPTION（一句话英文描述）：<候选>
 6. SCHEME（深链协议）：<候选>
 7. 设计资产（PRODUCT.md / DESIGN.md / .impeccable/）：<保留 / 删除>（默认保留）
-其余按推导默认：LIB_NAME=<推导值>、CRASH_LOG=<推导值>、KEYWORDS=<推导值>、INIT_VERSION=0.1.0；
+其余按推导默认：LIB_NAME=<推导值>、CRASH_LOG=<推导值>、TRAY_ID=<推导值>、KEYWORDS=<推导值>、INIT_VERSION=0.1.0；
 作者与许可证默认沿用模板（GPL-3.0-only），设计资产默认保留；如需更换请说明。
+TRAY_ID 命中复核条件（剥离后为空或出现 -tray-tray）时另行确认终值。
 ```
 
 ---
@@ -110,7 +113,7 @@ git remote get-url origin 2>/dev/null | sed -E 's#\.git$##' # REPO_OWNER / PROJE
 1. 起点：GitHub `Use this template` 建库，或 `git clone` 后 `rm -rf .git && git init` 另起干净历史
    （二选一即定，模板历史是否保留溯源自选）。
 2. `pnpm install --frozen-lockfile`；确认 `git status` 干净，直接在 `main` 分支上执行初始化，不必另拉分支。
-3. 基线自检：模板原状下 `pnpm validate` 应全绿，红则先修环境（Node ≥ 24 / pnpm 12.15.0 /
+3. 基线自检：模板原状下 `pnpm validate` 应全绿，红则先修环境（Node ≥ 24 / pnpm 12.18.0 /
    Rust 1.99.0）再继续，避免把环境问题混进初始化提交。
 4. 删除设计资产（仅 §1 确认删除时执行）：删除 `PRODUCT.md`、`DESIGN.md`、`.impeccable/`。
 5. 去掉设计引用（仅 §1 确认删除时执行）：去掉 `src/routes/layout.css` 里指向 `DESIGN.md` 的注释。
@@ -185,8 +188,14 @@ pnpm check:sync && pnpm validate
    丢失后已发布的旧版本将无法验证任何新更新，请备份到密码管理器 / 加密存储。**密钥文件全程不入仓库**：
    `~` 下的路径天然在仓库外，不要复制进工作区、不要提交、不要粘贴进日志或聊天记录。
 
+**C4 托盘 Id（Linux D-Bus `StatusNotifier` 按此 `Id` 区分，同机多应用撞名即串台）：**
+
+- `src-tauri/src/cores/tray.rs` → `TRAY_ID` 由模板值 `template-tray` 改为 `<TRAY_ID>`
+  （`PROJECT_SLUG` 迭代剥离尾部 `-desktop` / `-app` 后 kebab-case 化再加 `-tray` 后缀）。
+- 剥离后为空或出现 `-tray-tray` 时不自动落盘，由用户人工复核决定终值。
+
 **DoD：** `cargo test`（深链单测）+ `pnpm test:vitest src/tests/unit/libs/hooks/deep-link.test.ts` 通过；
-`rg "tdt://|my_app_crash" src src-tauri docs README.md AGENTS.md` 无命中（模板旧值已全部替换）；
+`rg "tdt://|my_app_crash|template-tray" src src-tauri docs README.md AGENTS.md` 无命中（模板旧值已全部替换）；
 `git ls-files | rg '\.(key|pub)$'` 无命中，`~/<PROJECT_SLUG>/<PROJECT_SLUG>.key` 已生成且已提醒用户备份。
 
 ---
@@ -269,7 +278,7 @@ English | [简体中文](docs/README_zh-CN.md)
 ```bash
 rg -i "tauri-desktop-template|tauri_desktop_template|Tauri Desktop Template" . \
   --glob '!**/node_modules/**' --glob '!**/*.lock'                        # 无命中（模板身份清零）
-rg "tdt://|my_app_crash" src src-tauri docs README.md AGENTS.md           # 无命中（<SCHEME> / <CRASH_LOG> 已替换）
+rg "tdt://|my_app_crash|template-tray" src src-tauri docs README.md AGENTS.md           # 无命中（<SCHEME> / <CRASH_LOG> / <TRAY_ID> 已替换）
 rg -n "v0.3.0" README.md AGENTS.md docs                                   # 无命中（上游示例指引已删）
 test "$(wc -l < README.md)" -le 10 && echo "README 已瘦身"                # README / docs 各 ≤ 10 行
 rg -n "docs/INITIAL.md" AGENTS.md README.md docs 2>/dev/null             # 本文件删除后须无命中；留档则豁免
@@ -306,7 +315,7 @@ git diff src/libs/commands/bindings.ts   # 应已提交且无未预期的改动
 - [ ] 三个页面（`/`、`/settings`、`/about`）可访问；about 页应用名与版本正确
 - [ ] 切换语言 → 重启 → 语言保持（`config.json` 持久化链路未破）
 - [ ] `<SCHEME>://settings` 唤起应用并跳转（深链三处同源）
-- [ ] 托盘菜单可用且托盘图标已替换为新图标（64×64 `tray.png`）、开机自启、更新检查面板可用
+- [ ] 托盘菜单可用且托盘图标已替换为新图标（64×64 `tray.png`）、托盘 `Id` 已为 `<TRAY_ID>`（Linux 多应用共存不串台）、开机自启、更新检查面板可用
 - [ ] 崩溃兜底：人为 panic 后临时目录（Win `%TEMP%` / Unix `$TMPDIR`）下 `<CRASH_LOG>` 生成
 
 ---

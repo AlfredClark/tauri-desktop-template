@@ -83,7 +83,7 @@ updater) out of the box.
 
 ## Quickstart
 
-Prerequisites: Node `>= 24`, `pnpm@12.15.0`, Rust toolchain from `rust-toolchain.toml`.
+Prerequisites: Node `>= 24`, `pnpm@12.18.0`, Rust toolchain from `rust-toolchain.toml`.
 
 ```bash
 pnpm install --frozen-lockfile   # install deps (never npm / yarn)

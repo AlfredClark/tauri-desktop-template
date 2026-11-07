@@ -6,8 +6,12 @@
 use rust_i18n::t;
 use tauri::{AppHandle, Manager};
 
-/// 托盘图标 id：动态显隐与文案重建经此查找，禁止多处各起一名
-const TRAY_ID: &str = "main-tray";
+/// 托盘图标 id：动态显隐与文案重建经此查找，禁止多处各起一名；
+/// Linux D-Bus `StatusNotifier` 按此 `Id` 区分实例，多应用同机共存必须每应用唯一。
+/// 初始化时按 `docs/INITIAL.md §1.1` 的 `TRAY_ID` 规则替换模板值 `template-tray`
+///（`PROJECT_SLUG` 迭代剥离尾部 `-desktop` / `-app` 后 kebab-case 化再加 `-tray` 后缀；
+/// 剥离后为空或出现 `-tray-tray` 时人工复核决定终值）。
+const TRAY_ID: &str = "template-tray";
 /// 显示/隐藏菜单项 id
 const MENU_TOGGLE: &str = "tray-toggle";
 /// 退出菜单项 id
