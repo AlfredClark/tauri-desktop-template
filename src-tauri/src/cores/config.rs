@@ -160,7 +160,7 @@ where
     D: Deserializer<'de>,
 {
     let value = Value::deserialize(deserializer)?;
-    Ok(value.as_str().map(Locale::parse).unwrap_or_default())
+    Ok(value.as_str().map_or_default(Locale::parse))
 }
 
 /// 容错解析开机自启：经 `serde_json::Value` 中转，非布尔值一律回落默认值（`false`）
@@ -205,7 +205,7 @@ where
     D: Deserializer<'de>,
 {
     let value = Value::deserialize(deserializer)?;
-    Ok(value.as_str().map(CloseBehavior::parse).unwrap_or_default())
+    Ok(value.as_str().map_or_default(CloseBehavior::parse))
 }
 
 /// 容错解析显示应用的全局快捷键：经 `serde_json::Value` 中转，非字符串一律回落空字符串；
@@ -215,7 +215,7 @@ where
     D: Deserializer<'de>,
 {
     let value = Value::deserialize(deserializer)?;
-    Ok(value.as_str().map(str::trim).unwrap_or_default().to_owned())
+    Ok(value.as_str().map_or_default(str::trim).to_owned())
 }
 
 /// 容错解析结构版本：经 `parse_schema_version` 统一处理脏值
